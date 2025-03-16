@@ -1,0 +1,38 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>پیام‌های من</h2>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h3>پیام‌های دریافتی</h3>
+            {% for message in received_messages %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">از طرف: {{ message.sender.username }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">محصول: {{ message.product.name }}</h6>
+                    <p class="card-text">{{ message.content }}</p>
+                    <small class="text-muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="col-md-6">
+            <h3>پیام‌های ارسالی</h3>
+            {% for message in sent_messages %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">به: {{ message.receiver.username }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">محصول: {{ message.product.name }}</h6>
+                    <p class="card-text">{{ message.content }}</p>
+                    <small class="text-muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

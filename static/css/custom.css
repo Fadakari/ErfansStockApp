@@ -1,0 +1,27 @@
+@font-face {
+    font-family: 'yekan';
+    src: url('../font/Yekan.woff2') format('woff2'),
+         url('../font/Yekan.woff') format('woff'),
+         url('../font/Yekan.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body {
+    font-family: 'yekan', sans-serif;
+}
+
+.card-img-top {
+    height: 200px;
+    object-fit: cover;
+    border-radius: 1rem;
+}
+
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.alert {
+    margin-bottom: 2rem;
+}

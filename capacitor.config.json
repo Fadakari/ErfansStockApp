@@ -1,0 +1,9 @@
+
+{
+  "appId": "com.tools.store",
+  "appName": "فروشگاه ابزار استوک",
+  "webDir": "static",
+  "server": {
+    "androidScheme": "https"
+  }
+}
