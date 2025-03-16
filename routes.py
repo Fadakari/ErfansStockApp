@@ -339,7 +339,7 @@ def payment_callback():
     
 @bp.route("/fake-callback", methods=["GET"])
 def fake_callback():
-    return redirect("http://localhost:5000/payment/callback?" + request.query_string.decode("utf-8"))
+    return render_template("fake_callback.html", query_string=request.query_string.decode("utf-8"))
 
 
     return render_template('signup.html')
