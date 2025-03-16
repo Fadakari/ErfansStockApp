@@ -36,7 +36,7 @@ def create_app():
     app.secret_key = os.environ.get("SESSION_SECRET", "B@h702600$")
 
     # Configure the database
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///C:/Users/iTeck/pythone-app/database.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:B%40h702600%24@localhost/my_database"
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_recycle": 300,
         "pool_pre_ping": True,

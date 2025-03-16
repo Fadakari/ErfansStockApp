@@ -6,6 +6,10 @@ from urllib.parse import urlparse
 from app import db
 from models import User, Product, Category
 from utils import save_image
+from datetime import datetime, timedelta
+import requests
+
+main = Blueprint('main', __name__)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,10 +33,12 @@ def index():
     if category_id:
         query = query.filter_by(category_id=category_id)
         
+    promoted_products = query.filter(Product.promoted_until > datetime.utcnow()).order_by(Product.promoted_until.desc())
+    normal_products = query.filter(db.or_(Product.promoted_until == None, Product.promoted_until <= datetime.utcnow())).order_by(Product.created_at.desc())
     # مرتب‌سازی بر اساس جدیدترین محصولات
     query = query.order_by(Product.created_at.desc())
 
-    products = query.all()
+    products = promoted_products.union(normal_products).all()
     categories = Category.query.all()
     return render_template('products.html', products=products, categories=categories)
 
@@ -76,6 +82,7 @@ def new_product():
             description = request.form.get('description')
             price = request.form.get('price')
             category_id = request.form.get('category_id')
+            promote = request.form.get('promote') == 'on'
 
             if not name or not price:
                 flash('لطفاً نام و قیمت محصول را وارد کنید')
@@ -102,6 +109,9 @@ def new_product():
                 user_id=current_user.id,
                 category_id=category_id
             )
+
+            if promote:
+                product.promoted_until = datetime.utcnow() + timedelta(days=30)
 
             db.session.add(product)
             db.session.commit()
@@ -131,6 +141,8 @@ def edit_product(id):
             product.name = request.form.get('name')
             product.description = request.form.get('description')
             product.category_id = request.form.get('category_id')
+            promote = request.form.get('promote') == 'on'
+
             try:
                 product.price = float(request.form.get('price'))
             except ValueError:
@@ -146,6 +158,11 @@ def edit_product(id):
                         if os.path.exists(old_image_path):
                             os.remove(old_image_path)
                     product.image_path = new_image_path
+
+            if promote and not product.promoted_until:
+                product.promoted_until = datetime.utcnow() + timedelta(days=30)
+            elif not promote:
+                product.promoted_until = None
 
             db.session.commit()
             flash('محصول با موفقیت به‌روزرسانی شد')
