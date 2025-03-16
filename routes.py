@@ -1,9 +1,9 @@
 import os
 import logging
-from flask import render_template, redirect, url_for, flash, request, Blueprint
+from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
-from app import db
+from aplication import db
 from models import User, Product, Category
 from utils import save_image
 from datetime import datetime, timedelta
@@ -278,5 +278,68 @@ def signup():
             logging.error(f"Error in signup: {str(e)}")
             flash('خطا در ثبت‌نام. لطفاً دوباره تلاش کنید')
             return render_template('signup.html')
+        
+
+@bp.route("/payment/start/<int:product_id>", methods=["GET"])
+def start_payment(product_id):
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+
+    amount = 70000  # مبلغ پرداختی
+    merchant = "65717f98c5d2cb000c3603da"
+    callback_url = "https://stockheydari.ir/fake-callback"
+
+
+    data = {
+        "merchant": merchant,
+        "amount": amount,
+        "callbackUrl": callback_url,
+    }
+
+    response = requests.post("https://gateway.zibal.ir/v1/request", json=data)
+    result = response.json()
+
+    print("Status Code:", response.status_code)
+    print("Response:", result)
+
+    if result["result"] == 100:
+        return redirect(f"https://gateway.zibal.ir/start/{result['trackId']}")
+    else:
+        return jsonify({"error": "خطا در ایجاد پرداخت"}), 400
+    
+@bp.route("/payment/callback", methods=["GET"])
+def payment_callback():
+    track_id = request.args.get("trackId")
+    success = request.args.get("success")
+
+    if not track_id:
+        return jsonify({"error": "No track ID"}), 400
+
+    # بررسی وضعیت پرداخت
+    verify_data = {
+        "merchant": "65717f98c5d2cb000c3603da",
+        "trackId": track_id
+    }
+
+    response = requests.post("https://gateway.zibal.ir/v1/verify", json=verify_data)
+    result = response.json()
+
+    if result["result"] == 100:  # پرداخت موفق
+        product_id = request.args.get("product_id")  # باید این مقدار رو در درخواست اولیه ذخیره کرده باشیم
+        product = Product.query.get(product_id)
+
+        if product:
+            product.updated_at = datetime.utcnow()  # نردبان کردن محصول
+            db.session.commit()
+
+        return jsonify({"message": "پرداخت موفق بود، محصول نردبان شد!"})
+    else:
+        return jsonify({"error": "پرداخت ناموفق بود"}), 400
+    
+@bp.route("/fake-callback", methods=["GET"])
+def fake_callback():
+    return redirect("http://localhost:5000/payment/callback?" + request.query_string.decode("utf-8"))
+
 
     return render_template('signup.html')
