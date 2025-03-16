@@ -22,6 +22,20 @@
                     <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST" class="d-inline">
                         <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
                     </form>
+
+                    {% if product.user_id == current_user.id %}
+                        <form action="{{ url_for('main.remove_promotion', product_id=product.id) }}" method="POST">
+                            <button type="submit" class="btn btn-danger">حذف نردبان</button>
+                        </form>
+                    {% endif %}
+
+                    {% if product.user_id == current_user.id %}
+                        <form action="{{ url_for('main.promote_product', product_id=product.id) }}" method="POST">
+                            <button type="submit" class="btn btn-success">نردبان کردن</button>
+                        </form>
+                    {% endif %}
+
+
                 </div>
             </div>
         </div>

@@ -36,11 +36,11 @@ def index():
     promoted_products = query.filter(Product.promoted_until > datetime.utcnow()).order_by(Product.promoted_until.desc())
     normal_products = query.filter(db.or_(Product.promoted_until == None, Product.promoted_until <= datetime.utcnow())).order_by(Product.created_at.desc())
     # مرتب‌سازی بر اساس جدیدترین محصولات
-    query = query.order_by(Product.created_at.desc())
+    query = query.order_by(Product.updated_at.desc().nullslast(), Product.created_at.desc())
 
     products = promoted_products.union(normal_products).all()
     categories = Category.query.all()
-    return render_template('products.html', products=products, categories=categories)
+    return render_template('products.html', products=products, categories=categories, datetime=datetime)
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -288,8 +288,7 @@ def start_payment(product_id):
 
     amount = 70000  # مبلغ پرداختی
     merchant = "65717f98c5d2cb000c3603da"
-    callback_url = "https://stockheydari.ir/fake-callback"
-
+    callback_url = "http://localhost:5000/fake-callback"
 
     data = {
         "merchant": merchant,
@@ -308,38 +307,96 @@ def start_payment(product_id):
     else:
         return jsonify({"error": "خطا در ایجاد پرداخت"}), 400
     
-@bp.route("/payment/callback", methods=["GET"])
+@bp.route("/payment/callback", methods=["GET", "POST"])
 def payment_callback():
-    track_id = request.args.get("trackId")
-    success = request.args.get("success")
+    """بررسی پرداخت و نردبان کردن محصول"""
+    if request.method == "POST":
+        data = request.form
+    else:
+        data = request.args
 
-    if not track_id:
-        return jsonify({"error": "No track ID"}), 400
+    track_id = data.get("trackId")
+    product_id = data.get("product_id")  # گرفتن شناسه محصول
 
-    # بررسی وضعیت پرداخت
-    verify_data = {
-        "merchant": "65717f98c5d2cb000c3603da",
-        "trackId": track_id
-    }
+    if not track_id or not product_id:
+        return jsonify({"error": "No track ID or product ID"}), 400
 
-    response = requests.post("https://gateway.zibal.ir/v1/verify", json=verify_data)
-    result = response.json()
+    # تبدیل product_id به عدد صحیح
+    try:
+        product_id = int(product_id)
+    except ValueError:
+        return jsonify({"error": "Invalid product ID"}), 400
 
-    if result["result"] == 100:  # پرداخت موفق
-        product_id = request.args.get("product_id")  # باید این مقدار رو در درخواست اولیه ذخیره کرده باشیم
-        product = Product.query.get(product_id)
+    # دریافت محصول از دیتابیس
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
 
-        if product:
-            product.updated_at = datetime.utcnow()  # نردبان کردن محصول
-            db.session.commit()
+    # چاپ اطلاعات محصول قبل از بروزرسانی
+    print(f"Product before update: {product}, updated_at: {product.updated_at}")
+
+    # شبیه‌سازی پاسخ موفق از زیبال
+    result = {"result": 100}  # فرض می‌کنیم پرداخت موفق بوده
+
+    if result["result"] == 100:
+        product.promoted_until = datetime.utcnow() + timedelta(days=7)  # 🔹 نردبان برای ۷ روز
+        db.session.commit() # ذخیره تغییرات در دیتابیس
+        db.session.refresh(product)  # اطمینان از دریافت مقدار جدید از دیتابیس
+
+
+        # چاپ اطلاعات محصول بعد از بروزرسانی
+        print(f"Product after update: {product}, updated_at: {product.updated_at}")
 
         return jsonify({"message": "پرداخت موفق بود، محصول نردبان شد!"})
     else:
         return jsonify({"error": "پرداخت ناموفق بود"}), 400
     
-@bp.route("/fake-callback", methods=["GET"])
-def fake_callback():
-    return render_template("fake_callback.html", query_string=request.query_string.decode("utf-8"))
+@bp.route("/product/<int:product_id>/remove-promotion", methods=["POST"])
+@login_required
+def remove_promotion(product_id):
+    """حذف نردبان محصول به صورت دستی"""
+    product = Product.query.get_or_404(product_id)
+    
+    # فقط افرادی که مالک محصول هستند می‌توانند نردبان را بردارند
+    if product.user_id != current_user.id:
+        flash('شما اجازه حذف نردبان این محصول را ندارید')
+        return redirect(url_for('main.dashboard'))
+
+    # تنظیم promoted_until به None برای برداشتن نردبان
+    product.promoted_until = None
+    db.session.commit()
+
+    flash('نردبان محصول با موفقیت برداشته شد!')
+    return redirect(url_for('main.dashboard'))
+
+
+@bp.route("/product/<int:product_id>/promote", methods=["POST"])
+@login_required
+def promote_product(product_id):
+    """نردبان کردن محصول به صورت دستی"""
+    product = Product.query.get_or_404(product_id)
+
+    # فقط افرادی که مالک محصول هستند می‌توانند محصول را نردبان کنند
+    if product.user_id != current_user.id:
+        flash('شما اجازه نردبان کردن این محصول را ندارید')
+        return redirect(url_for('main.dashboard'))
+
+    # تنظیم promoted_until برای 10 ثانیه بعد از زمان فعلی
+    product.promoted_until = datetime.utcnow() + timedelta(seconds=10)
+    db.session.commit()
+
+    flash('محصول به مدت 10 ثانیه نردبان شد!')
+    return redirect(url_for('main.dashboard'))
+
+
+
+
+    
+@bp.route("/fake-payment", methods=["POST"])
+def fake_payment():
+    """شبیه‌سازی درگاه پرداخت زیبال بدون نیاز به درگاه واقعی"""
+    track_id = "123456789"  # مقدار فیک برای تست
+    return jsonify({"result": 100, "trackId": track_id})
 
 
     return render_template('signup.html')

@@ -17,9 +17,15 @@
                         {{ product.name }}
                     </a>
                 </h5>
+                {% if product.promoted_until and product.promoted_until > datetime.utcnow() %}
+                    <p style="color: green; font-weight: bold;">✅ این محصول تا {{ product.promoted_until.strftime('%Y-%m-%d %H:%M') }} نردبان است!</p>
+                {% endif %}
                 <p class="card-text">{{ product.description }}</p>
                 <p class="card-text"><strong>{{ "%.2f"|format(product.price) }} تومان</strong></p>
                 {% if current_user.is_authenticated and current_user.id != product.user_id %}
+
+                
+
                 <div class="d-grid gap-2">
                     <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="btn btn-primary">
                         مشاهده و ارسال پیام

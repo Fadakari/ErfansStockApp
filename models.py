@@ -39,8 +39,8 @@ class Product(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     promoted_until = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)#-
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)#+
     messages = db.relationship('Message', backref='product', lazy='dynamic')#+
+    is_promoted = db.Column(db.Boolean, default=False)
 #+
 class Message(db.Model):#+
     id = db.Column(db.Integer, primary_key=True)#+
