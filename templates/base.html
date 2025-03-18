@@ -11,28 +11,32 @@
     <!-- <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}"> -->
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">استوک</a>
+            <a class="navbar-brand fs-2" href="{{ url_for('main.index') }}">استوک</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.index') }}">محصولات</a>
+            <div class="collapse navbar-collapse ms-0" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
+                        <i class="bi bi-cart3 txt-lighter fs-3 m-0 p-0"></i>
+                        <a class="nav-link text-lighter m-0 p-0" href="{{ url_for('main.index') }}">محصولات</a>
                     </li>
                     {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">داشبورد</a>
-                    </li>
+                        <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
+                            <i class="bi bi-person txt-lighter fs-3 m-0 p-0"></i>
+                            <a class="nav-link text-lighter m-0 p-0" href="{{ url_for('main.dashboard') }}">داشبورد</a>
+                        </li>
                     {% endif %}
                     {% if current_user.is_admin %}
-                        <li class="nav-item">
-                            <a class="nav-link text-danger" href="{{ url_for('main.admin_dashboard') }}">مدیریت سایت</a>
+                        <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
+                            <i class="bi bi-kanban text-danger fs-3 m-0 p-0"></i>
+                            <a class="nav-link text-danger m-0 p-0" href="{{ url_for('main.admin_dashboard') }}">مدیریت سایت</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -96,6 +100,16 @@
                     });
             });
         }
+
+        document.querySelectorAll(".header-tabs").forEach((element) => {
+            element.addEventListener('mousemove', (e) => {
+                const rect = element.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                element.style.setProperty('--mouse-x', `${x}%`);
+                element.style.setProperty('--mouse-y', `${y}%`);
+            });
+        });
     </script>
 </body>
 </html>

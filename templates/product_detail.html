@@ -19,13 +19,13 @@
             {% else %}
                 <p>آدرس وارد نشده است</p>
             {% endif %}
-            {% if product.postal_code %}
-                <p><strong>کد پستی:</strong> {{ product.postal_code }}</p>
+            {% if user.phone %}
+                <p><strong>شماره تلفن:</strong> {{ user.phone }}</p>
             {% else %}
                 <p>کد پستی وارد نشده است</p>
             {% endif %}
             {% if product.product_type %}
-                <p><strong>نوع محصول:</strong> {{ product.product_type }}</p>
+                <p><strong>نوع محصول:</strong> {{ product.product_type.value }}</p>
             {% else %}
                 <p>نوع محصول وارد نشده است</p>
             {% endif %}

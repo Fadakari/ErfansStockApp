@@ -7,7 +7,7 @@
     font-style: normal;
 }
 
-body {
+* {
     font-family: 'yekan', sans-serif;
 }
 
@@ -25,3 +25,42 @@ body {
 .alert {
     margin-bottom: 2rem;
 }
+
+.header-tabs{
+    backdrop-filter: blur(15px);
+    cursor: pointer;
+    transition: all 0.1s ease;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    margin: 0;
+    z-index: 100;
+  }
+  .header-tabs::after{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), #8f8f8f4d, transparent 70%);
+    mix-blend-mode: multiply;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .header-tabs:hover::after{
+    opacity: 1;
+  }
+  .header-tabs{
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+  }
+  .header-tabs:hover{
+    scale: 1.1;
+    backdrop-filter: blur(5px);
+    z-index: 200;
+    border-radius: 5px;
+  }
+  .header-tabs:active{
+    scale: 1;
+  }

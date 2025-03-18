@@ -48,16 +48,16 @@ class Product(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     image_path = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     promoted_until = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_promoted = db.Column(db.Boolean, default=False)
-    address = db.Column(db.String(200), nullable=True)  # آدرس
+    address = db.Column(db.String(200), nullable=False)  # آدرس
     postal_code = db.Column(db.String(20), nullable=True)  # کد پستی
-    product_type = db.Column(db.Enum(ProductType), nullable=True)
+    product_type = db.Column(db.Enum(ProductType), nullable=False)
     owner = db.relationship('User', back_populates='products', lazy=True)
 
 
@@ -73,10 +73,18 @@ class Product(db.Model):
         self.postal_code = postal_code
 
     # تبدیل مقدار متنی به مقدار Enum
-        if product_type in ProductType.__members__:  # بررسی اینکه مقدار ورودی در `Enum` تعریف شده
-            self.product_type = ProductType[product_type]  # مقدار متنی رو به `Enum` تبدیل کن
+        if product_type:
+            print(f"Raw Product Type Before Enum Conversion: {product_type}")  # مقدار قبل از تبدیل
+            if isinstance(product_type, str) and product_type in ProductType.__members__:
+                self.product_type = ProductType[product_type]
+            elif isinstance(product_type, ProductType):  # شاید مقدار از قبل به Enum تبدیل شده باشه
+                self.product_type = product_type
+            else:
+                self.product_type = None
+            print(f"Final Product Type in __init__: {self.product_type}")  # مقدار نهایی
         else:
             self.product_type = None
+
 
 
 

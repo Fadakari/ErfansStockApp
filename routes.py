@@ -146,6 +146,10 @@ def new_product():
                 product_type=product_type
             )
 
+            print(f"Received Product Type: {product_type}")
+            print(f"Available Enum Keys: {list(ProductType.__members__.keys())}")
+
+
             if promote:
                 product.promoted_until = datetime.utcnow() + timedelta(days=30)
 
@@ -175,7 +179,7 @@ def new_product():
 @login_required
 def edit_product(id):
     product = Product.query.get_or_404(id)
-    if product.user_id != current_user.id:
+    if product.user_id != current_user.id and not current_user.is_admin:
         flash('شما اجازه ویرایش این محصول را ندارید')
         return redirect(url_for('main.dashboard'))
 
@@ -185,13 +189,28 @@ def edit_product(id):
             product.description = request.form.get('description')
             product.category_id = request.form.get('category_id')
             promote = request.form.get('promote') == 'on'
+            product.address = request.form.get("address")
+            product.postal_code = request.form.get("postal_code")
 
+            # دریافت و تبدیل product_type
+            product_type = request.form.get("product_type")
+            print(f"Received Product Type: {product_type}")  # بررسی مقدار دریافتی
+
+            if product_type in ProductType.__members__:
+                product.product_type = ProductType[product_type]
+            else:
+                product.product_type = None
+
+            print(f"Final Product Type Before Save: {product.product_type}")  # بررسی مقدار قبل از ذخیره
+
+            # تبدیل مقدار قیمت به float
             try:
                 product.price = float(request.form.get('price'))
             except ValueError:
                 flash('لطفاً قیمت معتبر وارد کنید')
                 return render_template('product_form.html', product=product)
 
+            # بررسی آپلود تصویر جدید
             image = request.files.get('image')
             if image and image.filename:
                 new_image_path = save_image(image)
@@ -202,12 +221,18 @@ def edit_product(id):
                             os.remove(old_image_path)
                     product.image_path = new_image_path
 
+            # بررسی وضعیت تبلیغ
             if promote and not product.promoted_until:
                 product.promoted_until = datetime.utcnow() + timedelta(days=30)
             elif not promote:
                 product.promoted_until = None
 
             db.session.commit()
+
+            # بررسی مقدار ذخیره‌شده در دیتابیس
+            saved_product = Product.query.get(product.id)
+            print(f"Saved Product Type in DB: {saved_product.product_type}")
+
             flash('محصول با موفقیت به‌روزرسانی شد')
             return redirect(url_for('main.dashboard'))
 
@@ -219,11 +244,12 @@ def edit_product(id):
     categories = Category.query.all()
     return render_template('product_form.html', product=product, categories=categories)
 
+
 @bp.route('/product/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_product(id):
     product = Product.query.get_or_404(id)
-    if product.user_id != current_user.id:
+    if product.user_id != current_user.id and not current_user.is_admin:
         flash('شما اجازه حذف این محصول را ندارید')
         return redirect(url_for('main.dashboard'))
 
@@ -248,7 +274,9 @@ def delete_product(id):
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
     categories = Category.query.all()
-    return render_template('product_detail.html', product=product, categories=categories)
+    user = User.query.get(product.user_id)  # یا می‌توانید با استفاده از ارتباطات sqlalchemy این اطلاعات را بدست آورید
+    phone = user.phone if user else None
+    return render_template('product_detail.html', user=user, product=product, categories=categories, phone=phone)
 
 @bp.route('/init-categories')
 def init_categories():
