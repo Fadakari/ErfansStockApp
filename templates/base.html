@@ -30,6 +30,11 @@
                         <a class="nav-link" href="{{ url_for('main.dashboard') }}">داشبورد</a>
                     </li>
                     {% endif %}
+                    {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{{ url_for('main.admin_dashboard') }}">مدیریت سایت</a>
+                        </li>
+                    {% endif %}
                 </ul>
                 <form class="d-flex mx-3" action="{{ url_for('main.index') }}" method="GET">
                     <select name="category" class="form-select me-2">

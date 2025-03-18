@@ -8,6 +8,7 @@
                 <h4 class="mb-0">{% if product %}ویرایش محصول{% else %}محصول جدید{% endif %}</h4>
             </div>
             <div class="card-body">
+                <!-- فرم بدون جاوا اسکریپت -->
                 <form method="POST" enctype="multipart/form-data" id="productForm">
                     <div class="mb-3">
                         <label for="name" class="form-label">نام محصول</label>
@@ -35,6 +36,25 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label for="address" class="form-label">آدرس</label>
+                        <input type="text" class="form-control" id="address" name="address" 
+                               value="{{ product.address if product else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="postal_code" class="form-label">کد پستی</label>
+                        <input type="text" class="form-control" id="postal_code" name="postal_code" 
+                               value="{{ product.postal_code if product else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="product_type" class="form-label">نوع محصول</label>
+                        <select class="form-select" id="product_type" name="product_type" required>
+                            <option value="NEW" {% if product and product.product_type == ProductType.NEW %}selected{% endif %}>نو</option>
+                            <option value="STOCK" {% if product and product.product_type == ProductType.STOCK %}selected{% endif %}>استوک</option>
+                            <option value="USED" {% if product and product.product_type == ProductType.USED %}selected{% endif %}>دست دوم</option>
+                            <option value="NEEDS_REPAIR" {% if product and product.product_type == ProductType.NEEDS_REPAIR %}selected{% endif %}>نیاز به تعمیر جزئی</option>
+                        </select>                        
+                    </div>
+                    <div class="mb-3">
                         <label for="image" class="form-label">تصویر محصول</label>
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                         {% if product and product.image_path %}
@@ -54,48 +74,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('productForm');
-    const imageInput = document.getElementById('image');
-    const previewContainer = document.getElementById('imagePreview');
-
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const name = document.getElementById('name').value.trim();
-            const price = document.getElementById('price').value.trim();
-
-            if (!name || !price) {
-                e.preventDefault();
-                alert('لطفاً نام و قیمت محصول را وارد کنید');
-                return false;
-            }
-        });
-    }
-
-    if (imageInput) { // Removed unnecessary previewContainer check
-        imageInput.addEventListener('change', function(e) {
-            const previewContainer = document.querySelector('#image input[type="file"] + div'); // Corrected selector
-            while (previewContainer.firstChild) {
-                previewContainer.removeChild(previewContainer.firstChild);
-            }
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.createElement('img');
-                    preview.src = e.target.result;
-                    preview.style.maxWidth = '200px';
-                    preview.className = 'img-thumbnail';
-                    previewContainer.appendChild(preview);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-});
-</script>
 {% endblock %}

@@ -8,6 +8,8 @@ from models import User, Product, Category
 from utils import save_image
 from datetime import datetime, timedelta
 import requests
+from models import ProductType  # جایگزین yourapp با نام پروژه شما
+
 
 main = Blueprint('main', __name__)
 
@@ -73,16 +75,41 @@ def dashboard():
     categories = Category.query.all()
     return render_template('dashboard.html', products=products, categories=categories)
 
+@bp.route('/user-dashboard/<int:user_id>')
+def user_dashboard(user_id):
+    # بارگذاری اطلاعات کاربر بر اساس user_id
+    user = User.query.get_or_404(user_id)
+    
+    # اگر کاربر وارد شده همان کاربر باشد یا ادمین باشد، محصولات آن کاربر را نشان بده
+    if current_user.id == user.id or current_user.is_admin:
+        # بارگذاری محصولات کاربر
+        products = Product.query.filter_by(user_id=user.id).all()
+        return render_template('user_dashboard.html', products=products, user=user)
+    
+    # اگر کاربر به داشبورد کاربر دیگری وارد شده و خودش ادمین نباشد
+    flash("شما به این داشبورد دسترسی ندارید")
+    return redirect(url_for('main.dashboard'))  # به صفحه اصلی هدایت می‌شود
+
+
 @bp.route('/product/new', methods=['GET', 'POST'])
 @login_required
 def new_product():
     if request.method == 'POST':
         try:
+            # دریافت مقادیر از فرم
             name = request.form.get('name')
             description = request.form.get('description')
             price = request.form.get('price')
             category_id = request.form.get('category_id')
             promote = request.form.get('promote') == 'on'
+            address = request.form.get('address')  # آدرس
+            postal_code = request.form.get('postal_code')  # کد پستی
+            product_type = request.form.get('product_type')  # نوع محصول
+
+            # چاپ مقادیر در سرور
+            print(f"Address: {address}")
+            print(f"Postal Code: {postal_code}")
+            print(f"Product Type: {product_type}")
 
             if not name or not price:
                 flash('لطفاً نام و قیمت محصول را وارد کنید')
@@ -93,7 +120,9 @@ def new_product():
                 price = float(price)
             except ValueError:
                 flash('لطفاً قیمت معتبر وارد کنید')
-                return render_template('product_form.html')
+                categories = Category.query.all()
+                return render_template('product_form.html', categories=categories)
+            
 
             image_path = None
             if 'image' in request.files:
@@ -105,16 +134,21 @@ def new_product():
                 name=name,
                 description=description,
                 price=price,
-                image_path=image_path,
+                image_path=image.filename if image else None,
                 user_id=current_user.id,
-                category_id=category_id
+                category_id=category_id,
+                address=address,
+                postal_code=postal_code,
+                product_type=ProductType(product_type) if product_type else None  # تبدیل مقدار
             )
 
             if promote:
                 product.promoted_until = datetime.utcnow() + timedelta(days=30)
 
-            db.session.add(product)
             db.session.commit()
+            saved_product = Product.query.order_by(Product.id.desc()).first()
+            print(f"Saved Product: {saved_product.address}, {saved_product.postal_code}, {saved_product.product_type}")
+
 
             flash('محصول با موفقیت ایجاد شد')
             return redirect(url_for('main.dashboard'))
@@ -125,8 +159,12 @@ def new_product():
             flash('خطا در ایجاد محصول')
             return render_template('product_form.html')
 
+        
+        
     categories = Category.query.all()
     return render_template('product_form.html', categories=categories)
+
+
 
 @bp.route('/product/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -245,15 +283,19 @@ def init_categories():
 @bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
+        return redirect(url_for('main.index'))  # بازگشت به صفحه اصلی اگر لاگین است
 
     if request.method == 'POST':
         try:
             username = request.form.get('username')
             email = request.form.get('email')
+            phone = request.form.get('phone')
+            national_id = request.form.get('national_id')
             password = request.form.get('password')
 
-            if not username or not email or not password:
+            print(f"Username: {username}, Email: {email}, Phone: {phone}, National ID: {national_id}")
+
+            if not username or not email or not phone or not national_id or not password:
                 flash('لطفاً تمام فیلدها را پر کنید')
                 return render_template('signup.html')
 
@@ -264,9 +306,24 @@ def signup():
             if User.query.filter_by(email=email).first():
                 flash('این ایمیل قبلاً استفاده شده است')
                 return render_template('signup.html')
+            
+            if User.query.filter_by(phone=phone).first():
+                flash('این شماره تماس قبلاً استفاده شده است')
+                return render_template('signup.html')
 
-            user = User(username=username, email=email)
+            if User.query.filter_by(national_id=national_id).first():
+                flash('این کد ملی قبلاً ثبت شده است')
+                return render_template('signup.html')
+
+            # بررسی اگر هیچ ادمینی در سیستم وجود ندارد، اولین کاربر ادمین شود
+            is_first_admin = User.query.filter_by(is_admin=True).count() == 0
+
+            user = User(username=username, email=email, phone=phone, national_id=national_id)
             user.set_password(password)
+            
+            if is_first_admin:
+                user.is_admin = True  # تبدیل اولین کاربر به ادمین
+
             db.session.add(user)
             db.session.commit()
 
@@ -278,6 +335,9 @@ def signup():
             logging.error(f"Error in signup: {str(e)}")
             flash('خطا در ثبت‌نام. لطفاً دوباره تلاش کنید')
             return render_template('signup.html')
+
+    return render_template('signup.html')  # این خط برای نمایش فرم ثبت‌نام
+
         
 
 @bp.route("/payment/start/<int:product_id>", methods=["GET"])
@@ -357,8 +417,8 @@ def remove_promotion(product_id):
     """حذف نردبان محصول به صورت دستی"""
     product = Product.query.get_or_404(product_id)
     
-    # فقط افرادی که مالک محصول هستند می‌توانند نردبان را بردارند
-    if product.user_id != current_user.id:
+    # بررسی اینکه فقط صاحب محصول یا ادمین می‌توانند نردبان را حذف کنند
+    if product.user_id != current_user.id and not current_user.is_admin:
         flash('شما اجازه حذف نردبان این محصول را ندارید')
         return redirect(url_for('main.dashboard'))
 
@@ -370,14 +430,16 @@ def remove_promotion(product_id):
     return redirect(url_for('main.dashboard'))
 
 
+
+
 @bp.route("/product/<int:product_id>/promote", methods=["POST"])
 @login_required
 def promote_product(product_id):
     """نردبان کردن محصول به صورت دستی"""
     product = Product.query.get_or_404(product_id)
 
-    # فقط افرادی که مالک محصول هستند می‌توانند محصول را نردبان کنند
-    if product.user_id != current_user.id:
+    # فقط صاحب محصول یا ادمین می‌توانند محصول را نردبان کنند
+    if product.user_id != current_user.id and not current_user.is_admin:
         flash('شما اجازه نردبان کردن این محصول را ندارید')
         return redirect(url_for('main.dashboard'))
 
@@ -388,6 +450,98 @@ def promote_product(product_id):
     flash('محصول به مدت 10 ثانیه نردبان شد!')
     return redirect(url_for('main.dashboard'))
 
+
+
+@bp.route("/admin", methods=["GET", "POST"])
+@login_required
+def admin_dashboard():
+    if not current_user.is_admin:
+        flash("شما دسترسی به این بخش را ندارید")
+        return redirect(url_for('main.index'))
+    
+    users = User.query.all()  # نمایش تمام کاربران
+    categories = Category.query.all()  # نمایش تمام دسته‌بندی‌ها
+    return render_template("admin_dashboard.html", users=users, categories=categories)
+
+
+
+@bp.route("/make_admin/<int:user_id>", methods=["POST"])
+@login_required
+def make_admin(user_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید")
+        return redirect(url_for('main.admin_dashboard'))
+    
+    user = User.query.get_or_404(user_id)
+    user.is_admin = True  # تبدیل کاربر به ادمین
+    db.session.commit()
+
+    flash("کاربر با موفقیت به ادمین تبدیل شد")
+    return redirect(url_for('main.admin_dashboard'))
+
+
+
+@bp.route("/add-category", methods=["POST"])
+@login_required
+def add_category():
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید")
+        return redirect(url_for('main.index'))
+
+    category_name = request.form.get('category_name')
+    if category_name:
+        category = Category(name=category_name)
+        db.session.add(category)
+        db.session.commit()
+        flash("دسته‌بندی جدید با موفقیت اضافه شد")
+    else:
+        flash("نام دسته‌بندی وارد نشده است")
+
+    return redirect(url_for('main.admin_dashboard'))
+
+
+@bp.route("/delete_user/<int:user_id>", methods=["POST"])
+@login_required
+def delete_user(user_id):
+    """حذف کاربر توسط ادمین اصلی"""
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید")
+        return redirect(url_for('main.admin_dashboard'))
+
+    user = User.query.get_or_404(user_id)
+
+    # جلوگیری از حذف ادمین اصلی
+    if user.is_admin and user.id == current_user.id:
+        flash("نمی‌توانید ادمین اصلی را حذف کنید!")
+        return redirect(url_for('main.admin_dashboard'))
+
+    db.session.delete(user)
+    db.session.commit()
+    
+    flash(f"کاربر '{user.username}' با موفقیت حذف شد")
+    return redirect(url_for('main.admin_dashboard'))
+
+
+@bp.route("/delete_category/<int:category_id>", methods=["POST"])
+@login_required
+def delete_category(category_id):
+    """حذف دسته‌بندی توسط ادمین"""
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید")
+        return redirect(url_for('main.admin_dashboard'))
+
+    category = Category.query.get_or_404(category_id)
+
+    # بررسی اینکه آیا محصولی در این دسته‌بندی وجود دارد
+    if category.products:
+        flash("نمی‌توانید دسته‌بندی‌ای که دارای محصول است را حذف کنید!")
+        return redirect(url_for('main.admin_dashboard'))
+
+    db.session.delete(category)
+    db.session.commit()
+
+    flash(f"دسته‌بندی '{category.name}' با موفقیت حذف شد")
+    return redirect(url_for('main.admin_dashboard'))
 
 
 
