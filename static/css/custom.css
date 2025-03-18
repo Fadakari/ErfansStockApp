@@ -11,15 +11,25 @@
     font-family: 'yekan', sans-serif;
 }
 
+:root{
+    --black-color: #1c1c1E;
+    --dark-green: #3A3A3C;
+    --light-green: #9B1B30;
+    --light-white: #f1f1f1;
+}
+
+body {
+    background-color: var(--black-color);
+}
+
+.navbar{
+    background-color: var(--black-color)!important;
+}
+
 .card-img-top {
     height: 200px;
     object-fit: cover;
     border-radius: 1rem;
-}
-
-.form-control:focus {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
 .alert {
@@ -64,3 +74,61 @@
   .header-tabs:active{
     scale: 1;
   }
+
+  .inputs {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: var(--light-white);
+    background-color: var(--dark-green);
+    transition: all .3s ease;
+    overflow: visible;
+  }
+  
+  .inputs::placeholder{
+    transition: all .4s ease;
+    z-index: 500;
+  }
+  
+  .inputs:focus::placeholder{
+    transform: translate(0, -40px);
+  }
+  
+  .inputs:focus {
+    outline: none;
+    box-shadow: 0 0 1rem var(--light-green);
+  }
+
+  .form-select{
+    border: none !important;
+    background-color: var(--black-color);
+    cursor: pointer;
+  }
+  .form-select:focus{
+    outline: none;
+    box-shadow: 0 0 1rem var(--light-green);
+    transition: all .25 ease;
+}
+.form-select:active{
+  scale: .95;
+}
+
+  .productes{
+    background-color: var(--dark-green)!important;
+    border: none !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 0 1rem var(--light-green);
+  }
+.productes:hover{scale: 1.02;}
+.productes:active{scale: .97;}
+
+.left-button{
+    border-radius: 0 2rem 2rem 0 !important;
+}
+
+.img-fluid{
+   border-radius: 2rem !important;
+}
+

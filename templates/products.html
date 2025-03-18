@@ -2,30 +2,28 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2 class="mb-4">Available Products</h2>
+<h2 class="mb-4">محصولات</h2>
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for product in products %}
     <div class="col">
-        <div class="card h-100">
-            {% if product.image_path %}
-            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">
-                    <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="text-decoration-none">
-                        {{ product.name }}
-                    </a>
-                </h5>
-                {% if product.promoted_until and product.promoted_until > datetime.utcnow() %}
-                    <p style="color: green; font-weight: bold;">✅ این محصول تا {{ product.promoted_until.strftime('%Y-%m-%d %H:%M') }} نردبان است!</p>
+        <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="text-decoration-none">
+            <div class="card productes h-100 header-tabs text-light">
+                {% if product.image_path %}
+                <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
                 {% endif %}
-                <p class="card-text">{{ product.description }}</p>
-                <p class="card-text"><strong>{{ "%.2f"|format(product.price) }} تومان</strong></p>
-                
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    {% if product.promoted_until and product.promoted_until > datetime.utcnow() %}
+                        <p style="color: green; font-weight: bold;">✅ این محصول تا {{ product.promoted_until.strftime('%Y-%m-%d %H:%M') }} نردبان است!</p>
+                    {% endif %}
+                    <p class="card-text">{{ product.description }}</p>
+                    <p class="card-text"><strong>{{ "%.2f"|format(product.price) }} تومان</strong></p>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
     {% endfor %}
+
 </div>
 {% endblock %}
