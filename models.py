@@ -19,10 +19,9 @@ class User(UserMixin, db.Model):
     national_id = db.Column(db.String(10), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     # back_populates برای هماهنگ کردن با مدل Product
-    products = db.relationship('Product', backref='owner', lazy=True)
+    products = db.relationship('Product', back_populates='owner', lazy=True)
     is_admin = db.Column(db.Boolean, default=False)
     # اضافه کردن overlaps
-    items = db.relationship('Product', back_populates='seller', lazy=True, overlaps="owner,products")  # استفاده از overlaps
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -55,11 +54,11 @@ class Product(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     promoted_until = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    seller = db.relationship('User', back_populates='items', lazy=True)
     is_promoted = db.Column(db.Boolean, default=False)
     address = db.Column(db.String(200), nullable=True)  # آدرس
     postal_code = db.Column(db.String(20), nullable=True)  # کد پستی
     product_type = db.Column(db.Enum(ProductType), nullable=True)
+    owner = db.relationship('User', back_populates='products', lazy=True)
 
 
     def __init__(self, name, description, price, image_path, user_id, category_id, promoted_until=None, address=None, postal_code=None, product_type=None):
@@ -72,7 +71,14 @@ class Product(db.Model):
         self.promoted_until = promoted_until
         self.address = address
         self.postal_code = postal_code
-        self.product_type = product_type
+
+    # تبدیل مقدار متنی به مقدار Enum
+        if product_type in ProductType.__members__:  # بررسی اینکه مقدار ورودی در `Enum` تعریف شده
+            self.product_type = ProductType[product_type]  # مقدار متنی رو به `Enum` تبدیل کن
+        else:
+            self.product_type = None
+
+
 
 class ProductForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
@@ -80,7 +86,11 @@ class ProductForm(FlaskForm):
     price = FloatField('Price', validators=[DataRequired()])
     address = StringField('Address', validators=[DataRequired()])
     postal_code = StringField('Postal Code', validators=[DataRequired()])
-    product_type = SelectField('Product Type', choices=[(product_type.value, product_type.name) for product_type in ProductType], coerce=str)
+    product_type = SelectField(
+        'Product Type', 
+        choices=[(product_type.name, product_type.value) for product_type in ProductType], 
+        coerce=str
+    )
     category_id = SelectField('Category', choices=[], coerce=int)  # برای نمایش دسته‌بندی‌ها باید آن‌ها را به صورت داینامیک وارد کنید
     submit = SubmitField('Add Product')
 

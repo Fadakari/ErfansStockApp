@@ -102,10 +102,14 @@ def new_product():
             price = request.form.get('price')
             category_id = request.form.get('category_id')
             promote = request.form.get('promote') == 'on'
-            address = request.form.get('address')  # آدرس
-            postal_code = request.form.get('postal_code')  # کد پستی
-            product_type = request.form.get('product_type')  # نوع محصول
+            address = request.form.get("address")
+            postal_code = request.form.get("postal_code")
+            product_type = request.form.get("product_type")
 
+            if product_type in ProductType.__members__:
+                product_type = ProductType[product_type]  # مقدار متنی رو به Enum تبدیل کن
+            else:
+                product_type = None
             # چاپ مقادیر در سرور
             print(f"Address: {address}")
             print(f"Postal Code: {postal_code}")
@@ -139,12 +143,13 @@ def new_product():
                 category_id=category_id,
                 address=address,
                 postal_code=postal_code,
-                product_type=ProductType(product_type) if product_type else None  # تبدیل مقدار
+                product_type=product_type
             )
 
             if promote:
                 product.promoted_until = datetime.utcnow() + timedelta(days=30)
 
+            db.session.add(product)
             db.session.commit()
             saved_product = Product.query.order_by(Product.id.desc()).first()
             print(f"Saved Product: {saved_product.address}, {saved_product.postal_code}, {saved_product.product_type}")

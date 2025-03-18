@@ -48,11 +48,11 @@
                     <div class="mb-3">
                         <label for="product_type" class="form-label">نوع محصول</label>
                         <select class="form-select" id="product_type" name="product_type" required>
-                            <option value="NEW" {% if product and product.product_type == ProductType.NEW %}selected{% endif %}>نو</option>
-                            <option value="STOCK" {% if product and product.product_type == ProductType.STOCK %}selected{% endif %}>استوک</option>
-                            <option value="USED" {% if product and product.product_type == ProductType.USED %}selected{% endif %}>دست دوم</option>
-                            <option value="NEEDS_REPAIR" {% if product and product.product_type == ProductType.NEEDS_REPAIR %}selected{% endif %}>نیاز به تعمیر جزئی</option>
-                        </select>                        
+                            <option value="NEW" {% if product and product.product_type.name == "NEW" %}selected{% endif %}>نو</option>
+                            <option value="STOCK" {% if product and product.product_type.name == "STOCK" %}selected{% endif %}>استوک</option>
+                            <option value="USED" {% if product and product.product_type.name == "USED" %}selected{% endif %}>دست دوم</option>
+                            <option value="NEEDS_REPAIR" {% if product and product.product_type.name == "NEEDS_REPAIR" %}selected{% endif %}>نیاز به تعمیر جزئی</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="image" class="form-label">تصویر محصول</label>
