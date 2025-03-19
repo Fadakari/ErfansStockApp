@@ -2,45 +2,61 @@
 
 {% block content %}
 <h2>پنل مدیریت</h2>
-
+<hr class="w-100">
 <h3>مدیریت کاربران</h3>
-<table class="table">
-    <thead>
-        <tr>
-            <th>نام کاربری</th>
-            <th>ایمیل</th>
-            <th>دسترسی ادمین</th>
-            <th>عملیات</th>
+
+<form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex mb-3">
+    <input type="text" name="query" class="inputs me-2" placeholder="جست‌وجوی کاربران...">
+    
+    <select name="role_filter" class="form-select me-2">
+        <option value="">همه کاربران</option>
+        <option value="admin">فقط ادمین‌ها</option>
+        <option value="user">فقط کاربران عادی</option>
+    </select>
+    
+    <button type="submit" class="btn btn-primary">جست‌وجو</button>
+</form>
+
+
+<table class="bg-black rounded-3 mb-5">
+    <thead class="bg-black">
+        <tr class="">
+            <th class="text-end">نام کاربری</th>
+            <th class="text-end">ایمیل</th>
+            <th class="text-end">شماره تلفن</th>
+            <th class="text-end">کد ملی</th>
+            <th class="text-end">دسترسی ادمین</th>
+            <th class="text-end">عملیات</th>
         </tr>
     </thead>
-    <tbody>
+    <tbody class="bg-very-black">
         {% for user in users %}
         <tr>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ user.phone }}</td> <!-- نمایش شماره تماس -->
-            <td>{{ user.national_id }}</td>
-            <td>
+            <td class="header-tabs">{{ user.username }}</td>
+            <td class="header-tabs">{{ user.email }}</td>
+            <td class="header-tabs">{{ user.phone }}</td> <!-- نمایش شماره تماس -->
+            <td class="header-tabs">{{ user.national_id }}</td>
+            <td class="header-tabs">
                 {% if user.is_admin %}
                     ادمین
                 {% else %}
                     کاربر عادی
                 {% endif %}
             </td>
-            <td>
-                <a href="{{ url_for('main.user_dashboard', user_id=user.id) }}" class="btn btn-info">مشاهده داشبورد</a>
+            <td class="d-flex flex-nowrap">
+                <a href="{{ url_for('main.user_dashboard', user_id=user.id) }}" class="btn btn-info header-tabs">مشاهده داشبورد</a>
                 {% if not user.is_admin %}
                     <form action="{{ url_for('main.make_admin', user_id=user.id) }}" method="POST">
-                        <button type="submit" class="btn btn-primary">اضافه کردن ادمین</button>
+                        <button type="submit" class="btn btn-primary header-tabs">اضافه کردن ادمین</button>
                     </form>
                     <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger"
+                        <button type="submit" class="btn btn-danger header-tabs"
                             onclick="return confirm('آیا مطمئن هستید که می‌خواهید این کاربر را حذف کنید؟')">
                             حذف کاربر
                         </button>
                     </form>
                 {% else %}
-                    <span>ادمین</span>
+                    <span class="me-2">ادمین</span>
                 {% endif %}
             </td>
         </tr>
@@ -50,7 +66,7 @@
 
 <h3>افزودن دسته‌بندی جدید</h3>
 <form action="{{ url_for('main.add_category') }}" method="POST">
-    <input type="text" name="category_name" placeholder="نام دسته‌بندی جدید" required>
+    <input type="text" name="category_name" class="inputs w-25" placeholder="نام دسته‌بندی جدید" required>
     <button type="submit" class="btn btn-success">اضافه کردن</button>
 </form>
 

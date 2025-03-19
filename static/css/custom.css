@@ -17,6 +17,8 @@
     --light-green: #9B1B30;
     --light-white: #f1f1f1;
 }
+.bg-very-black{background: var(--black-color);}
+.bg-black{background: var(--dark-green);}
 
 body {
     background-color: var(--black-color);
@@ -132,3 +134,55 @@ body {
    border-radius: 2rem !important;
 }
 
+.signuper{
+  border: none;
+  box-shadow: 0 0 1rem var(--light-green);
+  border-radius: 2rem !important;
+}
+
+table {
+	width: auto;
+	border-collapse: collapse;
+	overflow: hidden;
+	box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+th,
+td {
+	padding: 15px;
+	background-color: var(--black-color);
+	color: #fff;
+}
+
+th {
+	text-align: left;
+}
+
+thead {
+	th {
+		background: var(--dark-green);
+	}
+}
+
+tbody {
+	tr {
+		&:hover {
+			background-color: rgba(255,255,255,0.3);
+		}
+	}
+	td {
+		position: relative;
+		&:hover {
+			&:before {
+				content: "";
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: -9999px;
+				bottom: -9999px;
+				background-color: rgba(255,255,255,0.2);
+				z-index: -1;
+			}
+		}
+	}
+}

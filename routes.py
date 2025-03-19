@@ -1,12 +1,13 @@
 import os
 import logging
-from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify
+from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from aplication import db
-from models import User, Product, Category
+from models import User, Product, Category, EditProfileForm
 from utils import save_image
 from datetime import datetime, timedelta
+import random
 import requests
 from models import ProductType  # جایگزین yourapp با نام پروژه شما
 
@@ -68,12 +69,20 @@ def logout():
     logout_user()
     return redirect(url_for('main.index'))
 
-@bp.route('/dashboard')
+@bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
     products = Product.query.filter_by(user_id=current_user.id).all()
     categories = Category.query.all()
-    return render_template('dashboard.html', products=products, categories=categories)
+    form = EditProfileForm(obj=current_user)
+    
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('اطلاعات شما با موفقیت بروزرسانی شد!')
+        return redirect(url_for('main.dashboard'))
+    return render_template('dashboard.html', products=products, categories=categories, form=form)
 
 @bp.route('/user-dashboard/<int:user_id>')
 def user_dashboard(user_id):
@@ -348,20 +357,20 @@ def signup():
                 flash('این کد ملی قبلاً ثبت شده است')
                 return render_template('signup.html')
 
-            # بررسی اگر هیچ ادمینی در سیستم وجود ندارد، اولین کاربر ادمین شود
-            is_first_admin = User.query.filter_by(is_admin=True).count() == 0
+            # تولید کد تأیید و ذخیره آن در سشن
+            verification_code = random.randint(1000, 9999)
+            session['verification_code'] = verification_code
+            session['signup_data'] = {
+                'username': username,
+                'email': email,
+                'phone': phone,
+                'national_id': national_id,
+                'password': password
+            }
 
-            user = User(username=username, email=email, phone=phone, national_id=national_id)
-            user.set_password(password)
-            
-            if is_first_admin:
-                user.is_admin = True  # تبدیل اولین کاربر به ادمین
+            print(f"کد تأیید برای {phone}: {verification_code}")  # در محیط واقعی باید پیامک شود
 
-            db.session.add(user)
-            db.session.commit()
-
-            flash('ثبت‌نام با موفقیت انجام شد. اکنون می‌توانید وارد شوید')
-            return redirect(url_for('main.login'))
+            return redirect(url_for('main.verify'))  # هدایت به صفحه تأیید شماره
 
         except Exception as e:
             db.session.rollback()
@@ -369,7 +378,44 @@ def signup():
             flash('خطا در ثبت‌نام. لطفاً دوباره تلاش کنید')
             return render_template('signup.html')
 
-    return render_template('signup.html')  # این خط برای نمایش فرم ثبت‌نام
+    return render_template('signup.html')  # نمایش فرم ثبت‌نام
+
+
+@bp.route('/verify', methods=['GET', 'POST'])
+def verify():
+    if request.method == 'POST':
+        entered_code = request.form.get('code')
+        
+        if entered_code == str(session.get('verification_code')):  # بررسی کد وارد شده
+            data = session.get('signup_data')
+            if not data:
+                flash('خطای سیستمی! لطفاً دوباره ثبت‌نام کنید.', 'danger')
+                return redirect(url_for('main.signup'))
+            
+            # ذخیره کاربر در دیتابیس پس از تأیید شماره
+            user = User(
+                username=data['username'],
+                email=data['email'],
+                phone=data['phone'],
+                national_id=data['national_id']
+            )
+            user.set_password(data['password'])
+
+            db.session.add(user)
+            db.session.commit()
+
+            # پاک کردن سشن بعد از ثبت موفق
+            session.pop('verification_code', None)
+            session.pop('signup_data', None)
+
+            flash('ثبت‌نام با موفقیت انجام شد!', 'success')
+            return redirect(url_for('main.login'))
+
+        else:
+            flash('کد وارد شده اشتباه است!', 'danger')
+
+    return render_template('verify.html')
+
 
         
 
@@ -485,16 +531,41 @@ def promote_product(product_id):
 
 
 
-@bp.route("/admin", methods=["GET", "POST"])
+@bp.route("/admin", methods=["GET"])
 @login_required
 def admin_dashboard():
     if not current_user.is_admin:
-        flash("شما دسترسی به این بخش را ندارید")
+        flash("شما دسترسی به این بخش را ندارید", "danger")
         return redirect(url_for('main.index'))
     
-    users = User.query.all()  # نمایش تمام کاربران
-    categories = Category.query.all()  # نمایش تمام دسته‌بندی‌ها
+    query = request.args.get('query', '').strip()  # دریافت مقدار جست‌وجو
+    role_filter = request.args.get('role_filter', '')  # دریافت فیلتر نقش (ادمین یا کاربر عادی)
+
+    # دریافت تمام کاربران
+    users = User.query
+
+    # جست‌وجو بر اساس نام کاربری، ایمیل، شماره تماس و کد ملی
+    if query:
+        users = users.filter(
+            (User.username.ilike(f"%{query}%")) | 
+            (User.email.ilike(f"%{query}%")) | 
+            (User.phone.ilike(f"%{query}%")) | 
+            (User.national_id.ilike(f"%{query}%"))
+        )
+
+    # فیلتر بر اساس نقش (ادمین یا کاربر عادی)
+    if role_filter == "admin":
+        users = users.filter(User.is_admin == True)
+    elif role_filter == "user":
+        users = users.filter(User.is_admin == False)
+
+    users = users.all()  # اجرای کوئری
+
+    # دریافت تمام دسته‌بندی‌ها
+    categories = Category.query.all()
+
     return render_template("admin_dashboard.html", users=users, categories=categories)
+
 
 
 
@@ -575,6 +646,9 @@ def delete_category(category_id):
 
     flash(f"دسته‌بندی '{category.name}' با موفقیت حذف شد")
     return redirect(url_for('main.admin_dashboard'))
+
+
+
 
 
 

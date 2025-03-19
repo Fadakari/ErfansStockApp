@@ -3,25 +3,25 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
+        <div class="card signuper mb-4">
+            <div class="card-header" style="background: var(--dark-green);">
                 <h4 class="mb-0">{% if product %}ویرایش محصول{% else %}محصول جدید{% endif %}</h4>
             </div>
-            <div class="card-body">
+            <div class="card-body bg-very-black">
                 <!-- فرم بدون جاوا اسکریپت -->
                 <form method="POST" enctype="multipart/form-data" id="productForm">
                     <div class="mb-3">
                         <label for="name" class="form-label">نام محصول</label>
-                        <input type="text" class="form-control" id="name" name="name" 
+                        <input type="text" class="inputs" placeholder="نام محصول را وارد کنید" id="name" name="name" 
                                value="{{ product.name if product else '' }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">توضیحات</label>
-                        <textarea class="form-control" id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
+                        <textarea class="inputs" placeholder="توضیحات راجب محصول و ویژگی های آن..." id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="price" class="form-label">قیمت (تومان)</label>
-                        <input type="number" class="form-control" id="price" name="price" 
+                        <input type="number" class="inputs" placeholder="قیمت محصول را وارد کنید" id="price" name="price" 
                                value="{{ product.price if product else '' }}" required>
                     </div>
                     <div class="mb-3">
@@ -37,12 +37,12 @@
                     </div>
                     <div class="mb-3">
                         <label for="address" class="form-label">آدرس</label>
-                        <input type="text" class="form-control" id="address" name="address" 
+                        <input type="text" class="inputs" placeholder="آدرس فروشنده" id="address" name="address" 
                                value="{{ product.address if product else '' }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="postal_code" class="form-label">کد پستی</label>
-                        <input type="text" class="form-control" id="postal_code" name="postal_code" 
+                        <input type="text" class="inputs" placeholder="کد پستی محل فروش (اختیاری)" id="postal_code" name="postal_code" 
                                value="{{ product.postal_code if product else '' }}" required>
                     </div>
                     <div class="mb-3">
@@ -65,7 +65,7 @@
                         {% endif %}
                     </div>
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn header-tabs py-3">
                             {% if product %}به‌روزرسانی محصول{% else %}ایجاد محصول{% endif %}
                         </button>
                     </div>

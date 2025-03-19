@@ -8,7 +8,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 # تنظیمات برنامه
 app = Flask(__name__)
-app.secret_key = "یک_کلید_امن_و_تصادفی"  
+app.secret_key = "یک_کلید_امن_و_تصادفی"
 
 # تنظیمات بانک اطلاعاتی
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://user:password@localhost/dbname"
@@ -17,6 +17,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False  # غیرفعال کردن 
 # کلاس پایه برای ORM
 class Base(DeclarativeBase):
     pass
+
 
 # مقداردهی به `db` بعد از مقداردهی `app`
 db = SQLAlchemy(app, model_class=Base)

@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, TextAreaField, SelectField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import Email, DataRequired
 
 @login_manager.user_loader
 def load_user(id):
@@ -102,3 +102,8 @@ class ProductForm(FlaskForm):
     category_id = SelectField('Category', choices=[], coerce=int)  # برای نمایش دسته‌بندی‌ها باید آن‌ها را به صورت داینامیک وارد کنید
     submit = SubmitField('Add Product')
 
+
+class EditProfileForm(FlaskForm):
+    username = StringField('نام کاربری', validators=[DataRequired()])
+    email = StringField('ایمیل', validators=[DataRequired(), Email()])
+    submit = SubmitField('ذخیره تغییرات')
