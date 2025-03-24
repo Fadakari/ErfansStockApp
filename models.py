@@ -32,6 +32,9 @@ class User(UserMixin, db.Model):
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
+    icon = db.Column(db.String(50), nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)  # اضافه کردن ارتباط والد و فرزند
+    subcategories = db.relationship('Category', backref=db.backref('parent', remote_side=[id]), lazy=True)
     products = db.relationship('Product', backref='category', lazy=True)
 
 def default_expiry():
@@ -55,7 +58,7 @@ class Product(db.Model):
     promoted_until = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_promoted = db.Column(db.Boolean, default=False)
-    address = db.Column(db.String(200), nullable=False)  # آدرس
+    address = db.Column(db.String(1000), nullable=False)  # آدرس
     postal_code = db.Column(db.String(20), nullable=True)  # کد پستی
     product_type = db.Column(db.Enum(ProductType), nullable=False)
     owner = db.relationship('User', back_populates='products', lazy=True)

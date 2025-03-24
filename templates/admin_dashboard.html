@@ -3,97 +3,93 @@
 {% block content %}
 <h2>پنل مدیریت</h2>
 <hr class="w-100">
-<h3>مدیریت کاربران</h3>
 
-<form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex mb-3">
-    <input type="text" name="query" class="inputs me-2" placeholder="جست‌وجوی کاربران...">
-    
-    <select name="role_filter" class="form-select me-2">
+<h3>مدیریت کاربران</h3>
+<form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex flex-wrap gap-2 mb-3">
+    <input type="text" name="query" class="inputs flex-grow-1" placeholder="جست‌وجوی کاربران...">
+    <select name="role_filter" class="form-select">
         <option value="">همه کاربران</option>
         <option value="admin">فقط ادمین‌ها</option>
         <option value="user">فقط کاربران عادی</option>
     </select>
-    
     <button type="submit" class="btn btn-primary">جست‌وجو</button>
 </form>
 
-
-<table class="bg-black rounded-3 mb-5">
-    <thead class="bg-black">
-        <tr class="">
-            <th class="text-end">نام کاربری</th>
-            <th class="text-end">ایمیل</th>
-            <th class="text-end">شماره تلفن</th>
-            <th class="text-end">کد ملی</th>
-            <th class="text-end">دسترسی ادمین</th>
-            <th class="text-end">عملیات</th>
-        </tr>
-    </thead>
-    <tbody class="bg-very-black">
-        {% for user in users %}
-        <tr>
-            <td class="header-tabs">{{ user.username }}</td>
-            <td class="header-tabs">{{ user.email }}</td>
-            <td class="header-tabs">{{ user.phone }}</td> <!-- نمایش شماره تماس -->
-            <td class="header-tabs">{{ user.national_id }}</td>
-            <td class="header-tabs">
-                {% if user.is_admin %}
-                    ادمین
-                {% else %}
-                    کاربر عادی
-                {% endif %}
-            </td>
-            <td class="d-flex flex-nowrap">
-                <a href="{{ url_for('main.user_dashboard', user_id=user.id) }}" class="btn btn-info header-tabs">مشاهده داشبورد</a>
-                {% if not user.is_admin %}
-                    <form action="{{ url_for('main.make_admin', user_id=user.id) }}" method="POST">
-                        <button type="submit" class="btn btn-primary header-tabs">اضافه کردن ادمین</button>
-                    </form>
-                    <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-danger header-tabs"
-                            onclick="return confirm('آیا مطمئن هستید که می‌خواهید این کاربر را حذف کنید؟')">
-                            حذف کاربر
-                        </button>
-                    </form>
-                {% else %}
-                    <span class="me-2">ادمین</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead class="bg-black">
+            <tr>
+                <th class="text-end">نام کاربری</th>
+                <th class="text-end">ایمیل</th>
+                <th class="text-end">شماره تلفن</th>
+                <th class="text-end">کد ملی</th>
+                <th class="text-end">دسترسی ادمین</th>
+                <th class="text-end">عملیات</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for user in users %}
+            <tr>
+                <td onclick="copyText(this)">{{ user.username }}</td>
+                <td onclick="copyText(this)">{{ user.email }}</td>
+                <td onclick="copyText(this)">{{ user.phone }}</td>
+                <td onclick="copyText(this)">{{ user.national_id }}</td>
+                <td onclick="copyText(this)">{{ "ادمین" if user.is_admin else "کاربر عادی" }}</td>
+                <td class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('main.user_dashboard', user_id=user.id) }}" class="btn btn-info">مشاهده داشبورد</a>
+                    {% if not user.is_admin %}
+                        <form action="{{ url_for('main.make_admin', user_id=user.id) }}" method="POST">
+                            <button type="submit" class="btn btn-primary">اضافه کردن ادمین</button>
+                        </form>
+                        <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف کاربر</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 <h3>افزودن دسته‌بندی جدید</h3>
-<form action="{{ url_for('main.add_category') }}" method="POST">
-    <input type="text" name="category_name" class="inputs w-25" placeholder="نام دسته‌بندی جدید" required>
+<form action="{{ url_for('main.add_category') }}" method="POST" class="d-flex flex-wrap gap-2">
+    <input type="text" name="category_name" class="inputs flex-grow-1" placeholder="نام دسته‌بندی جدید" required>
     <button type="submit" class="btn btn-success">اضافه کردن</button>
 </form>
 
 <h3>مدیریت دسته‌بندی‌ها</h3>
-<table class="table">
-    <thead>
-        <tr>
-            <th>نام دسته‌بندی</th>
-            <th>عملیات</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for category in categories %}
-        <tr>
-            <td>{{ category.name }}</td>
-            <td>
-                <form action="{{ url_for('main.delete_category', category_id=category.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-danger"
-                        onclick="return confirm('آیا مطمئن هستید که می‌خواهید این دسته‌بندی را حذف کنید؟')">
-                        حذف دسته‌بندی
-                    </button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="table-responsive" style="margin-bottom: 6rem;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>نام دسته‌بندی</th>
+                <th>عملیات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>
+                    <form action="{{ url_for('main.delete_category', category_id=category.id) }}" method="POST">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف دسته‌بندی</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
-
+<script>
+    function copyText(element) {
+        const text = element.innerText || element.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("متن کپی شد!");
+        }).catch(err => {
+            console.error("خطا در کپی کردن متن:", err);
+        });
+    }
+</script>
 {% endblock %}

@@ -25,9 +25,9 @@
                 <p>آدرس وارد نشده است</p>
             {% endif %}
             {% if user.phone %}
-                <p><strong>شماره تلفن:</strong> {{ user.phone }}</p>
+                <div class="d-flex flex-nowrap justify-content-start align-items-center my-3"><strong class="m-0">شماره تلفن:</strong><p onclick="copyText(this)" class="header-tabs py-2 px-3 w-75 m-0">{{ user.phone }}</p></div>
             {% else %}
-                <p>کد پستی وارد نشده است</p>
+                <p>شماره تلفن وارد نشده است</p>
             {% endif %}
             {% if product.product_type %}
                 <p><strong>نوع محصول:</strong> {{ product.product_type.value }}</p>
@@ -38,4 +38,32 @@
         </div>
     </div>
 </div>
+<script>
+    function copyText(element) {
+            const text = element.innerText || element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                let toast = document.createElement("span");
+                toast.classList.add("toast-message");
+                toast.innerText = "متن با موفقیت کپی شد!";
+                
+                document.body.appendChild(toast);
+
+                // نمایش پیام
+                setTimeout(() => {
+                    toast.classList.add("show");
+                }, 10);
+
+                // حذف پیام بعد از 2 ثانیه
+                setTimeout(() => {
+                    toast.classList.remove("show");
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                }, 2000);
+            }).catch(err => {
+                console.error("خطا در کپی کردن متن:", err);
+            });
+        }
+</script>
 {% endblock %}

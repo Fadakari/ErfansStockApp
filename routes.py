@@ -18,32 +18,87 @@ logging.basicConfig(level=logging.DEBUG)
 
 bp = Blueprint('main', __name__)
 
+
+# لیست استان‌ها و شهرهای مربوطه
+
 @bp.route('/')
 def index():
     search = request.args.get('search', '').strip()
-    category_id = request.args.get('category', '')
+    province_search = request.args.get('province_search', '').strip()
+    city_search = request.args.get('city_search', '').strip()
+    category_id = request.args.get('category', '').strip()  # جستجو بر اساس دسته‌بندی
+    address_search = request.args.get('address_search', '').strip()
+
 
     query = Product.query
 
+    # جستجو بر اساس نام محصول و توضیحات
     if search:
-        # جستجو در نام و توضیحات محصول
         search_filter = db.or_(
             Product.name.ilike(f'%{search}%'),
             Product.description.ilike(f'%{search}%')
         )
         query = query.filter(search_filter)
 
-    if category_id:
-        query = query.filter_by(category_id=category_id)
-        
-    promoted_products = query.filter(Product.promoted_until > datetime.utcnow()).order_by(Product.promoted_until.desc())
-    normal_products = query.filter(db.or_(Product.promoted_until == None, Product.promoted_until <= datetime.utcnow())).order_by(Product.created_at.desc())
-    # مرتب‌سازی بر اساس جدیدترین محصولات
-    query = query.order_by(Product.updated_at.desc().nullslast(), Product.created_at.desc())
+    # فیلتر بر اساس استان (استان در آدرس محصول باشد)
+    if province_search:
+        query = query.filter(Product.address.ilike(f'%{province_search}%'))
 
-    products = promoted_products.union(normal_products).all()
-    categories = Category.query.all()
-    return render_template('products.html', products=products, categories=categories, datetime=datetime)
+    # فیلتر بر اساس شهر (شهر در آدرس محصول باشد)
+    if city_search:
+        query = query.filter(Product.address.ilike(f'%{city_search}%'))
+
+    # فیلتر بر اساس آدرس کامل
+    if address_search:
+        query = query.filter(Product.address.ilike(f'%{address_search}%'))
+
+
+    # فیلتر بر اساس دسته‌بندی
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+
+    # لیست استان‌های ایران
+    provinces = ["تهران", "اصفهان", "خراسان رضوی", "فارس", "آذربایجان شرقی", "خوزستان"]
+
+    # لیست استان‌ها و شهرهای مربوطه
+    citiesByProvince = {
+        "تهران": ["تهران", "شهریار", "اسلامشهر", "ورامین"],
+        "اصفهان": ["اصفهان", "خمینی‌شهر", "کاشان", "نجف‌آباد"],
+        "خراسان رضوی": ["مشهد", "نیشابور", "تربت حیدریه", "سبزوار"],
+        "فارس": ["شیراز", "مرودشت", "لار", "جهرم"],
+        "آذربایجان شرقی": ["تبریز", "مراغه", "اهر", "میانه"],
+        "خوزستان": ["اهواز", "آبادان", "خرمشهر", "دزفول"]
+    }
+
+    # فقط شهرهایی که محصولی در آن‌ها وجود دارد را نمایش دهیم
+    cities_with_products = []
+    for province, cities in citiesByProvince.items():
+        for city in cities:
+            if Product.query.filter(Product.address.ilike(f'%{city}%')).first():
+                cities_with_products.append(city)
+
+    cities_with_products = list(set(cities_with_products))  # حذف شهرهای تکراری
+
+    # مرتب‌سازی و دریافت محصولات
+    products = query.order_by(
+        db.case(
+            (Product.promoted_until > datetime.utcnow(), 1),  # اگر نردبان شده، بالاتر قرار بگیرد
+            else_=0  # در غیر این صورت، پایین‌تر قرار بگیرد
+        ).desc(),  # ترتیب نزولی، یعنی نردبان‌شده‌ها بالاتر باشند
+        Product.created_at.desc()  # سپس جدیدترین محصولات بالاتر باشند
+    ).all()
+
+
+    # دریافت دسته‌بندی‌ها
+    categories = Category.query.filter_by(parent_id=None).all()
+
+    return render_template('products.html', products=products, categories=categories, provinces=provinces, cities=cities_with_products, datetime=datetime)
+
+
+
+
+
+
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -105,37 +160,17 @@ def user_dashboard(user_id):
 def new_product():
     if request.method == 'POST':
         try:
-            # دریافت مقادیر از فرم
             name = request.form.get('name')
             description = request.form.get('description')
             price = request.form.get('price')
             category_id = request.form.get('category_id')
-            promote = request.form.get('promote') == 'on'
-            address = request.form.get("address")
+            product_type = request.form.get('product_type')
+
+            province = request.form.get("province")
+            city = request.form.get("city")
+            address = f"{province}-{city}"  # ذخیره استان و شهر به این فرمت: "تهران-شهریار"
+
             postal_code = request.form.get("postal_code")
-            product_type = request.form.get("product_type")
-
-            if product_type in ProductType.__members__:
-                product_type = ProductType[product_type]  # مقدار متنی رو به Enum تبدیل کن
-            else:
-                product_type = None
-            # چاپ مقادیر در سرور
-            print(f"Address: {address}")
-            print(f"Postal Code: {postal_code}")
-            print(f"Product Type: {product_type}")
-
-            if not name or not price:
-                flash('لطفاً نام و قیمت محصول را وارد کنید')
-                categories = Category.query.all()
-                return render_template('product_form.html', categories=categories)
-
-            try:
-                price = float(price)
-            except ValueError:
-                flash('لطفاً قیمت معتبر وارد کنید')
-                categories = Category.query.all()
-                return render_template('product_form.html', categories=categories)
-            
 
             image_path = None
             if 'image' in request.files:
@@ -152,35 +187,33 @@ def new_product():
                 category_id=category_id,
                 address=address,
                 postal_code=postal_code,
-                product_type=product_type
+                product_type=ProductType[product_type] if product_type in ProductType.__members__ else None
             )
-
-            print(f"Received Product Type: {product_type}")
-            print(f"Available Enum Keys: {list(ProductType.__members__.keys())}")
-
-
-            if promote:
-                product.promoted_until = datetime.utcnow() + timedelta(days=30)
 
             db.session.add(product)
             db.session.commit()
-            saved_product = Product.query.order_by(Product.id.desc()).first()
-            print(f"Saved Product: {saved_product.address}, {saved_product.postal_code}, {saved_product.product_type}")
-
-
             flash('محصول با موفقیت ایجاد شد')
             return redirect(url_for('main.dashboard'))
 
         except Exception as e:
             db.session.rollback()
-            logging.error(f"Error in new_product: {str(e)}")
             flash('خطا در ایجاد محصول')
             return render_template('product_form.html')
 
-        
-        
+    provinces = ["تهران", "اصفهان", "خراسان رضوی", "فارس", "آذربایجان شرقی", "خوزستان"]
+    citiesByProvince = {
+        "تهران": ["تهران", "شهریار", "اسلامشهر", "ورامین"],
+        "اصفهان": ["اصفهان", "خمینی‌شهر", "کاشان", "نجف‌آباد"],
+        "خراسان رضوی": ["مشهد", "نیشابور", "تربت حیدریه", "سبزوار"],
+        "فارس": ["شیراز", "مرودشت", "لار", "جهرم"],
+        "آذربایجان شرقی": ["تبریز", "مراغه", "اهر", "میانه"],
+        "خوزستان": ["اهواز", "آبادان", "خرمشهر", "دزفول"]
+    }
+
     categories = Category.query.all()
-    return render_template('product_form.html', categories=categories)
+    return render_template('product_form.html', categories=categories, provinces=provinces, citiesByProvince=citiesByProvince)
+
+
 
 
 
@@ -197,61 +230,59 @@ def edit_product(id):
             product.name = request.form.get('name')
             product.description = request.form.get('description')
             product.category_id = request.form.get('category_id')
-            promote = request.form.get('promote') == 'on'
-            product.address = request.form.get("address")
+            product.price = float(request.form.get('price'))
+
+            province = request.form.get("province")
+            city = request.form.get("city")
+            product.address = f"{province}-{city}"  # ذخیره استان و شهر در قالب "استان-شهر"
+
             product.postal_code = request.form.get("postal_code")
 
             # دریافت و تبدیل product_type
             product_type = request.form.get("product_type")
-            print(f"Received Product Type: {product_type}")  # بررسی مقدار دریافتی
-
             if product_type in ProductType.__members__:
                 product.product_type = ProductType[product_type]
             else:
                 product.product_type = None
-
-            print(f"Final Product Type Before Save: {product.product_type}")  # بررسی مقدار قبل از ذخیره
-
-            # تبدیل مقدار قیمت به float
-            try:
-                product.price = float(request.form.get('price'))
-            except ValueError:
-                flash('لطفاً قیمت معتبر وارد کنید')
-                return render_template('product_form.html', product=product)
 
             # بررسی آپلود تصویر جدید
             image = request.files.get('image')
             if image and image.filename:
                 new_image_path = save_image(image)
                 if new_image_path:
+                    # حذف تصویر قدیمی
                     if product.image_path:
                         old_image_path = os.path.join('static/uploads', product.image_path)
                         if os.path.exists(old_image_path):
                             os.remove(old_image_path)
                     product.image_path = new_image_path
 
-            # بررسی وضعیت تبلیغ
-            if promote and not product.promoted_until:
-                product.promoted_until = datetime.utcnow() + timedelta(days=30)
-            elif not promote:
-                product.promoted_until = None
-
             db.session.commit()
-
-            # بررسی مقدار ذخیره‌شده در دیتابیس
-            saved_product = Product.query.get(product.id)
-            print(f"Saved Product Type in DB: {saved_product.product_type}")
-
             flash('محصول با موفقیت به‌روزرسانی شد')
             return redirect(url_for('main.dashboard'))
 
         except Exception as e:
             db.session.rollback()
-            logging.error(f"Error updating product: {str(e)}")
             flash('خطا در به‌روزرسانی محصول')
 
+    provinces = ["تهران", "اصفهان", "خراسان رضوی", "فارس", "آذربایجان شرقی", "خوزستان"]
+    citiesByProvince = {
+        "تهران": ["تهران", "شهریار", "اسلامشهر", "ورامین"],
+        "اصفهان": ["اصفهان", "خمینی‌شهر", "کاشان", "نجف‌آباد"],
+        "خراسان رضوی": ["مشهد", "نیشابور", "تربت حیدریه", "سبزوار"],
+        "فارس": ["شیراز", "مرودشت", "لار", "جهرم"],
+        "آذربایجان شرقی": ["تبریز", "مراغه", "اهر", "میانه"],
+        "خوزستان": ["اهواز", "آبادان", "خرمشهر", "دزفول"]
+    }
+
+    # استخراج استان و شهر از مقدار ذخیره‌شده در دیتابیس
+    product_province = product.address.split('-')[0] if product.address else ''
+    product_city = product.address.split('-')[1] if '-' in product.address else ''
+
     categories = Category.query.all()
-    return render_template('product_form.html', product=product, categories=categories)
+    return render_template('product_form.html', product=product, categories=categories, provinces=provinces, citiesByProvince=citiesByProvince, product_province=product_province, product_city=product_city)
+
+
 
 
 @bp.route('/product/<int:id>/delete', methods=['POST'])
@@ -279,6 +310,10 @@ def delete_product(id):
 
     return redirect(url_for('main.dashboard'))
 
+
+
+
+
 @bp.route('/product/<int:product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
@@ -290,26 +325,35 @@ def product_detail(product_id):
 @bp.route('/init-categories')
 def init_categories():
     categories = [
-        'ابزار برقی استوک',
-        'ابزار باغبانی استوک', 
-        'ابزار جوشکاری استوک',
-        'ابزار مکانیکی استوک',
-        'ابزار نجاری استوک',
-        'ابزار بنایی استوک',
-        'ابزار تراشکاری استوک',
-        'ابزار لوله‌کشی استوک',
-        'ابزار رنگ‌کاری استوک',
-        'تجهیزات ایمنی استوک',
-        'تجهیزات کارگاهی استوک',
-        'ابزار های شارژی',
-        'ابزار های کرگیر',
-        'سایر ابزارآلات استوک'
+        {'name': 'ابزار کرگیری', 'icon': 'bi-drill', 'subcategories': [
+            {'name': 'دریل', 'icon': 'bi-wrench'},
+            {'name': 'فرز', 'icon': 'bi-gear'},
+            {'name': 'کمپرسور', 'icon': 'bi-wind'}
+        ]},
+        {'name': 'ابزار اندازه گیری', 'icon': 'bi-rulers', 'subcategories': [
+            {'name': 'اره برقی', 'icon': 'bi-tree'},
+            {'name': 'چمن‌زن', 'icon': 'bi-flower3'}
+        ]},
+        {'name': 'مته و قلم', 'icon': 'bi-tools', 'subcategories': [
+            {'name': 'جک هیدرولیک', 'icon': 'bi-car-front'},
+            {'name': 'آچار بکس', 'icon': 'bi-wrench-adjustable'}
+        ]},
+        {'name': 'سیستم میخکوب ها', 'icon': 'bi-hammer', 'subcategories': []},
+        {'name': 'ابزار برقی', 'icon': 'bi-lightning-charge', 'subcategories': []},
+        {'name': 'ابزار شارژی', 'icon': 'bi-battery-full', 'subcategories': []},
     ]
     
-    for cat_name in categories:
-        if not Category.query.filter_by(name=cat_name).first():
-            category = Category(name=cat_name)
-            db.session.add(category)
+    for cat in categories:
+        parent = Category.query.filter_by(name=cat['name']).first()
+        if not parent:
+            parent = Category(name=cat['name'], icon=cat['icon'])
+            db.session.add(parent)
+        
+        for subcat in cat['subcategories']:
+            subcat_entry = Category.query.filter_by(name=subcat['name'], parent=parent).first()
+            if not subcat_entry:
+                subcat_entry = Category(name=subcat['name'], icon=subcat['icon'], parent=parent)
+                db.session.add(subcat_entry)
     
     try:
         db.session.commit()
@@ -319,6 +363,9 @@ def init_categories():
         flash('خطا در ایجاد دسته‌بندی‌ها')
     
     return redirect(url_for('main.index'))
+
+
+
 
 
 
@@ -425,7 +472,7 @@ def start_payment(product_id):
     if not product:
         return jsonify({"error": "Product not found"}), 404
 
-    amount = 70000  # مبلغ پرداختی
+    amount = 70000
     merchant = "65717f98c5d2cb000c3603da"
     callback_url = "http://localhost:5000/fake-callback"
 
@@ -646,9 +693,6 @@ def delete_category(category_id):
 
     flash(f"دسته‌بندی '{category.name}' با موفقیت حذف شد")
     return redirect(url_for('main.admin_dashboard'))
-
-
-
 
 
 

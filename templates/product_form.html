@@ -36,10 +36,31 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="address" class="form-label">آدرس</label>
-                        <input type="text" class="inputs" placeholder="آدرس فروشنده" id="address" name="address" 
-                               value="{{ product.address if product else '' }}" required>
+                        <label for="province" class="form-label">استان</label>
+                        <select class="form-select" id="province" name="province" required>
+                            <option value="">انتخاب استان</option>
+                            {% for province in provinces %}
+                            <option value="{{ province }}" {% if product and product.address.split('-')[0] == province %}selected{% endif %}>
+                                {{ province }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label for="city" class="form-label">شهر</label>
+                        <select class="form-select" id="city" name="city" required>
+                            <option value="">انتخاب شهر</option>
+                            {% if product %}
+                                {% for city in citiesByProvince[product.address.split('-')[0]] %}
+                                <option value="{{ city }}" {% if product.address.split('-')[1] == city %}selected{% endif %}>
+                                    {{ city }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    
                     <div class="mb-3">
                         <label for="postal_code" class="form-label">کد پستی</label>
                         <input type="text" class="inputs" placeholder="کد پستی محل فروش (اختیاری)" id="postal_code" name="postal_code" 
@@ -74,4 +95,34 @@
         </div>
     </div>
 </div>
+<script>
+    // لیست شهرهای مربوط به هر استان
+    const citiesByProvince = {
+        "تهران": ["تهران", "شهریار", "اسلامشهر", "ورامین"],
+        "اصفهان": ["اصفهان", "خمینی‌شهر", "کاشان", "نجف‌آباد"],
+        "خراسان رضوی": ["مشهد", "نیشابور", "تربت حیدریه", "سبزوار"],
+        "فارس": ["شیراز", "مرودشت", "لار", "جهرم"],
+        "آذربایجان شرقی": ["تبریز", "مراغه", "اهر", "میانه"],
+        "خوزستان": ["اهواز", "آبادان", "خرمشهر", "دزفول"]
+    };
+
+    document.getElementById("province").addEventListener("change", function() {
+        const selectedProvince = this.value;
+        const citySelect = document.getElementById("city");
+
+        // پاک کردن گزینه‌های قبلی
+        citySelect.innerHTML = '<option value="">انتخاب شهر</option>';
+
+        // اگر استانی انتخاب شده، شهرهای مربوطه را اضافه کن
+        if (selectedProvince in citiesByProvince) {
+            citiesByProvince[selectedProvince].forEach(city => {
+                const option = document.createElement("option");
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            });
+        }
+    });
+</script>
+
 {% endblock %}

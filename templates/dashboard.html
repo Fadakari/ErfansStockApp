@@ -22,7 +22,7 @@
     <a href="{{ url_for('main.new_product') }}" class="btn btn-primary d-flex align-items-center ">اضافه کردن محصول <i class="bi bi-plus fw-bolder fs-4"></i></a>
 </div>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
+<div class="row row-cols-1 row-cols-md-3 g-4" style="margin-bottom: 6rem;">
     {% for product in products %}
     <div class="col">
         <div class="card productes h-100 header-tabs">
@@ -31,7 +31,7 @@
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ product.name }}</h5>
-                <p class="card-text">{{ product.description }}</p>
+                <p class="card-text description px-3">{{ product.description }}</p>
                 <p class="card-text"><strong>${{ "%.2f"|format(product.price) }}</strong></p>
                 <div class="d-flex justify-content-between">
                     <a href="{{ url_for('main.edit_product', id=product.id) }}" class="btn btn-secondary header-tabs">ویرایش</a>

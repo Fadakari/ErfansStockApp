@@ -6,13 +6,17 @@
     font-weight: normal;
     font-style: normal;
 }
+@font-face {
+  font-family: 'nastaligh';
+  src: url('../font/IranNastaliq.ttf') format('truetype'),;
+}
 
 * {
     font-family: 'yekan', sans-serif;
 }
 
 :root{
-    --black-color: #1c1c1E;
+    --black-color: #1C1C1E;
     --dark-green: #3A3A3C;
     --light-green: #9B1B30;
     --light-white: #f1f1f1;
@@ -26,10 +30,11 @@ body {
 
 .navbar{
     background-color: var(--black-color)!important;
+    box-shadow: 0 0 2rem var(--light-green);
 }
 
 .card-img-top {
-    height: 200px;
+    height: 20rem !important;
     object-fit: cover;
     border-radius: 1rem;
 }
@@ -185,4 +190,144 @@ tbody {
 			}
 		}
 	}
+}
+
+.tamas-img{
+  transform-style: preserve-3d;
+  perspective: 20px;
+}
+
+.toast-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 14px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.toast-message.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.carousel{
+  width: 50%;
+}
+
+.description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* محدود به سه خط */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  max-height: 4.5em; /* متناسب با تعداد خطوط */
+  color: #6c757d; /* رنگ خاکستری تیره‌تر برای نمایش پیش‌نمایش */
+  font-style: italic; /* برای حس پیش‌نمایش */
+}
+
+.bottom-div{
+  box-shadow: 0 0 1rem var(--light-green), 0 0 1rem var(--light-green), 0 0 1rem var(--light-green);
+}
+
+.toggle-btn i {
+  transition: transform 0.3s ease; /* انیمیشن برای چرخش */
+}
+
+.rotated {
+  transform: rotate(-90deg); /* چرخش دکمه */
+}
+
+.subcategories {
+  padding-left: 20px;
+  z-index: 9999;
+  background-color: var(--black-color);
+  box-shadow: 0 0 2rem var(--light-green);
+}
+
+.bi-chevron-up, .bi-chevron-down {
+  transition: transform 0.3s ease;
+}
+
+.prod{
+  z-index: 1;
+}
+
+#ansazeh{transition: all 0.3s ease;}
+
+@media (max-width: 768px) {
+  /* تنظیم فرم جستجو در حالت موبایل */
+  form.d-flex {
+      flex-direction: column;
+      align-items: stretch;
+  }
+
+  form.d-flex input,
+  form.d-flex select,
+  form.d-flex button {
+      width: 100%;
+      margin-bottom: 10px;
+  }
+
+  /* اسکرول افقی برای جدول */
+  table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+  }
+
+  /* دکمه‌های عملیات زیر هم باشند */
+  td.d-flex {
+      flex-direction: column;
+      align-items: stretch;
+  }
+
+  td.d-flex a,
+  td.d-flex form {
+      width: 100%;
+      margin-bottom: 5px;
+  }
+
+  /* تنظیم فرم افزودن دسته‌بندی */
+  form[action="{{ url_for('main.add_category') }}"] {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+  }
+
+  form[action="{{ url_for('main.add_category') }}"] input,
+  form[action="{{ url_for('main.add_category') }}"] button {
+      width: 100%;
+      margin-bottom: 10px;
+  }
+}
+
+.category-menu {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.category-item {
+  width: 80px;
+  text-decoration: none;
+  color: #333;
+}
+
+.category-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.searcher:focus{
+  box-shadow: -1rem 0 1rem var(--light-green);
 }
