@@ -110,3 +110,5 @@ class EditProfileForm(FlaskForm):
     username = StringField('نام کاربری', validators=[DataRequired()])
     email = StringField('ایمیل', validators=[DataRequired(), Email()])
     submit = SubmitField('ذخیره تغییرات')
+
+
