@@ -262,8 +262,21 @@ tbody {
   z-index: 1;
 }
 
-#ansazeh{transition: all 0.3s ease;}
+.categor:hover{
+  scale: 1.01;
+}
 
+.chooser{
+  background-color: var(--black-color);
+  box-shadow: 0 0 2rem var(--light-green);
+}
+
+#ansazeh{transition: all 0.3s ease;}
+@media (max-width: 992px) {
+  .categorys-container{
+    width: 100%!important;
+  }
+}
 @media (max-width: 768px) {
   /* تنظیم فرم جستجو در حالت موبایل */
   form.d-flex {

@@ -18,6 +18,7 @@
 <body>
     <div class="d-lg-none d-md-none d-sm-flex flex-nowrap">
         <div class="row navbar-nav pe-0 ms-auto w-auto me-0 d-lg-flex d-md-flex d-sm-flex flex-nowrap flex-row">
+            <a class="navbar-brand text-light pt-3 text-end flex-fill" href="{{ url_for('main.index') }}" style="font-family: 'nastaligh', sans-serif; font-size: 3rem;">استوک</a>
             {% if current_user.is_admin %}
                         <div class="nav-item header-tabs pt-3 pb-4 pe-3 ps-3 text-center font-300 position-relative flex-fill">
                             <a class="nav-link text-danger m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.admin_dashboard') }}">
@@ -42,45 +43,56 @@
                             </a>
                         </div>
                     {% endif %}
-                    <a class="navbar-brand fs-2 text-light pt-3 text-start flex-fill" href="{{ url_for('main.index') }}" style="font-family: 'nastaligh', sans-serif;">استوک</a>
+                    
         </div>
         
     </div>
-    <nav class="navbar navbar-expand-md bg-light mb-4 ps-3 sticky-top">
+    <nav class="navbar navbar-expand-md bg-light mb-4 sticky-top">
         <div class="w-100 m-0">
             <div class="collapse navbar-collapse ms-0" id="navbarNav">
 
-                <a class="navbar-brand fs-2 text-light" href="{{ url_for('main.index') }}" style="font-family: 'nastaligh', sans-serif; font-size: 5rem;">استوک</a>
+                <a class="navbar-brand text-light" href="{{ url_for('main.index') }}" style="font-family: 'nastaligh', sans-serif; font-size: 3rem;">استوک</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
                 <form class="d-lg-flex d-md-none d-sm-none w-100" action="{{ url_for('main.index') }}" method="GET">
                     <div class="d-flex w-75 m-auto">
-                        <select id="province-select" name="province_search" class="form-select me-2 w-25">
-                            <option value="">انتخاب استان</option>
-                            {% for province in provinces %}
-                            <option value="{{ province }}" {% if request.args.get('province_search') == province %}selected{% endif %}>
-                                {{ province }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    
-                        <!-- انتخاب شهر (وابسته به استان انتخاب شده) -->
-                        <select id="city-select" name="city_search" class="form-select me-2 w-25">
-                            <option value="">انتخاب شهر</option>
-                            {% for city in cities %}
-                            <option value="{{ city }}" {% if request.args.get('city_search') == city %}selected{% endif %}>
-                                {{ city }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        
+                        <!-- Dropdown برای انتخاب استان -->
+                        <div class="dropdown me-2 w-25">
+                            <button class="btn chooser p-2 dropdown-toggle w-100 outline-none" type="button" id="provinceDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+                                انتخاب استان
+                            </button>
+                            <ul class="dropdown-menu chooser w-100" aria-labelledby="provinceDropdown" id="provinceList" style="background-color: var(--black-color);">
+                                <li><a class="dropdown-item" href="#" onclick="selectProvince('')">انتخاب استان</a></li>
+                                {% for province in provinces %}
+                                <li><a class="dropdown-item" href="#" onclick="selectProvince('{{ province }}')">{{ province }}</a></li>
+                                {% endfor %}
+                            </ul>
+                            <input type="hidden" name="province_search" id="provinceInput" value="{{ request.args.get('province_search', '') }}">
+                        </div>
+                
+                        <!-- Dropdown برای انتخاب شهر -->
+                        <div class="dropdown me-2 w-25">
+                            <button class="btn chooser p-2 dropdown-toggle w-100 outline-none" type="button" id="cityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+                                انتخاب شهر
+                            </button>
+                            <ul class="dropdown-menu chooser w-100" aria-labelledby="cityDropdown" id="cityList" style="background-color: var(--black-color);">
+                                <li><a class="dropdown-item" href="#" onclick="selectCity('')">انتخاب شهر</a></li>
+                            </ul>
+                            <input type="hidden" name="city_search" id="cityInput" value="{{ request.args.get('city_search', '') }}">
+                        </div>
+                
                         <input class="me-2 inputs searcher" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
                         <button class="btn header-tabs w-25" type="submit">جستجو</button>
                     </div>
                 </form>
+                
+                
+                
 
-                <ul class="navbar-nav pe-0 ms-auto w-auto ms-auto">
+                <ul class="navbar-nav pe-0 me-auto w-auto float-start">
                     <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
                         <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.index') }}">
                             <i class="bi bi-cart3 txt-lighter fs-3 m-0 p-0 me-1"></i> 
@@ -143,20 +155,42 @@
     </nav>
 
     
-    <form class="d-md-flex d-sm-flex w-100 d-lg-none mb-5" action="{{ url_for('main.index') }}" method="GET">
-        <select name="category" class="form-select me-2 w-50">
-            <option value="">همه دسته‌ها</option>
-            {% for category in categories %}
-            <option value="{{ category.id }}" {% if request.args.get('category')|int == category.id %}selected{% endif %}>
-                {{ category.name }}
-            </option>
-            {% endfor %}
-        </select>
-        <div class="d-flex w-100">
-            <input class="me-2 inputs searcher" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
-            <button class="btn header-tabs w-25" type="submit">جستجو</button>
+   <!-- فرم موبایل -->
+    <form class="d-lg-none d-md-flex d-sm-flex w-100" action="{{ url_for('main.index') }}" method="GET">
+        <div class="d-flex w-100 m-auto flex-wrap">
+            
+            <!-- Dropdown استان (مخصوص موبایل) -->
+            <div class="dropdown w-50">
+                <button class="btn p-2 dropdown-toggle w-100 outline-none" type="button" id="provinceDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
+                    انتخاب استان
+                </button>
+                <ul class="dropdown-menu chooser w-100" id="provinceListMobile">
+                    <li><a class="dropdown-item" href="#" onclick="selectProvince('mobile', '')">انتخاب استان</a></li>
+                    {% for province in provinces %}
+                    <li><a class="dropdown-item" href="#" onclick="selectProvince('mobile', '{{ province }}')">{{ province }}</a></li>
+                    {% endfor %}
+                </ul>
+                <input type="hidden" name="province_search" id="provinceInputMobile" value="{{ request.args.get('province_search', '') }}">
+            </div>
+        
+            <!-- Dropdown شهر (مخصوص موبایل) -->
+            <div class="dropdown w-50">
+                <button class="btn p-2 dropdown-toggle w-100 outline-none" type="button" id="cityDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
+                    انتخاب شهر
+                </button>
+                <ul class="dropdown-menu chooser w-100" id="cityListMobile">
+                    <li><a class="dropdown-item" href="#" onclick="selectCity('mobile', '')">انتخاب شهر</a></li>
+                </ul>
+                <input type="hidden" name="city_search" id="cityInputMobile" value="{{ request.args.get('city_search', '') }}">
+            </div>
+        
+            <div class="d-flex flex-nowrap w-100 mt-3">
+                <input class="me-2 inputs searcher w-75" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
+                <button class="btn header-tabs w-25" type="submit">جستجو</button>
+            </div>
         </div>
     </form>
+
 
     <div class="container">
         {% with messages = get_flashed_messages() %}
@@ -174,7 +208,7 @@
     </div>
 
     
-    <div class="bottom-div fixed-bottom d-lg-none d-md-none d-sm-flex flex-nowrap bg-black">
+    <div class="bottom-div sticky-bottom d-lg-none d-md-none d-sm-flex flex-nowrap" style="background-color: var(--dark-green);">
         <ul class="navbar-nav pe-0 ms-auto w-100 me-0 d-flex flex-row">
             <li class="nav-item header-tabs pt-3 pb-4 pe-4 ps-4 text-center font-300 position-relative flex-fill">
                 <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.index') }}">
@@ -184,6 +218,12 @@
             </li>
             
             {% if current_user.is_authenticated %}
+                <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative rounded-5" style="background-color: var(--black-color); bottom: 1.5rem; box-shadow: 0 0 2rem var(--light-green);">
+                    <a href="{{ url_for('main.new_product') }}" class="nav-link text-light m-0 p-0 w-100 h-100 d-block">
+                        <i class="bi bi-plus-square txt-lighter fs-3 m-0 p-0 me-1"></i><br>
+                        <span style="white-space: nowrap;">محصول جدید</span>
+                    </a>
+                </li>
                 <li class="nav-item header-tabs pt-3 pb-4 pe-4 ps-4 text-center font-300 position-relative flex-fill">
                     <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.dashboard') }}">
                         <i class="bi bi-person txt-lighter fs-3 m-0 p-0 me-1"></i> 
@@ -266,53 +306,44 @@
         });
 
         document.addEventListener("DOMContentLoaded", function() {
-            // لیست شهرهای مربوط به هر استان
-            const citiesByProvince = {
-                "تهران": ["تهران", "شهریار", "اسلامشهر", "ورامین"],
-                "اصفهان": ["اصفهان", "خمینی‌شهر", "کاشان", "نجف‌آباد"],
-                "خراسان رضوی": ["مشهد", "نیشابور", "تربت حیدریه", "سبزوار"],
-                "فارس": ["شیراز", "مرودشت", "لار", "جهرم"],
-                "آذربایجان شرقی": ["تبریز", "مراغه", "اهر", "میانه"],
-                "خوزستان": ["اهواز", "آبادان", "خرمشهر", "دزفول"]
-            };
+        const citiesByProvince = {
+            "تهران": ["تهران", "شهریار", "اسلامشهر", "ورامین"],
+            "اصفهان": ["اصفهان", "خمینی‌شهر", "کاشان", "نجف‌آباد"],
+            "خراسان رضوی": ["مشهد", "نیشابور", "تربت حیدریه", "سبزوار"],
+            "فارس": ["شیراز", "مرودشت", "لار", "جهرم"],
+            "آذربایجان شرقی": ["تبریز", "مراغه", "اهر", "میانه"],
+            "خوزستان": ["اهواز", "آبادان", "خرمشهر", "دزفول"]
+        };
 
-            const provinceSelect = document.getElementById("province-select");
-            const citySelect = document.getElementById("city-select");
-
-            // رویداد تغییر استان برای بارگذاری شهرهای مربوطه
-            provinceSelect.addEventListener("change", function() {
-                const selectedProvince = this.value;
-
-                // پاک کردن گزینه‌های قبلی شهرها
-                citySelect.innerHTML = '<option value="">انتخاب شهر</option>';
-
-                // اگر استانی انتخاب شده، شهرهای مربوطه را اضافه کن
-                if (selectedProvince in citiesByProvince) {
-                    citiesByProvince[selectedProvince].forEach(city => {
-                        const option = document.createElement("option");
-                        option.value = city;
-                        option.textContent = city;
-                        citySelect.appendChild(option);
-                    });
-                }
-            });
-
-            // مقداردهی اولیه شهر در صورت ویرایش محصول
-            const selectedProvince = provinceSelect.value;
-            const selectedCity = "{{ product_city if product_city else '' }}";  // مقدار ذخیره‌شده در دیتابیس
-
-            if (selectedProvince in citiesByProvince) {
-                citiesByProvince[selectedProvince].forEach(city => {
-                    const option = document.createElement("option");
-                    option.value = city;
-                    option.textContent = city;
-                    if (city === selectedCity) {
-                        option.selected = true;  // انتخاب مقدار قبلی
-                    }
-                    citySelect.appendChild(option);
+        function updateCities(formType, province) {
+            const cityList = document.getElementById(formType === 'desktop' ? "cityList" : "cityListMobile");
+            cityList.innerHTML = '<li><a class="dropdown-item" href="#" onclick="selectCity(\'' + formType + '\', \'\')">انتخاب شهر</a></li>';
+            
+            if (province in citiesByProvince) {
+                citiesByProvince[province].forEach(city => {
+                    cityList.innerHTML += `<li><a class="dropdown-item" href="#" onclick="selectCity('${formType}', '${city}')">${city}</a></li>`;
                 });
             }
-        });
+        }
+
+        window.selectProvince = function(formType, province) {
+            const provinceInput = document.getElementById(formType === 'desktop' ? "provinceInput" : "provinceInputMobile");
+            const provinceDropdown = document.getElementById(formType === 'desktop' ? "provinceDropdown" : "provinceDropdownMobile");
+            provinceInput.value = province;
+            provinceDropdown.innerText = province || "انتخاب استان";
+            updateCities(formType, province);
+        };
+
+        window.selectCity = function(formType, city) {
+            const cityInput = document.getElementById(formType === 'desktop' ? "cityInput" : "cityInputMobile");
+            const cityDropdown = document.getElementById(formType === 'desktop' ? "cityDropdown" : "cityDropdownMobile");
+            cityInput.value = city;
+            cityDropdown.innerText = city || "انتخاب شهر";
+        };
+    });
+
+        
+        
     </script>
 </body>
 </html>

@@ -3,21 +3,22 @@
 
 {% block content %}
 
-<div id="subcat1" class="subcategories row mt-2 position-fixed" style="scale: 0; opacity: 0; border-radius: 1rem; transition: scale 0.2s ease-in-out; transition: opacity 0.5s ease-in-out; right: 25rem; top: 13rem;">
-    
-    <div class="col-md-12 header-tabs rounded-5">
+
+<div id="subcat1" class="subcategories row mt-2 position-fixed w-75" style="scale: 0; opacity: 0; border-radius: 1rem; transition: scale 0.2s ease-in-out; transition: opacity 0.5s ease-in-out; top: 25%;">
+    <i class="bi bi-x-lg col-lg-1 col-md-2 col-sm-3 btn p-3" onclick="close1()"></i>
+    <div class="categor col-md-12 header-tabs rounded-5">
         <a href="{{ url_for('main.index', category=23) }}" class="btn btn-block d-flex align-items-center p-2">
             <i class="bi bi-wrench mr-2 ms-2"></i>
             دریل
         </a>
     </div>
-    <div class="col-md-12 header-tabs rounded-5">
+    <div class="categor col-md-12 header-tabs rounded-5">
         <a href="{{ url_for('main.index', category=24) }}" class="btn btn-block d-flex align-items-center p-2">
             <i class="bi bi-wrench mr-2 ms-2"></i>
             فرز
         </a>
     </div>
-    <div class="col-md-12 header-tabs rounded-5">
+    <div class="categor col-md-12 header-tabs rounded-5">
         <a href="{{ url_for('main.index', category=25) }}" class="btn btn-block d-flex align-items-center p-2">
             <i class="bi bi-wrench mr-2 ms-2"></i>
             کمپرسور
@@ -25,20 +26,22 @@
     </div>
 </div>
 
-<div id="subcat2" class="subcategories mt-2 position-fixed rounded-3" style="scale: 0; opacity: 0; border-radius: 1rem; transition: scale 0.1s ease-in-out; transition: opacity 0.5s ease-in-out; right: 45rem; top: 14rem;">
-    <div class="col-md-12 header-tabs rounded-5">
+<div id="subcat2" class="subcategories mt-2 position-fixed rounded-3 w-75" style="scale: 0; opacity: 0; border-radius: 1rem; transition: scale 0.1s ease-in-out; transition: opacity 0.5s ease-in-out; top: 25%;">
+    <i class="bi bi-x-lg col-lg-1 col-md-2 col-sm-3 btn p-3" onclick="close2()"></i>
+    <div class="categor col-md-12 header-tabs rounded-5">
         <a href="{{ url_for('main.index', category=27) }}" class="btn btn-block d-flex align-items-center p-2">
             <i class="bi bi-wrench mr-2 ms-2"></i>
             اره برقی
         </a>
     </div>
-    <div class="col-md-12 header-tabs rounded-5">
+    <div class="categor col-md-12 header-tabs rounded-5">
         <a href="{{ url_for('main.index', category=28) }}" class="btn btn-block d-flex align-items-center p-2">
             <i class="bi bi-wrench mr-2 ms-2"></i>
             چمن زن
         </a>
     </div>
 </div>
+
 <!-- <div class="container mt-4" style="position: fixed; top: 18rem; right: 0; width: 15%; transform: translateY(-50%);">
     <h2 class="mb-3">دسته‌بندی‌ها</h2>
     <div class="row">
@@ -100,11 +103,11 @@
 
 
 
-<div class="mt-4 w-75">
+<div class="categorys-container mt-4 w-75">
     <h2 class="mb-3">دسته‌بندی‌ها</h2>
     <div class="row">
         <!-- دسته‌بندی 1 (ابزار کرگیری) -->
-        <div class="col-md-3 mb-2 d-flex justify-content-between flex-nowrap">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-2 d-flex justify-content-between flex-nowrap">
             <a href="{{ url_for('main.index', category=22) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 w-75">
                 <i class="bi bi-wrench mr-2 ms-2"></i>
                 ابزار کرگیری
@@ -114,10 +117,11 @@
             <button class="btn btn-sm col-md-2 header-tabs w-25 bi bi-chevron-left" onclick="toggleSubcategories('subcat1', this)"></button>
             
             {% endif %}
+            
         </div>
 
         <!-- دسته‌بندی 2 (ابزار اندازه گیری) -->
-        <div class="col-md-3 mb-2 d-flex justify-content-between flex-nowrap">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-2 d-flex justify-content-between flex-nowrap">
             <a href="{{ url_for('main.index', category=26) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
                 <i class="bi bi-rulers mr-2 ms-2"></i>
                 ابزار اندازه گیری
@@ -127,10 +131,11 @@
             <button class="btn btn-sm col-md-2 header-tabs w-25 bi bi-chevron-left" onclick="toggleSubcategories('subcat2', this)"></button>
             
             {% endif %}
+            
         </div>
 
         <!-- دسته‌بندی 3 -->
-        <div class="col-md-3 mb-2">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
             <a href="{{ url_for('main.index', category=29) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
                 <i class="bi bi-tools mr-2 ms-2"></i>
                 مته و قلم
@@ -138,7 +143,7 @@
         </div>
 
         <!-- دسته‌بندی 4 -->
-        <div class="col-md-3 mb-2">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
             <a href="{{ url_for('main.index', category=32) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
                 <i class="bi bi-hammer mr-2 ms-2"></i>
                 سیستم میخکوب ها
@@ -146,7 +151,7 @@
         </div>
 
         <!-- دسته‌بندی 5 -->
-        <div class="col-md-3 mb-2">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
             <a href="{{ url_for('main.index', category=33) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
                 <i class="bi bi-lightning-charge mr-2 ms-2"></i>
                 ابزار برقی
@@ -154,7 +159,7 @@
         </div>
 
         <!-- دسته‌بندی 6 -->
-        <div class="col-md-3 mb-2">
+        <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
             <a href="{{ url_for('main.index', category=34) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
                 <i class="bi bi-battery-full mr-2 ms-2"></i>
                 ابزار شارژی
@@ -163,7 +168,7 @@
     </div>
 </div>
 
-<form class="d-lg-flex d-md-none d-sm-none w-75 mb-5 mt-3" action="{{ url_for('main.index') }}" method="GET">
+<form class="address-searcher d-flex w-75 mb-5 mt-3" action="{{ url_for('main.index') }}" method="GET">
     <div class="d-flex w-100 m-auto">
         <input class="me-2 inputs searcher" type="search" placeholder="جستجوی آدرس..." name="address_search" value="{{ request.args.get('address_search', '') }}">
         <button class="btn header-tabs w-25" type="submit">جستجو</button>
@@ -172,7 +177,7 @@
 
 <h2 class="mb-4">محصولات</h2>
 
-<div class="row row-cols-1 row-cols-md-3 g-4 prod">
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 row-cols-xl-3 g-4 prod">
     {% for product in products %}
     <div class="col">
         <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="text-decoration-none">
@@ -244,6 +249,18 @@
                 }
             });
         }
+        function close1() {
+            const subcat1 = document.getElementById("subcat1");
+            subcat1.style.scale = "0"; 
+            subcat1.style.opacity = "0";
+        }
+
+        function close2() {
+            const subcat2 = document.getElementById("subcat2");
+            subcat2.style.scale = "0"; 
+            subcat2.style.opacity = "0";
+        }
+
 
 </script>
 {% endblock %}
