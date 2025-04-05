@@ -10,31 +10,35 @@
             {% endif %}
         </div>
         
-        <div class="col-md-6">
-            <h2>{{ product.name }}</h2>
-            <h3 class="mb-4">قیمت: {{ product.price }} تومان</h3>
-            <p class="text-muted">فروشنده: {{ product.owner.username }}</p>
-            <hr class="w-100">
-            <p>توضیحات و ویژگی ها:</p>
-            <p class="lead">{{ product.description }}</p>
-            <hr class="w-100">
-            <p>اطلاعات بیشتر:</p>
+        <div class="col-md-6 mb-5 mt-4">
+            <h2 class="txt-black">{{ product.name }}</h2>
+            {% if product.price == product.price|int %}
+                <h3 class="mb-4 txt-black">قیمت: {{ "{:,}".format(product.price | int) }} تومان</h3>
+            {% else %}
+                <h3 class="mb-4 txt-black">قیمت: {{ "{:,.2f}".format(product.price) }} تومان</h3>
+            {% endif %}
+            <p class="text-muted txt-black">فروشنده: {{ product.owner.username }}</p>
+            
             {% if product.address %}
-                <p><strong>آدرس:</strong> {{ product.address }}</p>
+                <p class="txt-black"><strong>آدرس:</strong> {{ product.address }}</p>
             {% else %}
                 <p>آدرس وارد نشده است</p>
             {% endif %}
             {% if user.phone %}
-                <div class="d-flex flex-nowrap justify-content-start align-items-center my-3"><strong class="m-0">شماره تلفن:</strong><p onclick="copyText(this)" class="header-tabs py-2 px-3 w-75 m-0">{{ user.phone }}</p></div>
+                <div class="d-flex flex-nowrap justify-content-start align-items-center my-3 txt-black"><strong class="m-0">شماره تلفن:</strong><p onclick="copyText(this)" class="header-tabs py-2 px-3 w-75 m-0">{{ user.phone }}</p></div>
             {% else %}
                 <p>شماره تلفن وارد نشده است</p>
             {% endif %}
             {% if product.product_type %}
-                <p><strong>نوع محصول:</strong> {{ product.product_type.value }}</p>
+                <p class="txt-black"><strong>نوع محصول:</strong> {{ product.product_type.value }}</p>
             {% else %}
                 <p>نوع محصول وارد نشده است</p>
             {% endif %}
-            <p>تاریخ انتشار: {{ product.updated_at }}</p>
+            <hr class="w-100 txt-black">
+            <p>توضیحات و ویژگی ها:</p>
+            <p class="lead txt-black">{{ product.description }}</p>
+            <hr class="w-100 txt-black">
+            <p class="txt-black">تاریخ انتشار: {{ product.updated_at }}</p>
         </div>
     </div>
 </div>

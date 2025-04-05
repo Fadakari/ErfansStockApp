@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import random
 import requests
 from models import ProductType  # جایگزین yourapp با نام پروژه شما
+from aplication import limiter
 
 
 main = Blueprint('main', __name__)
@@ -19,8 +20,9 @@ logging.basicConfig(level=logging.DEBUG)
 bp = Blueprint('main', __name__)
 
 
-# لیست استان‌ها و شهرهای مربوطه
 
+# لیست استان‌ها و شهرهای مربوطه
+@limiter.limit("5 per minute")
 @bp.route('/')
 def index():
     search = request.args.get('search', '').strip()
@@ -117,7 +119,7 @@ def index():
 
 
 
-
+@limiter.limit("5 per minute")
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -129,14 +131,44 @@ def login():
             flash('نام کاربری یا رمز عبور نامعتبر است')
             return redirect(url_for('main.login'))
 
-        login_user(user)
-        next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
-            next_page = url_for('main.index')
-        return redirect(next_page)
+        # ارسال OTP به شماره کاربر
+        otp = random.randint(1000, 9999)
+        session['otp_code'] = otp
+        session['user_id'] = user.id  # ذخیره شناسه کاربر برای ورود
+
+        # ارسال OTP به شماره تلفن (در محیط واقعی اینجا پیامک می‌فرستیم)
+        print(f"کد OTP برای ورود به حساب: {otp}")  # در محیط واقعی باید ارسال پیامک بشه
+
+        return redirect(url_for('main.verify_login'))  # هدایت به صفحه تایید OTP
 
     return render_template('login.html')
 
+@limiter.limit("5 per minute")
+@bp.route('/verify_login', methods=['GET', 'POST'])
+def verify_login():
+    if request.method == 'POST':
+        entered_code = request.form.get('code')
+
+        if entered_code == str(session.get('otp_code')):  # بررسی کد وارد شده
+            user = User.query.get(session['user_id'])
+
+            # ورود کاربر پس از تایید کد OTP
+            login_user(user)
+
+            # پاک کردن سشن‌ها
+            session.pop('otp_code', None)
+            session.pop('user_id', None)
+
+            flash('ورود با موفقیت انجام شد!', 'success')
+            return redirect(url_for('main.index'))
+        else:
+            flash('کد وارد شده اشتباه است!', 'danger')
+
+    return render_template('verify_login.html')
+
+
+
+@limiter.limit("5 per minute")
 @bp.route('/logout')
 def logout():
     logout_user()
@@ -157,6 +189,7 @@ def dashboard():
         return redirect(url_for('main.dashboard'))
     return render_template('dashboard.html', products=products, categories=categories, form=form)
 
+@limiter.limit("5 per minute")
 @bp.route('/user-dashboard/<int:user_id>')
 def user_dashboard(user_id):
     # بارگذاری اطلاعات کاربر بر اساس user_id
@@ -173,6 +206,7 @@ def user_dashboard(user_id):
     return redirect(url_for('main.dashboard'))  # به صفحه اصلی هدایت می‌شود
 
 
+@limiter.limit("5 per minute")
 @bp.route('/product/new', methods=['GET', 'POST'])
 @login_required
 def new_product():
@@ -256,6 +290,7 @@ def new_product():
 
 
 
+@limiter.limit("5 per minute")
 @bp.route('/product/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_product(id):
@@ -344,6 +379,7 @@ def edit_product(id):
 
 
 
+@limiter.limit("5 per minute")
 @bp.route('/product/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_product(id):
@@ -373,6 +409,7 @@ def delete_product(id):
 
 
 
+@limiter.limit("5 per minute")
 @bp.route('/product/<int:product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
@@ -381,6 +418,7 @@ def product_detail(product_id):
     phone = user.phone if user else None
     return render_template('product_detail.html', user=user, product=product, categories=categories, phone=phone)
 
+@limiter.limit("5 per minute")
 @bp.route('/init-categories')
 def init_categories():
     categories = [
@@ -428,6 +466,7 @@ def init_categories():
 
 
 
+@limiter.limit("5 per minute")
 @bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
@@ -487,6 +526,7 @@ def signup():
     return render_template('signup.html')  # نمایش فرم ثبت‌نام
 
 
+@limiter.limit("5 per minute")
 @bp.route('/verify', methods=['GET', 'POST'])
 def verify():
     if request.method == 'POST':
@@ -525,6 +565,7 @@ def verify():
 
         
 
+@limiter.limit("5 per minute")
 @bp.route("/payment/start/<int:product_id>", methods=["GET"])
 def start_payment(product_id):
     product = Product.query.get(product_id)
@@ -533,7 +574,7 @@ def start_payment(product_id):
 
     amount = 70000
     merchant = "65717f98c5d2cb000c3603da"
-    callback_url = "http://localhost:5000/fake-callback"
+    callback_url = f"http://localhost:5000/payment/callback?product_id={product_id}"
 
     data = {
         "merchant": merchant,
@@ -547,11 +588,12 @@ def start_payment(product_id):
     print("Status Code:", response.status_code)
     print("Response:", result)
 
-    if result["result"] == 100:
+    if result.get("result") == 100 and "trackId" in result:
         return redirect(f"https://gateway.zibal.ir/start/{result['trackId']}")
     else:
         return jsonify({"error": "خطا در ایجاد پرداخت"}), 400
-    
+
+@limiter.limit("5 per minute")
 @bp.route("/payment/callback", methods=["GET", "POST"])
 def payment_callback():
     """بررسی پرداخت و نردبان کردن محصول"""
@@ -581,21 +623,26 @@ def payment_callback():
     print(f"Product before update: {product}, updated_at: {product.updated_at}")
 
     # شبیه‌سازی پاسخ موفق از زیبال
-    result = {"result": 100}  # فرض می‌کنیم پرداخت موفق بوده
+    # ارسال درخواست به زیبال برای بررسی وضعیت پرداخت
+    verify_response = requests.post("https://gateway.zibal.ir/v1/verify", json={
+        "merchant": "65717f98c5d2cb000c3603da",
+        "trackId": track_id
+    })
+    verify_result = verify_response.json()
 
-    if result["result"] == 100:
-        product.promoted_until = datetime.utcnow() + timedelta(days=7)  # 🔹 نردبان برای ۷ روز
-        db.session.commit() # ذخیره تغییرات در دیتابیس
-        db.session.refresh(product)  # اطمینان از دریافت مقدار جدید از دیتابیس
+    # چاپ برای دیباگ
+    print("Verify response:", verify_result)
 
-
-        # چاپ اطلاعات محصول بعد از بروزرسانی
-        print(f"Product after update: {product}, updated_at: {product.updated_at}")
-
+    if verify_result.get("result") == 100:
+        product.promoted_until = datetime.utcnow() + timedelta(days=7)
+        db.session.commit()
+        db.session.refresh(product)
         return jsonify({"message": "پرداخت موفق بود، محصول نردبان شد!"})
     else:
         return jsonify({"error": "پرداخت ناموفق بود"}), 400
-    
+
+
+@limiter.limit("5 per minute")
 @bp.route("/product/<int:product_id>/remove-promotion", methods=["POST"])
 @login_required
 def remove_promotion(product_id):
@@ -617,6 +664,7 @@ def remove_promotion(product_id):
 
 
 
+@limiter.limit("5 per minute")
 @bp.route("/product/<int:product_id>/promote", methods=["POST"])
 @login_required
 def promote_product(product_id):
@@ -637,6 +685,7 @@ def promote_product(product_id):
 
 
 
+@limiter.limit("5 per minute")
 @bp.route("/admin", methods=["GET"])
 @login_required
 def admin_dashboard():
@@ -675,6 +724,7 @@ def admin_dashboard():
 
 
 
+@limiter.limit("5 per minute")
 @bp.route("/make_admin/<int:user_id>", methods=["POST"])
 @login_required
 def make_admin(user_id):
@@ -691,6 +741,7 @@ def make_admin(user_id):
 
 
 
+@limiter.limit("5 per minute")
 @bp.route("/add-category", methods=["POST"])
 @login_required
 def add_category():
@@ -710,6 +761,7 @@ def add_category():
     return redirect(url_for('main.admin_dashboard'))
 
 
+@limiter.limit("5 per minute")
 @bp.route("/delete_user/<int:user_id>", methods=["POST"])
 @login_required
 def delete_user(user_id):
@@ -732,6 +784,7 @@ def delete_user(user_id):
     return redirect(url_for('main.admin_dashboard'))
 
 
+@limiter.limit("5 per minute")
 @bp.route("/delete_category/<int:category_id>", methods=["POST"])
 @login_required
 def delete_category(category_id):
@@ -755,7 +808,8 @@ def delete_category(category_id):
 
 
 
-    
+
+@limiter.limit("5 per minute")  
 @bp.route("/fake-payment", methods=["POST"])
 def fake_payment():
     """شبیه‌سازی درگاه پرداخت زیبال بدون نیاز به درگاه واقعی"""

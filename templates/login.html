@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center mt-5 mb-5">
     <div class="col-md-6">
         <div class="card bg-very-black signuper">
             <div class="card-header">
-                <h4 class="mb-0">ورود</h4>
+                <h4 class="mb-0 txt-black">ورود</h4>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('main.login') }}">
                     <div class="mb-3">
-                        <label for="username" class="form-label">نام کاربری</label>
-                        <input type="text" class="inputs" id="username" placeholder="نام کاربری خود را وارد کنید" name="username" required>
+                        <label for="username" class="form-label txt-black">نام کاربری</label>
+                        <input type="text" class="inputs txt-black" id="username" placeholder="نام کاربری خود را وارد کنید" name="username" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">رمز عبور</label>
-                        <input type="password" class="inputs" id="password" placeholder="رمز عبور خود را وارد کنید" name="password" required>
+                        <label for="password" class="form-label txt-black">رمز عبور</label>
+                        <input type="password" class="inputs txt-black" id="password" placeholder="رمز عبور خود را وارد کنید" name="password" required>
                     </div>
-                    <button type="submit" class="btn header-tabs py-3 px-4">ورود</button>
+                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black">ورود</button>
                     <a href="{{ url_for('main.signup') }}" class="btn btn-link">حساب کاربری ندارید؟ ثبت‌نام کنید</a>
                 </form>
             </div>

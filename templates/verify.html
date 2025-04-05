@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="container">
-        <h2>تأیید شماره تلفن</h2>
+    <div class="container my-5">
+        <h2 class="txt-black">تأیید شماره تلفن</h2>
         <form method="POST">
-            <label for="code">کد ارسال‌شده را وارد کنید:</label>
-            <input type="text" id="code" name="code" class="inputs" required>
-            <button type="submit">تأیید</button>
+            <label for="code" class="txt-black">کد ارسال‌شده را وارد کنید:</label>
+            <input type="text" id="code" name="code" class="inputs txt-black" required>
+            <button type="submit" class="txt-black">تأیید</button>
         </form>
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}

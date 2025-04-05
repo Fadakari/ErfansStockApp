@@ -16,18 +16,35 @@
 }
 
 :root{
-    --black-color: #1C1C1E;
-    --dark-green: #3A3A3C;
+    --black-color: #F8F8F8;
+    --dark-green: #E0E0E0;
     --light-green: #9B1B30;
-    --light-white: #f1f1f1;
+    --light-white: #F1F1F1;
+    --txt-color: #1C1C1E;
 }
+/* :root{
+  --black-color: #1C1C1E;
+  --dark-green: #3A3A3C;
+  --light-green: #9B1B30;
+  --light-white: #f1f1f1;
+} */
 .bg-very-black{background: var(--black-color);}
 .bg-black{background: var(--dark-green);}
+.txt-black{color: var(--txt-color) !important;}
+#toggleButton {
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  background-color: none;
+}
 
 body {
     background-color: var(--black-color);
 }
-
+.shadower{
+    background-color: var(--black-color)!important;
+    box-shadow: 0 0 2rem var(--light-green);
+}
 .navbar{
     background-color: var(--black-color)!important;
     box-shadow: 0 0 2rem var(--light-green);
@@ -268,7 +285,29 @@ tbody {
 
 .chooser{
   background-color: var(--black-color);
-  box-shadow: 0 0 2rem var(--light-green);
+  box-shadow: 0 0 1rem var(--light-green);
+}
+
+.toast-message {
+  position: fixed;
+  height: 4rem;
+  width: 50%;
+  bottom: 20px;
+  right: 25%;
+  background-color: #2e7d32;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all .3s ease;
+  z-index: 9999;
+}
+
+.toast-message.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 #ansazeh{transition: all 0.3s ease;}

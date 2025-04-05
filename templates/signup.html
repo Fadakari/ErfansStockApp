@@ -1,41 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center my-5">
     <div class="col-md-6" style="background: #1c1c1e00;">
         <div class="card bg-very-black signuper">
             <div class="card-header">
-                <h4 class="mb-0">ثبت‌نام</h4>
+                <h4 class="mb-0 txt-black">ثبت‌نام</h4>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('main.signup') }}">
                     <div class="mb-3">
-                        <label for="username" class="form-label">نام کاربری</label>
-                        <input type="text" class="inputs" id="username" name="username" placeholder="نام کاربری خود را وارد کنید" required>
+                        <label for="username" class="form-label txt-black">نام کاربری</label>
+                        <input type="text" class="inputs txt-black" id="username" name="username" placeholder="نام کاربری خود را وارد کنید" required>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">ایمیل</label>
-                        <input type="email" class="inputs" id="email" name="email" placeholder="ایمیل خود را وارد کنید" required>
+                        <label for="email" class="form-label txt-black">ایمیل</label>
+                        <input type="email" class="inputs txt-black" id="email" name="email" placeholder="ایمیل خود را وارد کنید" required>
                     </div>
                     <div class="mb-3">
-                        <label for="phone">شماره تماس:</label>
-                        <input type="text" id="phone" name="phone" placeholder="شماره تماس خود را وارد کنید(ارسال کد پیامکی)" required class="inputs">
+                        <label for="phone" class="txt-black txt-black">شماره تماس:</label>
+                        <input type="text" id="phone" name="phone" placeholder="شماره تماس خود را وارد کنید(ارسال کد پیامکی)" required class="inputs txt-black">
                     </div>
 
                     <div class="mb-3">
-                        <label for="national_id">کد ملی:</label>
-                        <input type="text" id="national_id" name="national_id" placeholder="کد ملی خود را وارد کنید" required class="inputs">
+                        <label for="national_id" class="txt-black">کد ملی:</label>
+                        <input type="text" id="national_id" name="national_id" placeholder="کد ملی خود را وارد کنید" required class="inputs txt-black">
                     </div>
-
-                    
 
                     
 
+                    
+
                     <div class="mb-3">
-                        <label for="password" class="form-label">رمز عبور</label>
-                        <input type="password" class="inputs" id="password" name="password" placeholder="یک رمز عبور بسازید" required>
+                        <label for="password" class="form-label txt-black">رمز عبور</label>
+                        <input type="password" class="inputs txt-black" id="password" name="password" placeholder="یک رمز عبور بسازید" required>
                     </div>
-                    <button type="submit" class="btn header-tabs py-3 px-4">ثبت‌نام</button>
+                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black">ثبت‌نام</button>
                     <a href="{{ url_for('main.login') }}" class="btn btn-link">قبلاً ثبت‌نام کرده‌اید؟ وارد شوید</a>
                 </form>
             </div>

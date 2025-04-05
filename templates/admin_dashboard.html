@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>پنل مدیریت</h2>
+<h2 class="txt-black">پنل مدیریت</h2>
 <hr class="w-100">
 
-<h3>مدیریت کاربران</h3>
+<h3 class="txt-black">مدیریت کاربران</h3>
 <form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex flex-wrap gap-2 mb-3">
     <input type="text" name="query" class="inputs flex-grow-1" placeholder="جست‌وجوی کاربران...">
-    <select name="role_filter" class="form-select">
-        <option value="">همه کاربران</option>
-        <option value="admin">فقط ادمین‌ها</option>
-        <option value="user">فقط کاربران عادی</option>
+    <select name="role_filter" class="form-select txt-black">
+        <option class="txt-black" value="">همه کاربران</option>
+        <option class="txt-black" value="admin">فقط ادمین‌ها</option>
+        <option class="txt-black" value="user">فقط کاربران عادی</option>
     </select>
     <button type="submit" class="btn btn-primary">جست‌وجو</button>
 </form>
@@ -52,7 +52,7 @@
     </table>
 </div>
 
-<h3>افزودن دسته‌بندی جدید</h3>
+<!-- <h3>افزودن دسته‌بندی جدید</h3>
 <form action="{{ url_for('main.add_category') }}" method="POST" class="d-flex flex-wrap gap-2">
     <input type="text" name="category_name" class="inputs flex-grow-1" placeholder="نام دسته‌بندی جدید" required>
     <button type="submit" class="btn btn-success">اضافه کردن</button>
@@ -80,7 +80,7 @@
             {% endfor %}
         </tbody>
     </table>
-</div>
+</div> -->
 
 <script>
     function copyText(element) {

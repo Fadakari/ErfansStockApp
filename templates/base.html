@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}فروشگاه ابزار استوک{% endblock %}</title>
+    <title>{% block title %}استوک{% endblock %}</title>
+    <script src="/static/js/theme.js" defer></script>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#000000">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <!-- <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}"> -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -489,9 +491,9 @@
     </script>
 </head>
 <body>
-    <div class="d-lg-none d-md-none d-sm-flex flex-nowrap">
-        <div class="row navbar-nav pe-0 ms-auto w-auto me-0 d-lg-flex d-md-flex d-sm-flex flex-nowrap flex-row">
-            <a class="navbar-brand text-light pt-3 text-end flex-fill" href="{{ url_for('main.index') }}" style="font-family: 'nastaligh', sans-serif; font-size: 3rem;">استوک</a>
+    <div class="d-lg-none d-md-none d-sm-flex flex-nowrap shadower">
+        <div class="row pe-0 ms-auto w-auto me-0 d-lg-none d-md-none d-sm-flex flex-nowrap flex-row">
+            <a class="navbar-brand text-light pt-3 text-end flex-fill txt-black" href="{{ url_for('main.index') }}" style="font-size: 2rem;">استوک</a>
             {% if current_user.is_admin %}
                         <div class="nav-item header-tabs pt-3 pb-4 pe-3 ps-3 text-center font-300 position-relative flex-fill">
                             <a class="nav-link text-danger m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.admin_dashboard') }}">
@@ -520,11 +522,11 @@
         </div>
         
     </div>
-    <nav class="navbar navbar-expand-md bg-light mb-4 sticky-top">
+    <nav class="navbar navbar-expand-md bg-light mb-4 sticky-top p-0 pb-lg-2">
         <div class="w-100 m-0">
             <div class="collapse navbar-collapse ms-0" id="navbarNav">
 
-                <a class="navbar-brand text-light" href="{{ url_for('main.index') }}" style="font-family: 'nastaligh', sans-serif; font-size: 3rem;">استوک</a>
+                <a class="navbar-brand text-light txt-black" href="{{ url_for('main.index') }}" style="font-size: 3rem;">استوک</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -533,35 +535,35 @@
                     <div class="d-flex w-75 m-auto">
                         
                         <!-- Dropdown برای انتخاب استان -->
-                        <div class="dropdown me-2 w-25">
-                            <button class="btn chooser p-2 dropdown-toggle w-100 outline-none" type="button" id="provinceDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+                        <div class="dropdown me-0 w-25">
+                            <button class="btn chooser p-2 dropdown-toggle w-100 outline-none txt-black m-0" style="font-size: 1rem;" type="button" id="provinceDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
                                 انتخاب استان
                             </button>
                             <ul class="dropdown-menu chooser w-100 overflow-auto" aria-labelledby="provinceDropdown" id="provinceList" style="background-color: var(--black-color); max-height: 20rem;">
                                 <li>
                                     <input type="text" id="provinceSearch" class="form-control w-100 p-2 mb-2" placeholder="جستجوی استان..." onkeyup="filterProvinces()">
                                 </li>
-                                <li class="px-2"><a class="dropdown-item header-tabs" href="#" onclick="selectProvince('')">انتخاب استان</a></li>
+                                <li class="px-2"><a class="dropdown-item header-tabs txt-black" href="#" style="font-size: 1rem;" onclick="selectProvince('')">انتخاب استان</a></li>
                                 {% for province in provinces %}
-                                <li class="px-2 province-item"><a class="dropdown-item header-tabs" href="#" onclick="selectProvince('desktop', '{{ province }}')" style="font-family: 'nastaligh', sans-serif; font-size: 2rem;">{{ province }}</a></li>
+                                <li class="px-2 province-item"><a class="dropdown-item header-tabs txt-black" href="#" onclick="selectProvince('desktop', '{{ province }}')" style="font-size: 1rem;">{{ province }}</a></li>
                                 {% endfor %}
                             </ul>
                             <input type="hidden" name="province_search" id="provinceInput" value="{{ request.args.get('province_search', '') }}">
                         </div>
                 
                         <!-- Dropdown برای انتخاب شهر -->
-                        <div class="dropdown me-2 w-25">
-                            <button class="btn chooser p-2 dropdown-toggle w-100 outline-none" type="button" id="cityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+                        <div class="dropdown m-0 w-25 txt-black">
+                            <button class="btn chooser p-2 dropdown-toggle w-100 outline-none txt-black m-0" style="font-size: 1rem;" type="button" id="cityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
                                 انتخاب شهر
                             </button>
-                            <ul class="dropdown-menu chooser w-100 overflow-auto" aria-labelledby="cityDropdown" id="cityList" style="background-color: var(--black-color); max-height: 20rem;">
-                                <li><a class="dropdown-item header-tabs" href="#" onclick="selectCity('')">انتخاب شهر</a></li>
+                            <ul class="dropdown-menu chooser w-100 overflow-auto txt-black" aria-labelledby="cityDropdown" id="cityList" style="background-color: #3A3A3C; max-height: 20rem;">
+                                <li><a class="dropdown-item header-tabs txt-black" href="#" style="font-size: 1rem;" onclick="selectCity('')">انتخاب شهر</a></li>
                             </ul>
                             <input class="" type="hidden" name="city_search" id="cityInput" value="{{ request.args.get('city_search', '') }}">
                         </div>
                 
                         <input class="me-2 inputs searcher" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
-                        <button class="btn header-tabs w-25" type="submit">جستجو</button>
+                        <button class="btn header-tabs w-25 txt-black" type="submit">جستجو</button>
                     </div>
                 </form>
                 
@@ -570,7 +572,7 @@
 
                 <ul class="navbar-nav pe-0 me-auto w-auto float-start">
                     <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
-                        <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.index') }}">
+                        <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.index') }}">
                             <i class="bi bi-cart3 txt-lighter fs-3 m-0 p-0 me-1"></i> 
                             <span>محصولات</span>
                         </a>
@@ -578,13 +580,13 @@
                     
                     {% if current_user.is_authenticated %}
                         <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
-                            <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.dashboard') }}">
+                            <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.dashboard') }}">
                                 <i class="bi bi-person txt-lighter fs-3 m-0 p-0 me-1"></i> 
                                 <span>داشبورد</span>
                             </a>
                         </li>
                         <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
-                            <a href="{{ url_for('main.new_product') }}" class="nav-link text-light m-0 p-0 w-100 h-100 d-block">
+                            <a href="{{ url_for('main.new_product') }}" class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black">
                                 <i class="bi bi-plus-square txt-lighter fs-3 m-0 p-0 me-1"></i> 
                                 <span style="white-space: nowrap;">محصول جدید</span>
                             </a>
@@ -636,29 +638,29 @@
         <div class="d-flex w-100 m-auto flex-wrap">
             
             <!-- Dropdown استان (مخصوص موبایل) -->
-            <div class="dropdown w-50">
-                <button class="btn p-2 dropdown-toggle w-100 outline-none" type="button" id="provinceDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown w-50 m-0">
+                <button class="btn p-2 dropdown-toggle w-100 outline-none txt-black m-0" type="button" id="provinceDropdownMobile" style="font-size: 1.25rem;" data-bs-toggle="dropdown" aria-expanded="false">
                     انتخاب استان
                 </button>
                 <ul class="dropdown-menu chooser w-100 overflow-auto" id="provinceListMobile" style="max-height: 20rem;">
                     <li>
                         <input type="text" id="provinceSearchMobile" class="form-control w-100 p-2 mb-2" placeholder="جستجوی استان..." onkeyup="filterProvincesMobile()" onclick="keepDropdownOpen(event)">
                     </li>
-                    <li><a class="dropdown-item" href="#" onclick="selectProvince('mobile', '')">انتخاب استان</a></li>
+                    <li><a class="dropdown-item txt-black" href="#" style="font-size: 1.5rem;" onclick="selectProvince('mobile', '')">انتخاب استان</a></li>
                     {% for province in provinces %}
-                    <li class="province-item-mobile"><a class="dropdown-item" href="#" onclick="selectProvince('mobile', '{{ province }}')">{{ province }}</a></li>
+                    <li class="province-item-mobile"><a class="dropdown-item txt-black" href="#" onclick="selectProvince('mobile', '{{ province }}')">{{ province }}</a></li>
                     {% endfor %}
                 </ul>
                 <input type="hidden" name="province_search" id="provinceInputMobile" value="{{ request.args.get('province_search', '') }}">
             </div>
         
             <!-- Dropdown شهر (مخصوص موبایل) -->
-            <div class="dropdown w-50">
-                <button class="btn p-2 dropdown-toggle w-100 outline-none" type="button" id="cityDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="dropdown w-50 m-0 txt-black">
+                <button class="btn p-2 dropdown-toggle w-100 outline-none txt-black m-0" style="font-size: 1.25rem;" type="button" id="cityDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
                     انتخاب شهر
                 </button>
-                <ul class="dropdown-menu chooser w-100" id="cityListMobile">
-                    <li><a class="dropdown-item" href="#" onclick="selectCity('mobile', '')">انتخاب شهر</a></li>
+                <ul class="dropdown-menu chooser w-100 txt-black" id="cityListMobile" style="background-color: #3A3A3C;">
+                    <li><a class="dropdown-item txt-black" href="#" style="font-size: 1.5rem;" onclick="selectCity('mobile', '')">انتخاب شهر</a></li>
                 </ul>
                 <input type="hidden" name="city_search" id="cityInputMobile" value="{{ request.args.get('city_search', '') }}">
             </div>
@@ -669,6 +671,8 @@
             </div>
         </div>
     </form>
+
+    <!-- <button id="toggleButton">تغییر تم</button> -->
 
 
     <div class="container">
@@ -690,7 +694,7 @@
     <div class="bottom-div sticky-bottom d-lg-none d-md-none d-sm-flex flex-nowrap" style="background-color: var(--dark-green);">
         <ul class="navbar-nav pe-0 ms-auto w-100 me-0 d-flex flex-row">
             <li class="nav-item header-tabs pt-3 pb-4 pe-4 ps-4 text-center font-300 position-relative flex-fill">
-                <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.index') }}">
+                <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.index') }}">
                     <i class="bi bi-cart3 txt-lighter fs-3 m-0 p-0 me-1"></i> 
                     <span>محصولات</span>
                 </a>
@@ -698,13 +702,13 @@
             
             {% if current_user.is_authenticated %}
                 <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative rounded-5" style="background-color: var(--black-color); bottom: 1.5rem; box-shadow: 0 0 2rem var(--light-green);">
-                    <a href="{{ url_for('main.new_product') }}" class="nav-link text-light m-0 p-0 w-100 h-100 d-block">
+                    <a href="{{ url_for('main.new_product') }}" class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black">
                         <i class="bi bi-plus-square txt-lighter fs-3 m-0 p-0 me-1"></i><br>
                         <span style="white-space: nowrap;">محصول جدید</span>
                     </a>
                 </li>
                 <li class="nav-item header-tabs pt-3 pb-4 pe-4 ps-4 text-center font-300 position-relative flex-fill">
-                    <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.dashboard') }}">
+                    <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.dashboard') }}">
                         <i class="bi bi-person txt-lighter fs-3 m-0 p-0 me-1"></i> 
                         <span>داشبورد</span>
                     </a>
@@ -858,6 +862,29 @@
 function keepDropdownOpen(event) {
     event.stopPropagation();
 }
+
+// const button = document.getElementById("toggleButton");
+
+// button.addEventListener("click", function() {
+//     const root = document.documentElement;
+
+//     // بررسی وضعیت تم (تاریک یا روشن)
+//     if (root.style.getPropertyValue("--black-color") === "#F8F8F8") {
+//         // تغییر به دارک مود
+//         root.style.setProperty("--black-color", "#1C1C1E");
+//         root.style.setProperty("--dark-green", "#3A3A3C");
+//         root.style.setProperty("--light-green", "#9B1B30");
+//         root.style.setProperty("--light-white", "#f1f1f1");
+//         root.style.setProperty("--txt-color", "#F8F8F8");
+//     } else {
+//         // تغییر به لایت مود
+//         root.style.setProperty("--black-color", "#F8F8F8");
+//         root.style.setProperty("--dark-green", "#E0E0E0");
+//         root.style.setProperty("--light-green", "#9B1B30");
+//         root.style.setProperty("--light-white", "#F1F1F1");
+//         root.style.setProperty("--txt-color", "#1C1C1E");
+//     }
+// });
 
 
 

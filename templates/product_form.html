@@ -1,46 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
+<div class="row justify-content-center mt-5 mb-5">
     <div class="col-md-8">
         <div class="card signuper mb-4">
             <div class="card-header" style="background: var(--dark-green);">
-                <h4 class="mb-0">{% if product %}ویرایش محصول{% else %}محصول جدید{% endif %}</h4>
+                <h4 class="mb-0 txt-black">{% if product %}ویرایش محصول{% else %}محصول جدید{% endif %}</h4>
             </div>
             <div class="card-body bg-very-black">
                 <!-- فرم بدون جاوا اسکریپت -->
                 <form method="POST" enctype="multipart/form-data" id="productForm">
                     <div class="mb-3">
-                        <label for="name" class="form-label">نام محصول</label>
+                        <label for="name" class="form-label txt-black">نام محصول</label>
                         <input type="text" class="inputs" placeholder="نام محصول را وارد کنید" id="name" name="name" 
                                value="{{ product.name if product else '' }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="description" class="form-label">توضیحات</label>
+                        <label for="description" class="form-label txt-black">توضیحات</label>
                         <textarea class="inputs" placeholder="توضیحات راجب محصول و ویژگی های آن..." id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="price" class="form-label">قیمت (تومان)</label>
+                        <label for="price" class="form-label txt-black">قیمت (تومان)</label>
                         <input type="number" class="inputs" placeholder="قیمت محصول را وارد کنید" id="price" name="price" 
                                value="{{ product.price if product else '' }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="category_id" class="form-label">دسته‌بندی</label>
-                        <select class="form-select" id="category_id" name="category_id" required>
-                            <option value="">انتخاب دسته‌بندی</option>
+                        <label for="category_id" class="form-label txt-black">دسته‌بندی</label>
+                        <select class="form-select txt-black" id="category_id" name="category_id" required>
+                            <option value="" class="txt-black">انتخاب دسته‌بندی</option>
                             {% for category in categories %}
-                            <option value="{{ category.id }}" {% if product and product.category_id == category.id %}selected{% endif %}>
+                            <option class="txt-black" value="{{ category.id }}" {% if product and product.category_id == category.id %}selected{% endif %}>
                                 {{ category.name }}
                             </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="province" class="form-label">استان</label>
-                        <select class="form-select" id="province" name="province" required>
-                            <option value="">انتخاب استان</option>
+                        <label for="province" class="form-label txt-black">استان</label>
+                        <select class="form-select txt-black" id="province" name="province" required>
+                            <option class="txt-black" value="">انتخاب استان</option>
                             {% for province in provinces %}
-                            <option value="{{ province }}" {% if product and product.address.split('-')[0] == province %}selected{% endif %}>
+                            <option class="txt-black" value="{{ province }}" {% if product and product.address.split('-')[0] == province %}selected{% endif %}>
                                 {{ province }}
                             </option>
                             {% endfor %}
@@ -48,12 +48,12 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="city" class="form-label">شهر</label>
-                        <select class="form-select" id="city" name="city" required>
-                            <option value="">انتخاب شهر</option>
+                        <label for="city" class="form-label txt-black">شهر</label>
+                        <select class="form-select txt-black" id="city" name="city" required>
+                            <option class="txt-black" value="">انتخاب شهر</option>
                             {% if product %}
                                 {% for city in citiesByProvince[product.address.split('-')[0]] %}
-                                <option value="{{ city }}" {% if product.address.split('-')[1] == city %}selected{% endif %}>
+                                <option class="txt-black" value="{{ city }}" {% if product.address.split('-')[1] == city %}selected{% endif %}>
                                     {{ city }}
                                 </option>
                                 {% endfor %}
@@ -62,21 +62,21 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="postal_code" class="form-label">کد پستی</label>
+                        <label for="postal_code" class="form-label txt-black">کد پستی</label>
                         <input type="text" class="inputs" placeholder="کد پستی محل فروش (اختیاری)" id="postal_code" name="postal_code" 
                                value="{{ product.postal_code if product else '' }}">
                     </div>
                     <div class="mb-3">
-                        <label for="product_type" class="form-label">نوع محصول</label>
-                        <select class="form-select" id="product_type" name="product_type" required>
-                            <option value="NEW" {% if product and product.product_type.name == "NEW" %}selected{% endif %}>نو</option>
-                            <option value="STOCK" {% if product and product.product_type.name == "STOCK" %}selected{% endif %}>استوک</option>
-                            <option value="USED" {% if product and product.product_type.name == "USED" %}selected{% endif %}>دست دوم</option>
-                            <option value="NEEDS_REPAIR" {% if product and product.product_type.name == "NEEDS_REPAIR" %}selected{% endif %}>نیاز به تعمیر جزئی</option>
+                        <label for="product_type" class="form-label txt-black">نوع محصول</label>
+                        <select class="form-select txt-black" id="product_type" name="product_type" required>
+                            <option class="txt-black" value="NEW" {% if product and product.product_type.name == "NEW" %}selected{% endif %}>نو</option>
+                            <option class="txt-black" value="STOCK" {% if product and product.product_type.name == "STOCK" %}selected{% endif %}>استوک</option>
+                            <option class="txt-black" value="USED" {% if product and product.product_type.name == "USED" %}selected{% endif %}>دست دوم</option>
+                            <option class="txt-black" value="NEEDS_REPAIR" {% if product and product.product_type.name == "NEEDS_REPAIR" %}selected{% endif %}>نیاز به تعمیر جزئی</option>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="image" class="form-label">تصویر محصول</label>
+                        <label for="image" class="form-label txt-black">تصویر محصول</label>
                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                         {% if product and product.image_path %}
                         <div class="mt-2">
@@ -86,7 +86,7 @@
                         {% endif %}
                     </div>
                     <div class="d-grid">
-                        <button type="submit" class="btn header-tabs py-3">
+                        <button type="submit" class="btn header-tabs py-3 txt-black">
                             {% if product %}به‌روزرسانی محصول{% else %}ایجاد محصول{% endif %}
                         </button>
                     </div>
@@ -95,9 +95,16 @@
         </div>
     </div>
 </div>
+
+<script>
+    // مقادیر از Jinja درون جاوااسکریپت:
+    const initialProvince = "{{ product.address.split('-')[0] if product else '' }}";
+    const initialCity = "{{ product.address.split('-')[1] if product else '' }}";
+</script>
 <script>
     // لیست شهرهای مربوط به هر استان
-    const citiesByProvince = {
+    if (!window.citiesByProvince) {
+        window.citiesByProvince = {
     "آذربایجان شرقی": [
         "تبریز",
         "اسکو",
@@ -567,38 +574,45 @@
         "مهریز",
         "میبد"
     ]
+}
 };
 
 
 document.addEventListener("DOMContentLoaded", function () {
-    const provinceSelect = document.getElementById("province");
-    const citySelect = document.getElementById("city");
+            const provinceSelect = document.getElementById("province");
+            const citySelect = document.getElementById("city");
 
-    function updateCities() {
-        const selectedProvince = provinceSelect.value;
-        citySelect.innerHTML = '<option value="">انتخاب شهر</option>'; // پاک‌سازی لیست شهرها
-
-        if (selectedProvince && citiesByProvince[selectedProvince]) {
-            citiesByProvince[selectedProvince].forEach(city => {
+            provinceSelect.addEventListener("change", function () {
+              const selectedProvince = this.value;
+              const cities = citiesByProvince[selectedProvince] || [];
+            
+              // Clear previous cities
+              citySelect.innerHTML = "";
+            
+              cities.forEach(function (city) {
                 const option = document.createElement("option");
                 option.value = city;
                 option.textContent = city;
                 citySelect.appendChild(option);
+              });
+        });
+
+        // مقدار اولیه (برای حالت ویرایش)
+        if (initialProvince && initialCity) {
+            provinceSelect.value = initialProvince;
+            const cities = citiesByProvince[initialProvince] || [];
+            cities.forEach(function (city) {
+                const option = document.createElement("option");
+                option.value = city;
+                option.textContent = city;
+                if (city === initialCity) {
+                    option.selected = true;
+                }
+                citySelect.appendChild(option);
             });
         }
-    }
-
-    // اجرای تابع هنگام تغییر استان
-    provinceSelect.addEventListener("change", updateCities);
-
-    // **حفظ مقدار شهر در صورت ویرایش محصول**
-    if (provinceSelect.value) {
-        updateCities(); // شهرها رو بارگذاری کن
-        setTimeout(() => {
-            citySelect.value = "{{ product.address.split('-')[1] if product else '' }}";
-        }, 100); // تأخیر کوتاه برای اطمینان از لود کامل گزینه‌ها
-    }
-});
+    });
+    console.log(citiesByProvince["تهران"]);
 
 </script>
 

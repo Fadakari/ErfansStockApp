@@ -4,7 +4,7 @@
 {% block content %}
 
 
-<div id="subcat1" class="subcategories row mt-2 position-fixed w-75" style="scale: 0; opacity: 0; border-radius: 1rem; transition: scale 0.2s ease-in-out; transition: opacity 0.5s ease-in-out; top: 25%;">
+<!-- <div id="subcat1" class="subcategories row mt-2 position-fixed w-75" style="scale: 0; opacity: 0; border-radius: 1rem; transition: scale 0.2s ease-in-out; transition: opacity 0.5s ease-in-out; top: 25%;">
     <i class="bi bi-x-lg col-lg-1 col-md-2 col-sm-3 btn p-3" onclick="close1()"></i>
     <div class="categor col-md-12 header-tabs rounded-5">
         <a href="{{ url_for('main.index', category=23) }}" class="btn btn-block d-flex align-items-center p-2">
@@ -40,81 +40,33 @@
             چمن زن
         </a>
     </div>
-</div>
-
-<!-- <div class="container mt-4" style="position: fixed; top: 18rem; right: 0; width: 15%; transform: translateY(-50%);">
-    <h2 class="mb-3">دسته‌بندی‌ها</h2>
-    <div class="row">
-        
-        <div class="col-md-10 mb-2">
-            <a href="{{ url_for('main.index', category=22) }}" class="btn header-tabs btn-block d-flex align-items-center p-2">
-                <i class="bi bi-wrench mr-2 ms-2"></i>
-                ابزار کرگیری
-            </a>
-            
-        </div>
-        
-        {% if categories[0].subcategories %}
-        
-        <button class="btn btn-sm mb-2 col-md-2 header-tabs bi bi-chevron-left" onclick="toggleSubcategories('subcat1', this)"></button>
-        
-        {% endif %}
-
-        <div class="col-md-10 mb-2">
-            <a href="{{ url_for('main.index', category=26) }}" class="btn header-tabs btn-block d-flex align-items-center p-2">
-                <i class="bi bi-rulers mr-2 ms-2"></i>
-                ابزار اندازه گیری
-            </a>
-        </div>
-
-        {% if categories[1].subcategories %}
-        <button class="btn btn-sm mb-2 col-md-2 header-tabs bi bi-chevron-left" onclick="toggleSubcategories('subcat2', this)"></button>
-        
-        {% endif %}
-
-        <div class="col-md-12 mb-2">
-            <a href="{{ url_for('main.index', category=29) }}" class="btn header-tabs btn-block d-flex align-items-center p-2">
-                <i class="bi bi-tools mr-2 ms-2"></i>
-                مته و قلم
-            </a>
-        </div>
-
-        <div class="col-md-12 mb-2">
-            <a href="{{ url_for('main.index', category=32) }}" class="btn header-tabs btn-block d-flex align-items-center p-2">
-                <i class="bi bi-hammer mr-2 ms-2"></i>
-                سیستم میخکوب ها
-            </a>
-        </div>
-
-        <div class="col-md-12 mb-2">
-            <a href="{{ url_for('main.index', category=33) }}" class="btn header-tabs btn-block d-flex align-items-center p-2">
-                <i class="bi bi-lightning-charge mr-2 ms-2"></i>
-                ابزار برقی
-            </a>
-        </div>
-
-        <div class="col-md-12 mb-2">
-            <a href="{{ url_for('main.index', category=34) }}" class="btn header-tabs btn-block d-flex align-items-center p-2">
-                <i class="bi bi-battery-full mr-2 ms-2"></i>
-                ابزار شارژی
-            </a>
-        </div>
-    </div> -->
+</div> -->
 
 
 
 <div class="categorys-container mt-4 w-75">
-    <h2 class="mb-3">دسته‌بندی‌ها</h2>
+    <h2 class="mb-3 txt-black">دسته‌بندی‌ها</h2>
     <div class="row">
         <!-- دسته‌بندی 1 (ابزار کرگیری) -->
         <div class="col-lg-3 col-md-6 col-sm-6 mb-2 d-flex justify-content-between flex-nowrap">
-            <a href="{{ url_for('main.index', category=22) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 w-75">
+            <a href="{{ url_for('main.index', category=22) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 w-75 txt-black">
                 <i class="bi bi-wrench mr-2 ms-2"></i>
                 ابزار کرگیری
             </a>
             {% if categories[0].subcategories %}
             <!-- دکمه برای باز کردن/بستن زیردسته‌ها -->
-            <button class="btn btn-sm col-md-2 header-tabs w-25 bi bi-chevron-left" onclick="toggleSubcategories('subcat1', this)"></button>
+            <div class="dropdown d-inline-block col-md-2 w-25">
+                <button class="btn btn-sm header-tabs bi bi-chevron-left h-100 w-100 txt-black" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end text-end p-2 rounded-4 w-auto" style="background-color: #3A3A3C!important;">
+                    <li><a class="dropdown-item d-flex align-items-center header-tabs txt-black" href="{{ url_for('main.index', category=23) }}">
+                        <i class="bi bi-wrench ms-2"></i> دریل</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center header-tabs txt-black" href="{{ url_for('main.index', category=24) }}">
+                        <i class="bi bi-wrench ms-2"></i> فرز</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center header-tabs txt-black" href="{{ url_for('main.index', category=25) }}">
+                        <i class="bi bi-wrench ms-2"></i> کمپرسور</a></li>
+                </ul>
+            </div>
             
             {% endif %}
             
@@ -122,13 +74,22 @@
 
         <!-- دسته‌بندی 2 (ابزار اندازه گیری) -->
         <div class="col-lg-3 col-md-6 col-sm-6 mb-2 d-flex justify-content-between flex-nowrap">
-            <a href="{{ url_for('main.index', category=26) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
+            <a href="{{ url_for('main.index', category=26) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 txt-black">
                 <i class="bi bi-rulers mr-2 ms-2"></i>
                 ابزار اندازه گیری
             </a>
             {% if categories[1].subcategories %}
             <!-- دکمه برای باز کردن/بستن زیردسته‌ها -->
-            <button class="btn btn-sm col-md-2 header-tabs w-25 bi bi-chevron-left" onclick="toggleSubcategories('subcat2', this)"></button>
+            <div class="dropdown d-inline-block col-md-2 w-25">
+                <button class="btn btn-sm header-tabs bi bi-chevron-left h-100 w-100 txt-black" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end text-end p-2 rounded-4 w-auto" style="background-color: #3A3A3C!important;">
+                    <li><a class="dropdown-item d-flex align-items-center header-tabs txt-black" href="{{ url_for('main.index', category=27) }}">
+                        <i class="bi bi-wrench ms-2"></i> اره برقی</a></li>
+                    <li><a class="dropdown-item d-flex align-items-center header-tabs txt-black" href="{{ url_for('main.index', category=28) }}">
+                        <i class="bi bi-wrench ms-2"></i> چمن زن</a></li>
+                </ul>
+            </div>
             
             {% endif %}
             
@@ -136,7 +97,7 @@
 
         <!-- دسته‌بندی 3 -->
         <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
-            <a href="{{ url_for('main.index', category=29) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
+            <a href="{{ url_for('main.index', category=29) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 txt-black">
                 <i class="bi bi-tools mr-2 ms-2"></i>
                 مته و قلم
             </a>
@@ -144,7 +105,7 @@
 
         <!-- دسته‌بندی 4 -->
         <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
-            <a href="{{ url_for('main.index', category=32) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
+            <a href="{{ url_for('main.index', category=32) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 txt-black">
                 <i class="bi bi-hammer mr-2 ms-2"></i>
                 سیستم میخکوب ها
             </a>
@@ -152,7 +113,7 @@
 
         <!-- دسته‌بندی 5 -->
         <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
-            <a href="{{ url_for('main.index', category=33) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
+            <a href="{{ url_for('main.index', category=33) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 txt-black">
                 <i class="bi bi-lightning-charge mr-2 ms-2"></i>
                 ابزار برقی
             </a>
@@ -160,7 +121,7 @@
 
         <!-- دسته‌بندی 6 -->
         <div class="col-lg-3 col-md-6 col-sm-6 mb-2">
-            <a href="{{ url_for('main.index', category=34) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3">
+            <a href="{{ url_for('main.index', category=34) }}" class="btn header-tabs btn-block d-flex align-items-center p-2 py-3 txt-black">
                 <i class="bi bi-battery-full mr-2 ms-2"></i>
                 ابزار شارژی
             </a>
@@ -171,11 +132,11 @@
 <form class="address-searcher d-flex w-75 mb-5 mt-3" action="{{ url_for('main.index') }}" method="GET">
     <div class="d-flex w-100 m-auto">
         <input class="me-2 inputs searcher" type="search" placeholder="جستجوی آدرس..." name="address_search" value="{{ request.args.get('address_search', '') }}">
-        <button class="btn header-tabs w-25" type="submit">جستجو</button>
+        <button class="btn header-tabs w-25 txt-black" type="submit">جستجو</button>
     </div>
 </form>
 
-<h2 class="mb-4">محصولات</h2>
+<h2 class="mb-4 txt-black">محصولات</h2>
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 row-cols-xl-3 g-4 prod">
     {% for product in products %}
@@ -186,15 +147,19 @@
                 <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
                 {% endif %}
                 <div class="card-body">
-                    <h5 class="card-title">{{ product.name }}</h5>
+                    <h5 class="card-title txt-black">{{ product.name }}</h5>
                     {% if product.promoted_until and product.promoted_until > datetime.utcnow() %}
                         <p style="color: green; font-weight: bold;">✅ این محصول تا {{ product.promoted_until_jalali }} نردبان است!</p>
                     {% endif %}
                     <p class="card-text description px-2">{{ product.description }}</p>
                     {% if product.address %}
-                        <p>{{ product.address }}</p>
+                        <p class="txt-black">{{ product.address }}</p>
                     {% endif %}
-                    <p class="card-text"><strong>{{ "%.2f"|format(product.price) }} تومان</strong></p>
+                    {% if product.price == product.price|int %}
+                      <p class="card-text txt-black"><strong>{{ "{:,}".format(product.price | int) }} تومان</strong></p>
+                    {% else %}
+                      <p class="card-text txt-black"><strong>{{ "{:,.2f}".format(product.price) }} تومان</strong></p>
+                    {% endif %}
                 </div>
             </div>
         </a>
