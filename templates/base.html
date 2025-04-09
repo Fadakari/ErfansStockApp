@@ -491,6 +491,21 @@
     </script>
 </head>
 <body>
+    <div id="loader">
+        <img src="/static/images/noBgWhite(1)cut.png" alt="" style="width: 30%;">
+        <img class="rotater" src="/static/images/noBgWhite(1)cut3.png" alt="" style="width: 20%;">
+        <!-- <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <div class="loader-div"></div>
+        <h1 class="position-absolute translate-middle" style="top: 65%; left: 50%; font-size: 5rem;">stock</h1> -->
+    </div>
     <div class="d-lg-none d-md-none d-sm-flex flex-nowrap shadower">
         <div class="row pe-0 ms-auto w-auto me-0 d-lg-none d-md-none d-sm-flex flex-nowrap flex-row">
             <a class="navbar-brand text-light pt-3 text-end flex-fill txt-black" href="{{ url_for('main.index') }}" style="font-size: 2rem;">استوک</a>
@@ -774,6 +789,10 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
+    window.addEventListener('load', function () {
+      document.body.classList.add('loaded');
+    });
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/static/js/sw.js')

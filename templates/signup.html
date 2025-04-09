@@ -19,7 +19,11 @@
                     </div>
                     <div class="mb-3">
                         <label for="phone" class="txt-black txt-black">شماره تماس:</label>
-                        <input type="text" id="phone" name="phone" placeholder="شماره تماس خود را وارد کنید(ارسال کد پیامکی)" required class="inputs txt-black">
+                        <input type="text" id="phone" name="phone"
+                            pattern="^09\d{9}$"
+                            title="شماره باید با 09 شروع شده و 11 رقم باشد"
+                            placeholder="شماره تماس خود را وارد کنید"
+                            required class="inputs txt-black">
                     </div>
 
                     <div class="mb-3">

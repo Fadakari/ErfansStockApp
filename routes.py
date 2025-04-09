@@ -11,6 +11,8 @@ import random
 import requests
 from models import ProductType  # جایگزین yourapp با نام پروژه شما
 from aplication import limiter
+from sms_utils import send_sms
+import re
 
 
 main = Blueprint('main', __name__)
@@ -121,6 +123,7 @@ def index():
 
 
 
+
 @limiter.limit("5 per minute")
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -136,14 +139,16 @@ def login():
         # ارسال OTP به شماره کاربر
         otp = random.randint(1000, 9999)
         session['otp_code'] = otp
-        session['user_id'] = user.id  # ذخیره شناسه کاربر برای ورود
+        session['user_id'] = user.id
 
-        # ارسال OTP به شماره تلفن (در محیط واقعی اینجا پیامک می‌فرستیم)
-        print(f"کد OTP برای ورود به حساب: {otp}")  # در محیط واقعی باید ارسال پیامک بشه
+        # پیامک با ملی پیامک
+        message = f"کد ورود شما: {otp}"
+        send_sms(user.phone, message)
 
-        return redirect(url_for('main.verify_login'))  # هدایت به صفحه تایید OTP
+        return redirect(url_for('main.verify_login'))
 
     return render_template('login.html')
+
 
 @limiter.limit("5 per minute")
 @bp.route('/verify_login', methods=['GET', 'POST'])
@@ -488,21 +493,23 @@ def init_categories():
 
 
 
+
+
 @limiter.limit("5 per minute")
 @bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('main.index'))  # بازگشت به صفحه اصلی اگر لاگین است
+        return redirect(url_for('main.index'))
 
     if request.method == 'POST':
+        def is_valid_phone(phone):
+            return re.match(r'^09\d{9}$', phone)
         try:
             username = request.form.get('username')
             email = request.form.get('email')
             phone = request.form.get('phone')
             national_id = request.form.get('national_id')
             password = request.form.get('password')
-
-            print(f"Username: {username}, Email: {email}, Phone: {phone}, National ID: {national_id}")
 
             if not username or not email or not phone or not national_id or not password:
                 flash('لطفاً تمام فیلدها را پر کنید')
@@ -524,7 +531,6 @@ def signup():
                 flash('این کد ملی قبلاً ثبت شده است')
                 return render_template('signup.html')
 
-            # تولید کد تأیید و ذخیره آن در سشن
             verification_code = random.randint(1000, 9999)
             session['verification_code'] = verification_code
             session['signup_data'] = {
@@ -534,10 +540,14 @@ def signup():
                 'national_id': national_id,
                 'password': password
             }
+            if not is_valid_phone(phone):
+                flash('شماره تماس نامعتبر است. باید با 09 شروع شود و 11 رقم باشد.')
+                return render_template('signup.html')
 
-            print(f"کد تأیید برای {phone}: {verification_code}")  # در محیط واقعی باید پیامک شود
+            message = f"کد تأیید ثبت‌نام شما: {verification_code}"
+            send_sms(phone, message)
 
-            return redirect(url_for('main.verify'))  # هدایت به صفحه تأیید شماره
+            return redirect(url_for('main.verify'))
 
         except Exception as e:
             db.session.rollback()
@@ -545,7 +555,8 @@ def signup():
             flash('خطا در ثبت‌نام. لطفاً دوباره تلاش کنید')
             return render_template('signup.html')
 
-    return render_template('signup.html')  # نمایش فرم ثبت‌نام
+    return render_template('signup.html')
+
 
 
 @limiter.limit("5 per minute")
@@ -841,69 +852,155 @@ def fake_payment():
 
     return render_template('signup.html')
 
-@bp.route('/conversations')
-@login_required
-def conversations():
-    convs = Conversation.query.filter(
-        (Conversation.user1_id == current_user.id) | 
-        (Conversation.user2_id == current_user.id)
-    ).all()
-    return render_template('conversations.html', conversations=convs)
+# @bp.route('/conversations')
+# @login_required
+# def conversations():
+#     convs = Conversation.query.filter(
+#         (Conversation.user1_id == current_user.id) | 
+#         (Conversation.user2_id == current_user.id)
+#     ).all()
+#     return render_template('conversations.html', conversations=convs)
 
 
-@bp.route('/chat/<int:user_id>', methods=['GET', 'POST'])
-@login_required
-def chat(user_id):
-    user = User.query.get_or_404(user_id)
-    messages = Message.query.filter(
-        ((Message.sender_id == current_user.id) & (Message.receiver_id == user.id)) |
-        ((Message.sender_id == user.id) & (Message.receiver_id == current_user.id))
-    ).order_by(Message.timestamp).all()
+# @bp.route('/chat/<int:user_id>', methods=['GET', 'POST'])
+# @login_required
+# def chat(user_id):
+#     user = User.query.get_or_404(user_id)
     
-    # چک می‌کنیم آیا مکالمه‌ای هست
-    convo = Conversation.query.filter(
-        ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == user_id)) |
-        ((Conversation.user1_id == user_id) & (Conversation.user2_id == current_user.id))
-    ).first()
+#     if request.method == 'POST':
+#         content = request.form.get('content')
+#         replied_to_id = request.form.get('replied_to_id')
 
-    if not convo:
-        convo = Conversation(user1_id=current_user.id, user2_id=user_id)
-        db.session.add(convo)
-        db.session.commit()
+#         if content:
+#             convo = Conversation.query.filter(
+#                 ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == user_id)) |
+#                 ((Conversation.user1_id == user_id) & (Conversation.user2_id == current_user.id))
+#             ).first()
 
-    # دریافت پیام‌ها
-    messages = convo.messages.order_by(Message.timestamp.asc()).all()
+#             if not convo:
+#                 convo = Conversation(user1_id=current_user.id, user2_id=user_id)
+#                 db.session.add(convo)
+#                 db.session.commit()
 
-    if request.method == 'POST':
-        content = request.form.get('content')
-        if content:
-            # اضافه کردن receiver_id در زمان ساخت پیام
-            msg = Message(sender_id=current_user.id, receiver_id=user.id, conversation_id=convo.id, content=content)
-            db.session.add(msg)
-            db.session.commit()
-            return redirect(url_for('main.chat', user_id=user_id))
+#             msg = Message(
+#                 sender_id=current_user.id,
+#                 conversation_id=convo.id,
+#                 content=content,
+#                 replied_to_id=replied_to_id if replied_to_id else None
+#             )
+#             db.session.add(msg)
+#             db.session.commit()
 
-    return render_template('chat.html', messages=messages, user_id=user_id, user=user)
+#             # هدایت به همان صفحه پس از ارسال پیام
+#             return redirect(url_for('main.chat', user_id=user.id))
+    
+#     # برای متد GET پیام‌ها را بارگذاری می‌کنیم
+#     messages = Message.query.filter(
+#         (Message.sender_id == current_user.id) | 
+#         (Message.receiver_id == current_user.id)
+#     ).order_by(Message.timestamp).all()
+
+#     convo = Conversation.query.filter(
+#         ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == user_id)) |
+#         ((Conversation.user1_id == user_id) & (Conversation.user2_id == current_user.id))
+#     ).first()
+
+#     return render_template('chat.html', user=user, messages=messages)
 
 
 
-@bp.route('/edit_message/<int:message_id>', methods=['POST'])
-@login_required
-def edit_message(message_id):
-    msg = Message.query.get_or_404(message_id)
-    if msg.sender_id != current_user.id:
-        return jsonify(success=False), 403
-    data = request.get_json()
-    msg.content = data.get('content', '').strip()
-    db.session.commit()
-    return jsonify(success=True)
 
-@bp.route('/delete_message/<int:message_id>', methods=['POST'])
-@login_required
-def delete_message(message_id):
-    msg = Message.query.get_or_404(message_id)
-    if msg.sender_id != current_user.id:
-        return jsonify(success=False), 403
-    db.session.delete(msg)
-    db.session.commit()
-    return jsonify(success=True)
+
+
+
+
+# @bp.route('/edit_message/<int:message_id>', methods=['POST'])
+# @login_required
+# def edit_message(message_id):
+#     msg = Message.query.get_or_404(message_id)
+#     if msg.sender_id != current_user.id:
+#         return jsonify(success=False), 403
+#     data = request.get_json()
+#     msg.content = data.get('content', '').strip()
+#     db.session.commit()
+#     return jsonify(success=True)
+
+# @bp.route('/delete_message/<int:message_id>', methods=['POST'])
+# @login_required
+# def delete_message(message_id):
+#     msg = Message.query.get_or_404(message_id)
+#     if msg.sender_id != current_user.id:
+#         return jsonify(success=False), 403
+#     db.session.delete(msg)
+#     db.session.commit()
+#     return jsonify(success=True)
+
+
+
+
+# def get_conversation_id(user_id):
+#     # پیدا کردن مکالمه‌ای که کاربر در آن حضور دارد
+#     conversation = Conversation.query.filter(
+#         (Conversation.user1_id == user_id) | 
+#         (Conversation.user2_id == user_id)
+#     ).first()  # پیدا کردن اولین مکالمه که کاربر در آن حضور دارد
+    
+#     if conversation:
+#         return conversation.id
+#     else:
+#         # اگر مکالمه‌ای پیدا نشد، مکالمه جدید ایجاد می‌کنیم
+#         new_conversation = Conversation(user1_id=user_id, user2_id=user_id)  # مثال: فرض می‌کنیم هر دو کاربر یکسان‌اند
+#         db.session.add(new_conversation)
+#         db.session.commit()
+#         return new_conversation.id
+
+# @bp.route('/send_message', methods=['POST'])
+# def send_message():
+#     try:
+#         content = request.form['content']
+#         replied_to_id = request.form.get('replied_to_id')
+
+#         # برای پیدا کردن conversation_id
+#         conversation_id = get_conversation_id(current_user.id)
+
+#         # ذخیره پیام جدید در دیتابیس
+#         new_message = Message(content=content, sender_id=current_user.id, replied_to_id=replied_to_id, conversation_id=conversation_id)
+#         db.session.add(new_message)
+#         db.session.commit()
+
+#         # بازیابی تمامی پیام‌ها برای این گفتگو
+#         messages = Message.query.filter_by(conversation_id=conversation_id).all()
+
+#         # تبدیل پیام‌ها به فرمت JSON برای ارسال به کلاینت
+#         message_data = []
+#         for msg in messages:
+#             message_data.append({
+#                 'id': msg.id,
+#                 'content': msg.content,
+#                 'sender': msg.sender.username,
+#                 'replied_to': msg.replied_to.content if msg.replied_to else None
+#             })
+
+#         return jsonify({'success': True, 'messages': message_data})
+
+#     except Exception as e:
+#         # در صورت بروز خطا، پیام خطا ارسال می‌کنیم
+#         return jsonify({'success': False, 'error': str(e)}), 500
+    
+
+# # روت دیگر (مثال) که پیام‌ها را برای نمایش به کلاینت می‌آورد
+# @bp.route('/get_messages')
+# def get_messages():
+#     conversation_id = get_conversation_id(current_user.id)
+#     messages = Message.query.filter_by(conversation_id=conversation_id).all()
+    
+#     message_data = []
+#     for msg in messages:
+#         message_data.append({
+#             'id': msg.id,
+#             'content': msg.content,
+#             'sender': msg.sender.username,
+#             'replied_to': msg.replied_to.content if msg.replied_to else None
+#         })
+
+#     return jsonify({'messages': message_data})

@@ -124,16 +124,27 @@ class Conversation(db.Model):
     user1 = db.relationship('User', foreign_keys=[user1_id])
     user2 = db.relationship('User', foreign_keys=[user2_id])
 
-    messages = db.relationship('Message', backref='conversation', lazy='dynamic')
+    # تغییر backref به back_populates
+    messages = db.relationship('Message', back_populates='conversation', lazy=True)
+
 
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'))
+    replied_to_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
+    
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
+    
+    # تغییر backref به back_populates
+    conversation = db.relationship('Conversation', back_populates='messages')
+    
+    replied_to = db.relationship('Message', remote_side=[id], backref=db.backref('replies', lazy=True), uselist=False)
+
+
+

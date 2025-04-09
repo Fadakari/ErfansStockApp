@@ -33,12 +33,12 @@
         <tbody class="bg-very-black">
             {% for user in users %}
             <tr>
-                <td onclick="copyText(this)">{{ user.username }}</td>
-                <td onclick="copyText(this)">{{ user.email }}</td>
-                <td onclick="copyText(this)">{{ user.phone }}</td>
-                <td onclick="copyText(this)">{{ user.national_id }}</td>
-                <td onclick="copyText(this)">{{ "ادمین" if user.is_admin else "کاربر عادی" }}</td>
-                <td class="d-flex flex-wrap gap-2">
+                <td class="header-tabs" onclick="copyText(this)">{{ user.username }}</td>
+                <td class="header-tabs" onclick="copyText(this)">{{ user.email }}</td>
+                <td class="header-tabs" onclick="copyText(this)">{{ user.phone }}</td>
+                <td class="header-tabs" onclick="copyText(this)">{{ user.national_id }}</td>
+                <td class="header-tabs" onclick="copyText(this)">{{ "ادمین" if user.is_admin else "کاربر عادی" }}</td>
+                <td class="header-tabs" class="d-flex flex-wrap gap-2">
                     <a href="{{ url_for('main.user_dashboard', user_id=user.id) }}" class="btn btn-info">مشاهده داشبورد</a>
                     {% if not user.is_admin %}
                         <form action="{{ url_for('main.make_admin', user_id=user.id) }}" method="POST">
