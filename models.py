@@ -58,13 +58,13 @@ class Product(db.Model):
     promoted_until = db.Column(db.DateTime, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_promoted = db.Column(db.Boolean, default=False)
-    address = db.Column(db.String(1000), nullable=False)  # آدرس
-    postal_code = db.Column(db.String(20), nullable=True)  # کد پستی
+    address = db.Column(db.String(1000), nullable=False)
+    postal_code = db.Column(db.String(20), nullable=True)
     product_type = db.Column(db.Enum(ProductType), nullable=False)
+    views = db.Column(db.Integer, default=0)  # تعداد بازدید، مقدار اولیه صفر
     owner = db.relationship('User', back_populates='products', lazy=True)
 
-
-    def __init__(self, name, description, price, image_path, user_id, category_id, promoted_until=None, address=None, postal_code=None, product_type=None):
+    def __init__(self, name, description, price, image_path, user_id, category_id, promoted_until=None, address=None, postal_code=None, product_type=None, views=0):
         self.name = name
         self.description = description
         self.price = price
@@ -74,6 +74,9 @@ class Product(db.Model):
         self.promoted_until = promoted_until
         self.address = address
         self.postal_code = postal_code
+        self.product_type = product_type
+        self.views = views  # مقدار تعداد بازدید را به ویژگی اضافه کنید
+
 
     # تبدیل مقدار متنی به مقدار Enum
         if product_type:
@@ -112,3 +115,25 @@ class EditProfileForm(FlaskForm):
     submit = SubmitField('ذخیره تغییرات')
 
 
+# models.py
+class Conversation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user1_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user2_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    user1 = db.relationship('User', foreign_keys=[user1_id])
+    user2 = db.relationship('User', foreign_keys=[user2_id])
+
+    messages = db.relationship('Message', backref='conversation', lazy='dynamic')
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    receiver = db.relationship('User', foreign_keys=[receiver_id])

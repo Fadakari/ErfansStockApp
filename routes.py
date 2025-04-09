@@ -1,10 +1,10 @@
 import os
 import logging
-from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify, session
+from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify, session, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from aplication import db
-from models import User, Product, Category, EditProfileForm
+from models import User, Product, Category, EditProfileForm, Message, Conversation
 from utils import save_image
 from datetime import datetime, timedelta
 import random
@@ -31,7 +31,6 @@ def index():
     category_id = request.args.get('category', '').strip()  # جستجو بر اساس دسته‌بندی
     address_search = request.args.get('address_search', '').strip()
 
-
     query = Product.query
 
     # جستجو بر اساس نام محصول و توضیحات
@@ -53,7 +52,6 @@ def index():
     # فیلتر بر اساس آدرس کامل
     if address_search:
         query = query.filter(Product.address.ilike(f'%{address_search}%'))
-
 
     # فیلتر بر اساس دسته‌بندی
     if category_id:
@@ -99,6 +97,13 @@ def index():
 
     cities_with_products = list(set(cities_with_products))  # حذف شهرهای تکراری
 
+    # دریافت محصولات پر بازدید (محصولاتی که بیشترین تعداد بازدید دارند)
+    top_products = Product.query.order_by(Product.views.desc()).limit(3).all()
+
+    # اگر تعداد محصولات کمتر از ۴ باشد، فقط پر بازدیدترین محصول را نمایش دهیم
+    if len(top_products) < 4:
+        top_products = top_products[:1]  # نمایش فقط یک محصول پر بازدید
+
     # مرتب‌سازی و دریافت محصولات
     products = query.order_by(
         db.case(
@@ -107,12 +112,9 @@ def index():
         ).desc(),  # ترتیب نزولی، یعنی نردبان‌شده‌ها بالاتر باشند
         Product.created_at.desc()  # سپس جدیدترین محصولات بالاتر باشند
     ).all()
-
-
     # دریافت دسته‌بندی‌ها
     categories = Category.query.filter_by(parent_id=None).all()
-
-    return render_template('products.html', products=products, categories=categories, provinces=provinces, cities=cities_with_products, datetime=datetime, citiesByProvince=citiesByProvince)
+    return render_template('products.html', products=products, categories=categories, provinces=provinces,cities=cities_with_products, datetime=datetime, citiesByProvince=citiesByProvince, top_products=top_products)
 
 
 
@@ -177,17 +179,37 @@ def logout():
 @bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
+    # دریافت محصولات کاربر
     products = Product.query.filter_by(user_id=current_user.id).all()
+    
+    # دریافت دسته‌بندی‌ها
     categories = Category.query.all()
+    
+    # فرم ویرایش پروفایل
     form = EditProfileForm(obj=current_user)
     
+    # دریافت محصولات پر بازدید (محصولاتی که بیشترین تعداد بازدید دارند)
+    top_products = Product.query.order_by(Product.views.desc()).limit(3).all()
+
+    # اگر تعداد محصولات کمتر از ۴ باشد، فقط پر بازدیدترین محصول را نمایش دهیم
+    if len(top_products) < 4:
+        top_products = top_products[:1]  # نمایش فقط یک محصول پر بازدید
+
+    # بررسی و ارسال فرم ویرایش پروفایل
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.email = form.email.data
         db.session.commit()
         flash('اطلاعات شما با موفقیت بروزرسانی شد!')
         return redirect(url_for('main.dashboard'))
-    return render_template('dashboard.html', products=products, categories=categories, form=form)
+    
+    # رندر کردن صفحه داشبورد همراه با محصولات پر بازدید
+    return render_template('dashboard.html', 
+                           products=products, 
+                           categories=categories, 
+                           form=form, 
+                           top_products=top_products)
+
 
 @limiter.limit("5 per minute")
 @bp.route('/user-dashboard/<int:user_id>')
@@ -818,3 +840,70 @@ def fake_payment():
 
 
     return render_template('signup.html')
+
+@bp.route('/conversations')
+@login_required
+def conversations():
+    convs = Conversation.query.filter(
+        (Conversation.user1_id == current_user.id) | 
+        (Conversation.user2_id == current_user.id)
+    ).all()
+    return render_template('conversations.html', conversations=convs)
+
+
+@bp.route('/chat/<int:user_id>', methods=['GET', 'POST'])
+@login_required
+def chat(user_id):
+    user = User.query.get_or_404(user_id)
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.receiver_id == user.id)) |
+        ((Message.sender_id == user.id) & (Message.receiver_id == current_user.id))
+    ).order_by(Message.timestamp).all()
+    
+    # چک می‌کنیم آیا مکالمه‌ای هست
+    convo = Conversation.query.filter(
+        ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == user_id)) |
+        ((Conversation.user1_id == user_id) & (Conversation.user2_id == current_user.id))
+    ).first()
+
+    if not convo:
+        convo = Conversation(user1_id=current_user.id, user2_id=user_id)
+        db.session.add(convo)
+        db.session.commit()
+
+    # دریافت پیام‌ها
+    messages = convo.messages.order_by(Message.timestamp.asc()).all()
+
+    if request.method == 'POST':
+        content = request.form.get('content')
+        if content:
+            # اضافه کردن receiver_id در زمان ساخت پیام
+            msg = Message(sender_id=current_user.id, receiver_id=user.id, conversation_id=convo.id, content=content)
+            db.session.add(msg)
+            db.session.commit()
+            return redirect(url_for('main.chat', user_id=user_id))
+
+    return render_template('chat.html', messages=messages, user_id=user_id, user=user)
+
+
+
+@bp.route('/edit_message/<int:message_id>', methods=['POST'])
+@login_required
+def edit_message(message_id):
+    msg = Message.query.get_or_404(message_id)
+    if msg.sender_id != current_user.id:
+        return jsonify(success=False), 403
+    data = request.get_json()
+    msg.content = data.get('content', '').strip()
+    db.session.commit()
+    return jsonify(success=True)
+
+@bp.route('/delete_message/<int:message_id>', methods=['POST'])
+@login_required
+def delete_message(message_id):
+    msg = Message.query.get_or_404(message_id)
+    if msg.sender_id != current_user.id:
+        return jsonify(success=False), 403
+    db.session.delete(msg)
+    db.session.commit()
+    return jsonify(success=True)

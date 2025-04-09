@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>مکالمه‌های شما</h3>
+<ul>
+  {% for convo in conversations %}
+    {% if convo.user1.id != current_user.id %}
+      <li><a href="{{ url_for('main.chat', user_id=convo.user1.id) }}">{{ convo.user1.username }}</a></li>
+    {% else %}
+      <li><a href="{{ url_for('main.chat', user_id=convo.user2.id) }}">{{ convo.user2.username }}</a></li>
+    {% endif %}
+  {% endfor %}
+</ul>
+{% endblock %}

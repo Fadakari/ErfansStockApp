@@ -522,7 +522,7 @@
         </div>
         
     </div>
-    <nav class="navbar navbar-expand-md bg-light mb-4 sticky-top p-0 pb-lg-2">
+    <nav class="navbar navbar-expand-md bg-light mb-4 sticky-top p-0 pb-lg-2" style="padding-top: 90px;">
         <div class="w-100 m-0">
             <div class="collapse navbar-collapse ms-0" id="navbarNav">
 
@@ -562,7 +562,7 @@
                             <input class="" type="hidden" name="city_search" id="cityInput" value="{{ request.args.get('city_search', '') }}">
                         </div>
                 
-                        <input class="me-2 inputs searcher" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
+                        <input class="me-2 inputs searcher txt-black" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
                         <button class="btn header-tabs w-25 txt-black" type="submit">جستجو</button>
                     </div>
                 </form>
@@ -666,7 +666,7 @@
             </div>
         
             <div class="d-flex flex-nowrap w-100 mt-3">
-                <input class="me-2 inputs searcher w-75" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
+                <input class="me-2 inputs searcher w-75 txt-black" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
                 <button class="btn header-tabs w-25" type="submit">جستجو</button>
             </div>
         </div>
@@ -719,44 +719,52 @@
         
     </div>
 
-    <!-- <footer class="w-100 text-start pt-3" style="padding: 20px 0;">
-        <div class="w-100 d-flex flex-row align-items-center justify-content-center">
-            <div class="w-50 pe-4">
-                <div id="carouselExample" class="carousel slide">
-                    <div class="carousel-inner">
+    <footer class="w-100 text-start pt-4 px-3 mt-4" style="background-color: #1f1f1f; color: #f1f1f1;">
+        <div class="w-100 d-flex flex-column flex-md-row align-items-start justify-content-between gap-4">
+            <!-- Carousel بخش عکس -->
+            <div class="w-100 w-md-50 rounded overflow-hidden shadow-sm d-flex flex-wrap">
+                <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner rounded">
                         <div class="carousel-item active">
-                            <img src="/static/images/IMG-20250213-WA0003.jpg" class="d-block w-100" alt="...">
+                            <img src="/static/images/contact1.png" class="d-block w-100" alt="تصویر 1">
                         </div>
                         <div class="carousel-item">
-                            <img src="/static/images/IMG-20250213-WA0003.jpg" class="d-block w-100" alt="...">
+                            <img src="/static/images/contact1.png" class="d-block w-100" alt="تصویر 2">
                         </div>
                         <div class="carousel-item">
-                            <img src="/static/images/IMG-20250213-WA0003.jpg" class="d-block w-100" alt="...">
+                            <img src="/static/images/contact1.png" class="d-block w-100" alt="تصویر 3">
                         </div>
                     </div>
                     <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
+                        <span class="carousel-control-prev-icon"></span>
                     </button>
                     <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
+                        <span class="carousel-control-next-icon"></span>
                     </button>
                 </div>
+                <div class="w-100 mt-3 text-end">
+                   <p>هیلتی حیدری</p>
+                </div>
             </div>
-            <ul class="w-25 d-flex flex-column text-end ps-4">
-                <h4 class="mb-3">هیلتی حیدری</h4>
-                <li class="mt-3">سایت ما: <a href="https://stockheydari.ir">stockheydari.ir</a></li>
-                <li class="mt-3">تماس با پشتیبانی: 09123456789</li>
-                <li class="mt-3">ارسال بازخورد به ما: 09186998672</li>
-                <li class="mt-3">آدرس شرکت: تهران، اسلامشهر، سرنوری، ک لادن، پ 12</li>
-                <li class="mt-3"><a href="https://stockheydari.ir/abut-us/" class="text-decoration-none">درباره ما</a></li>
+    
+            <!-- اطلاعات تماس -->
+            <ul class="w-100 w-md-50 list-unstyled text-end">
+                <h4 class="mb-3 fw-bold">هیلتی حیدری</h4>
+                <li class="mb-2">سایت ما: <a href="https://stockheydari.ir" class="text-decoration-none" style="color: #00bcd4;">stockheydari.ir</a></li>
+                <li class="mb-2">تلفن ثابت: 02191691502</li>
+                <li class="mb-2">صفحه اینستاگرام: <a href="https://www.instagram.com/stok.heydari/" class="text-decoration-none" style="color: #00bcd4;">stok.heydari</a></li>
+                <li class="mb-2">تماس با پشتیبانی: <span dir="ltr">09123456789</span></li>
+                <li class="mb-2">ارسال بازخورد: <span dir="ltr">09186998672</span></li>
+                <li class="mb-2">آدرس شرکت: تهران، اسلامشهر، سرنوری، ک لادن، پ 12</li>
+                <li class="mb-2"><a href="https://stockheydari.ir/abut-us/" class="text-decoration-none" style="color: #00bcd4;">درباره ما</a></li>
             </ul>
         </div>
-        <div class="w-100 text-center mt-3 border-top pt-2">
-            <p>© ۲۰۲۵ شرکت هیلتی حیدری و سید عرفان حسینی - تمامی حقوق محفوظ است.</p>
+    
+        <div class="w-100 text-center mt-4 border-top border-secondary pt-3 pb-3">
+            <p class="m-0" style="font-size: 14px;">© ۲۰۲۵ | تمامی حقوق متعلق به شرکت هیلتی حیدری و توسعه دهنده ی آن است.</p>
         </div>
-    </footer> -->
+    </footer>
+    
     
     
     
@@ -862,6 +870,8 @@
 function keepDropdownOpen(event) {
     event.stopPropagation();
 }
+
+
 
 // const button = document.getElementById("toggleButton");
 

@@ -99,6 +99,10 @@ body {
     scale: 1;
   }
 
+  #rotate-icon.rotated {
+    transform: rotate(-90deg);
+  }
+  
   .inputs {
     width: 100%;
     padding: 10px;
@@ -311,6 +315,128 @@ tbody {
 }
 
 #ansazeh{transition: all 0.3s ease;}
+
+.chat-container {
+  background-color: var(--dark-green);
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 700px;
+  margin: 0 auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.chat-header {
+  color: var(--txt-color);
+  margin-bottom: 20px;
+  font-size: 20px;
+  border-bottom: 2px solid var(--dark-green);
+  padding-bottom: 10px;
+}
+
+.chat-message {
+  display: inline-block;
+  max-width: 70%;
+  padding: 10px 15px;
+  border-radius: 15px;
+  position: relative;
+  word-wrap: break-word;
+}
+
+.chat-message.you {
+  background-color: var(--light-green);
+  color: white;
+  justify-content: end;
+  border-bottom-right-radius: 0;
+}
+
+.chat-message.other {
+  background-color: var(--black-color);
+  color: var(--txt-color);
+  justify-content: start;
+  border-bottom-left-radius: 0;
+}
+
+.message-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  position: relative;
+}
+
+.message-container.own-message{
+  justify-content: start;
+}
+.message-container.other-message{
+  justify-content: end;
+}
+
+.message-container.active .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  background-color: var(--black-color);
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 5px;
+  z-index: 100;
+  top: 100%;
+  right: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dropdown-menu button {
+  display: block;
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  width: 100%;
+  text-align: right;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background-color: #f0f0f0;
+}
+
+/* فرم ارسال پیام */
+.chat-form {
+  display: flex;
+  gap: 10px;
+}
+
+.chat-form input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--dark-green);
+  border-radius: 8px;
+  color: var(--txt-color);
+}
+
+.chat-form button {
+  padding: 10px 20px;
+  background-color: var(--light-green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.chat-form button:hover {
+  background-color: #801524;
+}
+
+
+
+
+
 @media (max-width: 992px) {
   .categorys-container{
     width: 100%!important;

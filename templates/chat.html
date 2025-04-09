@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="chat-container">
+  <div class="chat-header">💬 {{ user.username }}</div>
+
+  <div class="chat-box">
+    {% for msg in messages %}
+    <div class="message-container {% if msg.sender_id == current_user.id %}own-message{% else %}other-message{% endif %}" id="msg-{{ msg.id }}" onclick="toggleDropdown(this)">
+      <div class="chat-message mt-2 {% if msg.sender_id == current_user.id %}chat-message you{% else %}chat-message other{% endif %}">
+        <strong>{{ msg.sender.username }} :</strong>
+        <span class="content">{{ msg.content }}</span>
+
+        <div class="dropdown-menu">
+          {% if msg.sender_id == current_user.id %}
+            <button onclick="copyMessage(event, {{ msg.id }})">📋 کپی</button>
+            <button onclick="editMessage(event, {{ msg.id }})">✏️ ویرایش</button>
+            <button onclick="deleteMessage(event, {{ msg.id }})">🗑️ حذف</button>
+            <button onclick="showInfo(event, {{ msg.id }})">ℹ️ اطلاعات</button>
+          {% else %}
+            <button onclick="copyMessage(event, {{ msg.id }})">📋 کپی</button>
+            <button onclick="replyMessage(event, {{ msg.id }})">🔁 ریپلای</button>
+            <button onclick="showInfo(event, {{ msg.id }})">ℹ️ اطلاعات</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="reply-container" id="reply-container" style="display: none;">
+    <div class="reply-box">
+      <strong>پاسخ به:</strong> <span id="reply-user"></span><br>
+      <span id="reply-content"></span><br>
+      <button onclick="clearReply()">لغو پاسخ</button>
+    </div>
+  </div>
+
+  <form method="POST" class="chat-form">
+    <input class="inputs" type="text" name="content" placeholder="پیام خود را بنویسید..." required>
+    <button type="submit">ارسال</button>
+  </form>
+</div>
+
+<script>
+  function toggleDropdown(container) {
+    // بستن سایر دراپ‌داون‌ها
+    document.querySelectorAll('.message-container').forEach(el => {
+      if (el !== container) el.classList.remove("active");
+    });
+
+    // باز یا بسته کردن دراپ‌داون فعلی
+    container.classList.toggle("active");
+  }
+
+  function copyMessage(event, id) {
+    event.stopPropagation();
+    const text = document.querySelector(`#msg-${id} .content`).innerText;
+    navigator.clipboard.writeText(text)
+      .then(() => alert("پیام کپی شد ✅"))
+      .catch(() => alert("خطا در کپی پیام ❌"));
+  }
+
+  function editMessage(event, id) {
+    event.stopPropagation();
+    const content = document.querySelector(`#msg-${id} .content`);
+    const oldContent = content.innerText;
+    const newContent = prompt("متن جدید پیام:", oldContent);
+    if (newContent && newContent.trim() !== "") {
+      fetch(`/edit_message/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrf_token")
+        },
+        body: JSON.stringify({ content: newContent })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) content.innerText = newContent;
+        else alert("خطا در ویرایش پیام");
+      });
+    }
+  }
+
+  function deleteMessage(event, id) {
+    event.stopPropagation();
+    if (confirm("حذف پیام؟")) {
+      fetch(`/delete_message/${id}`, {
+        method: "POST",
+        headers: { "X-CSRFToken": getCookie("csrf_token") }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) document.getElementById(`msg-${id}`).remove();
+        else alert("خطا در حذف پیام");
+      });
+    }
+  }
+
+  function showInfo(event, id) {
+    event.stopPropagation();
+    alert(`اطلاعات پیام ID: ${id} (مثلاً زمان ارسال و ...)`);
+  }
+
+  function replyMessage(event, id) {
+    event.stopPropagation();
+    const username = document.querySelector(`#msg-${id} strong`).innerText;
+    const content = document.querySelector(`#msg-${id} .content`).innerText;
+
+    // نمایش پیام ریپلای در بالای فیلد ورودی
+    document.getElementById('reply-user').innerText = username;
+    document.getElementById('reply-content').innerText = content;
+    document.getElementById('reply-container').style.display = 'block';
+
+    // تنظیم محتوا برای ورودی پیام
+    const input = document.querySelector('.chat-form input[name="content"]');
+    input.value = `پاسخ به ${username}: "${content}"\n`;
+    input.focus();
+  }
+
+  function clearReply() {
+    // پاک کردن نمایش ریپلای
+    document.getElementById('reply-container').style.display = 'none';
+    const input = document.querySelector('.chat-form input[name="content"]');
+    input.value = '';  // پاک کردن محتوای ورودی
+  }
+
+  function getCookie(name) {
+    let value = `; ${document.cookie}`;
+    let parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+</script>
+{% endblock %}
