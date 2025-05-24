@@ -21,6 +21,7 @@
     --light-green: #9B1B30;
     --light-white: #F1F1F1;
     --txt-color: #1C1C1E;
+    --txt-light: #F1F1F1;
 }
 /* :root{
   --black-color: #1C1C1E;
@@ -30,7 +31,9 @@
 } */
 .bg-very-black{background: var(--black-color);}
 .bg-black{background: var(--dark-green);}
+.bg-red{background: var(--light-green)!important;}
 .txt-black{color: var(--txt-color) !important;}
+.txt-lighting{color: var(--txt-light) !important;}
 #toggleButton {
   padding: 10px 20px;
   border: none;
@@ -38,8 +41,22 @@
   background-color: none;
 }
 
+.animationshow{
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+} .animationshow.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+
 body {
     background-color: var(--black-color);
+}
+.scale0:hover{
+  scale: 1!important;
 }
 .shadower{
     background-color: var(--black-color)!important;
@@ -51,53 +68,84 @@ body {
 }
 
 .card-img-top {
-    height: 20rem !important;
+    height: 15rem !important;
     object-fit: cover;
     border-radius: 1rem;
+}
+.carousel-caption {
+  background-color: #00000080;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+.modal-body {
+  text-align: center;
+  padding: 1rem;
+  max-width: 90%;
+  margin: auto;
+}
+.modal-img {
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 
 .alert {
     margin-bottom: 2rem;
 }
 
-.header-tabs{
-    backdrop-filter: blur(15px);
-    cursor: pointer;
-    transition: all 0.1s ease;
-    overflow: hidden;
-    transition: all 0.2s ease;
-    margin: 0;
-    z-index: 100;
-  }
-  .header-tabs::after{
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), #8f8f8f4d, transparent 70%);
-    mix-blend-mode: multiply;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .header-tabs:hover::after{
-    opacity: 1;
-  }
-  .header-tabs{
-    --mouse-x: 50%;
-    --mouse-y: 50%;
-  }
-  .header-tabs:hover{
-    scale: 1.1;
-    backdrop-filter: blur(5px);
-    z-index: 200;
-    border-radius: 5px;
-  }
-  .header-tabs:active{
-    scale: 1;
-  }
+.header-tabs {
+  position: relative;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  backdrop-filter: blur(12px);
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease, background 0.3s ease, opacity 1s ease, transform 1s ease, scale 0.3s ease;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.header-tabs::after {
+  content: '';
+  position: absolute;
+  top: var(--mouse-y);
+  left: var(--mouse-x);
+  width: 0;
+  height: 0;
+  background: #ffffff4d;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: width 0.6s ease, height 0.6s ease, opacity 1s ease;
+}
+.header-tabs.light-mode::after {
+  background: #000000da; /* تیره برای لایت‌مود */
+}
+
+
+.header-tabs.clicked {
+  transform: scale(0.98);
+}
+
+.header-tabs.clicked::after {
+  width: 300%;
+  height: 300%;
+  opacity: 0.3;
+}
+
+
+.header-tabs:hover {
+  transform: scale(1.025);
+}
+
 
   #rotate-icon.rotated {
     transform: rotate(-90deg);
@@ -121,7 +169,7 @@ body {
   }
   
   .inputs:focus::placeholder{
-    transform: translate(0, -40px);
+    transform: translate(0, -60px);
   }
   
   .inputs:focus {
@@ -292,6 +340,10 @@ tbody {
   box-shadow: 0 0 1rem var(--light-green);
 }
 
+.preserve-format {
+  white-space: pre-wrap;
+}
+
 .toast-message {
   position: fixed;
   height: 4rem;
@@ -449,7 +501,16 @@ tbody {
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
 }
+
+body.loaded #loader {
+  opacity: 0;
+  visibility: hidden;
+}
+
 
 .loader-div {
   width: 0.5rem;
@@ -469,6 +530,27 @@ tbody {
   }
 }
 
+.password-wrapper {
+  position: relative;
+}
+.password-wrapper input {
+  padding-right: 0; /* فضای جا دادن آیکن سمت راست */
+}
+.password-toggle {
+  position: absolute;
+  top: 10%;
+  left: 2%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6c757d;
+  font-size: 1.2rem;
+}
+.password-toggle:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 /* موجی کردن با تاخیر مرحله‌ای */
 .loader-div:nth-child(1) { animation-delay: 0s; }
 .loader-div:nth-child(2) { animation-delay: 0.1s; }
@@ -483,11 +565,6 @@ tbody {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* بعد از لود شدن پنهان می‌شه */
-body.loaded #loader {
-  display: none;
 }
 
 .rotater {
@@ -556,7 +633,11 @@ body.loaded #loader {
       margin-bottom: 10px;
   }
 }
-
+@media (max-width: 400px) {
+  .displayer{
+    display: none!important;
+  }
+}
 @media (max-width: 350px) {
   .loader-div{
     margin: 0 0.5rem;
@@ -582,4 +663,152 @@ body.loaded #loader {
 
 .searcher:focus{
   box-shadow: -1rem 0 1rem var(--light-green);
+}
+
+:root {
+  --vh: 100%;
+}
+
+.chat-box { max-width: 600px; margin: auto; background: var(--black-color); padding: 20px; position: relative; border-radius: 10px; box-shadow: 0 0 2rem var(--light-green); height: calc(var(--vh, 1vh) * 100); overflow-y: auto;}
+.message { margin: 10px 0; padding: 10px; border-radius: 8px; max-width: 70%; }
+.sent { background: var(--light-green); align-self: flex-end; margin-left: auto; }
+.received { background: var(--dark-green); align-self: flex-start; margin-right: auto; }
+.chat { display: flex; flex-direction: column; gap: 10px;  height: 30rem; overflow-y: auto; }
+.myform { display: flex; margin-top: 20px; }
+.myinput[type="text"] { flex-grow: 1; padding: 10px; border-radius: 8px;}
+.mybtn { padding: 10px 20px; border: none; background: var(--light-green); color: white; border-radius: 8px; margin-right: 10px; }
+.refreshbtn{
+  top: 20%;
+  left: 20%;
+  z-index: 9999;
+}
+
+.custom-file-upload {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background-color: var(--light-green);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.custom-file-upload:hover {
+    background-color: var(--dark-green);
+}
+.custom-file-upload i {
+    font-size: 1.2rem;
+}
+input[type="file"] {
+    display: none;
+}
+
+.privacy-container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .privacy-title {
+      font-size: 26px;
+      color: #222;
+      margin-bottom: 25px;
+      font-weight: bold;
+    }
+
+    .privacy-section-title {
+      font-size: 20px;
+      color: #444;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .privacy-text {
+      margin: 12px 0;
+      font-size: 16px;
+      line-height: 1.9;
+    }
+
+    .privacy-list {
+      padding-right: 20px;
+      margin-top: 10px;
+    }
+
+    .privacy-list li {
+      margin-bottom: 8px;
+      font-size: 15.5px;
+    }
+
+    .btn-privacy-policy {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4caf50;
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-privacy-policy:hover {
+  background-color: #388e3c;
+}
+
+/* انیمیشن برای باز شدن صفحه */
+.slide-in {
+    position: fixed;
+    top: 0;
+    right: -100%; /* ابتدا صفحه پنهان است */
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    z-index: 1050;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+    transition: right 0.3s ease-in-out;
+}
+
+/* زمانی که صفحه به صورت کشویی وارد می‌شود */
+.slide-in.open {
+    right: 0;
+}
+
+/* دکمه بستن صفحه */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: none;
+    border: none;
+    font-size: 30px;
+    color: black;
+    cursor: pointer;
+    z-index: 1060;
+}
+
+.navbar-toggler.txt-black:focus,
+.navbar-toggler.txt-black:active,
+.navbar-toggler.txt-black:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.shadower{
+  box-shadow: 0 0 1rem var(--light-green),
+  inset 0 0 0.5rem var(--light-green);
+}
+
+.shadower-light{
+  box-shadow: 0 0 1rem #ffffff3b,
+  inset 0 0 0.5rem var(--light-green);
+}
+
+.page-transition {
+  transition: transform 0.3s ease;
+  will-change: transform;
 }

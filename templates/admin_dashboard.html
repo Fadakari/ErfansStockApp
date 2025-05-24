@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<button class="btn header-tabs float-start py-2 px-3" onclick="history.back()">
-    <i class="bi bi-arrow-left fs-3"></i>
+<button class="btn header-tabs py-2 px-3 float-start">
+    <a href="{{ url_for('main.index') }}">
+        <i class="bi bi-arrow-left fs-3 txt-black"></i>
+    </a>
 </button>
 <h2 class="txt-black">پنل مدیریت</h2>
 <hr class="w-100">
+
+<div class="text-center my-4">
+    <button class="btn btn-danger" onclick="cleanupUnusedImages()">🧹 حذف تصاویر بلااستفاده</button>
+</div>
 
 <h3 class="txt-black">مدیریت کاربران</h3>
 <form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex flex-wrap gap-2 mb-3">
@@ -33,27 +39,114 @@
         <tbody class="bg-very-black">
             {% for user in users %}
             <tr>
-                <td class="header-tabs" onclick="copyText(this)">{{ user.username }}</td>
-                <td class="header-tabs" onclick="copyText(this)">{{ user.email }}</td>
-                <td class="header-tabs" onclick="copyText(this)">{{ user.phone }}</td>
-                <td class="header-tabs" onclick="copyText(this)">{{ user.national_id }}</td>
-                <td class="header-tabs" onclick="copyText(this)">{{ "ادمین" if user.is_admin else "کاربر عادی" }}</td>
-                <td class="header-tabs" class="d-flex flex-wrap gap-2">
+                <td style="cursor: pointer;" onclick="copyText(this)">{{ user.username }}</td>
+                <td style="cursor: pointer;" onclick="copyText(this)">{{ user.email }}</td>
+                <td style="cursor: pointer;" onclick="copyText(this)">{{ user.phone }}</td>
+                <td style="cursor: pointer;" onclick="copyText(this)">{{ user.national_id }}</td>
+                <td style="cursor: pointer;" onclick="copyText(this)">{{ "ادمین" if user.is_admin else "کاربر عادی" }}</td>
+                <td class="d-flex flex-wrap gap-2" style="cursor: pointer;">
                     <a href="{{ url_for('main.user_dashboard', user_id=user.id) }}" class="btn btn-info">مشاهده داشبورد</a>
+                
                     {% if not user.is_admin %}
                         <form action="{{ url_for('main.make_admin', user_id=user.id) }}" method="POST">
                             <button type="submit" class="btn btn-primary">اضافه کردن ادمین</button>
                         </form>
-                        <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST">
-                            <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف کاربر</button>
+                    {% else %}
+                        <form action="{{ url_for('main.remove_admin', user_id=user.id) }}" method="POST">
+                            <button type="submit" class="btn btn-warning" onclick="return confirm('آیا مطمئن هستید که می‌خواهید این کاربر را از ادمینی حذف کنید؟')">حذف ادمین</button>
                         </form>
                     {% endif %}
+                    
+                    <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف کاربر</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+
+<h3 class="txt-black">گزارش‌های تخلف</h3>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead>
+            <tr>
+                <th class="text-end">کاربر گزارش‌دهنده</th>
+                <th class="text-end">محصول</th>
+                <th class="text-end">شرح گزارش</th>
+                <th class="text-end">تاریخ</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.reporter.username }}</td>
+                <td><a href="{{ url_for('main.product_detail', product_id=report.product.id) }}" target="_blank">{{ report.product.name }}</a></td>
+                <td>{{ report.text }}</td>
+                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <form action="{{ url_for('main.delete_report', report_id=report.id) }}" method="post" onsubmit="return confirm('آیا از حذف این گزارش مطمئن هستید؟');">
+                      <button type="submit" class="btn btn-danger btn-sm">🗑 حذف</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+
+
+<h3 class="txt-black">محصولات در انتظار تأیید</h3>
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 row-cols-xl-3 g-4 prod mb-5">
+    {% for product in pending_products %}
+    <div class="col">
+        <div class="card productes h-100 header-tabs text-light">
+            {% if product.image_path %}
+            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title txt-black">{{ product.name }}</h5>
+                <p class="card-text description px-2">{{ product.description }}</p>
+                {% if product.address %}
+                    <p class="txt-black">{{ product.address }}</p>
+                {% endif %}
+                <p class="card-text txt-black"><strong>{{ "{:,}".format(product.price | int) }} تومان</strong></p>
+                <p class="txt-black">کاربر: {{ users_dict[product.user_id] }}</p>
+                <p class="txt-black">ایجاد شده: {{ product.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+
+                <form method="POST" action="{{ url_for('main.approve_product', product_id=product.id) }}">
+                    <button type="submit" class="btn btn-success w-100 mt-2">✔️ تأیید محصول</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+<script>
+function cleanupUnusedImages() {
+    if (!confirm("آیا مطمئن هستید که می‌خواهید تصاویر بلااستفاده حذف شوند؟")) return;
+
+    fetch('/admin/cleanup-images', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+    })
+    .catch(err => {
+        alert("خطایی در حذف تصاویر رخ داد");
+        console.error(err);
+    });
+}
+</script>
 
 <!-- <h3>افزودن دسته‌بندی جدید</h3>
 <form action="{{ url_for('main.add_category') }}" method="POST" class="d-flex flex-wrap gap-2">

@@ -1,38 +1,46 @@
 import requests
 import os
+import logging
 from dotenv import load_dotenv
 
+# تنظیمات لاگ
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# لود کردن متغیرهای محیطی
 load_dotenv()
 
-USERNAME = os.getenv('PAYAMAK_USERNAME')  # شماره کاربری پنل
-API_KEY = os.getenv('PAYAMAK_API_KEY')    # کلید API که در پنل دیدی
-FROM_NUMBER = os.getenv('PAYAMAK_FROM')   # شماره خط فرستنده مثل 1000xxxx
+USERNAME = os.getenv('PAYAMAK_USERNAME')
+API_KEY = os.getenv('PAYAMAK_API_KEY')
+PATTERN_CODE = os.getenv('PAYAMAK_PATTERN_CODE')  # باید عدد bodyId واقعی باشه
 
-def send_sms(phone_number, message):
-    url = "https://rest.payamak-panel.com/api/SendSMS/SendSMS"
+def send_verification_code(phone_number, code):
+    logging.info(f"🛂 شروع ارسال کد: شماره={phone_number}, کد={code}")
+    url = "https://rest.payamak-panel.com/api/SendSMS/BaseServiceNumber"
+
     payload = {
         "username": USERNAME,
-        "password": API_KEY,  # استفاده از APIKey به‌جای رمز عبور
+        "password": API_KEY,
         "to": phone_number,
-        "from": FROM_NUMBER,
-        "text": message,
-        "isflash": False
+        "bodyId": PATTERN_CODE,
+        "text": [str(code)]  # 👈 باید text باشه نه args
     }
 
-    print(f"🔍 شماره ارسالی به API: [{phone_number}]")
+    logging.debug(f"📦 داده‌ی ارسالی به ملی پیامک: {payload}")
+
     try:
-        response = requests.post(url, data=payload)
+        response = requests.post(url, json=payload)  # حتما json
+        logging.info(f"🌐 وضعیت پاسخ HTTP: {response.status_code}")
         response.raise_for_status()
 
         data = response.json()
-        print("📨 پاسخ API:", data)
+        logging.info(f"📨 پاسخ کامل API: {data}")
 
         if data.get("RetStatus") == 1:
-            print("✅ پیامک با موفقیت ارسال شد.")
+            logging.info("✅ کد تایید با موفقیت ارسال شد.")
         else:
-            print("❌ ارسال پیامک با خطا مواجه شد:", data.get("StrRetStatus"))
+            logging.error(f"❌ خطا در ارسال کد: {data.get('StrRetStatus')}")
 
         return data
-    except Exception as e:
-        print(f"⚠️ خطا در ارسال پیامک: {e}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"⚠️ خطای اتصال به ملی پیامک: {e}")
         return False

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحه مورد نظر یافت نشد</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+    <style>
+        @keyframes float {
+            0%   { transform: translateY(0); }
+            50%  { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+
+        body {
+            background-color: #121212;
+            color: #fff;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Vazirmatn', sans-serif;
+            overflow: hidden;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .illustration {
+            width: 300px;
+            max-width: 80%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-top: 1.5rem;
+            color: #ff4c4c;
+        }
+
+        p {
+            font-size: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        a {
+            margin-top: 2rem;
+            color: #0d6efd;
+            text-decoration: none;
+            border: 1px solid #0d6efd;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        a:hover {
+            background-color: #0d6efd;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- تصویر SVG زیبا -->
+    <svg class="illustration" viewBox="0 0 700 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M350 100C350 77.91 368.91 59 391 59C413.09 59 432 77.91 432 100C432 122.09 413.09 141 391 141C368.91 141 350 122.09 350 100Z" fill="#ff4c4c"/>
+        <circle cx="170" cy="170" r="50" fill="#0d6efd"/>
+        <circle cx="530" cy="170" r="50" fill="#0d6efd"/>
+        <path d="M150 350 C200 300, 500 300, 550 350" stroke="#ccc" stroke-width="8" stroke-linecap="round"/>
+        <text x="50%" y="470" text-anchor="middle" fill="#888" font-size="100" font-family="sans-serif">404</text>
+    </svg>
+
+    <h1>صفحه‌ای یافت نشد</h1>
+    <p>متأسفیم! آدرس وارد شده معتبر نیست یا صفحه حذف شده است.</p>
+    <a href="{{ url_for('main.index') }}">بازگشت به صفحه اصلی</a>
+</body>
+</html>

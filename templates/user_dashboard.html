@@ -23,6 +23,16 @@
                         <button type="submit" class="btn btn-danger header-tabs" onclick="return confirm('Are you sure?')">حذف</button>
                     </form>
 
+                    {% if product.status == 'pending' %}
+                              <span class="text-warning">در انتظار تایید</span>
+                            {% elif product.status == 'awaiting_payment' %}
+                            <form method="POST" action="{{ url_for('main.pay_to_publish', product_id=product.id) }}">
+                                <button type="submit" class="btn btn-primary">پرداخت برای انتشار</button>
+                            </form>
+                            {% elif product.status == 'published' %}
+                              <span class="text-success">منتشر شده</span>
+                            {% endif %}
+
                     {% if product.user_id == current_user.id %}
                         {% if product.promoted_until %}
                             <form action="{{ url_for('main.remove_promotion', product_id=product.id) }}" method="POST">

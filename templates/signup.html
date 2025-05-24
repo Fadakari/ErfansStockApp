@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center my-5">
-    <div class="col-md-6" style="background: #1c1c1e00;">
+<div class="row d-flex justify-content-center m-auto my-5 px-1 w-100">
+    <div class="col-lg-4 col-md-6 col-sm-8 p-0 m-auto mx-3" style="background: #1c1c1e00;">
         <div class="card bg-very-black signuper">
             <div class="card-header">
                 <h4 class="mb-0 txt-black">ثبت‌نام</h4>
@@ -15,7 +15,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="email" class="form-label txt-black">ایمیل</label>
-                        <input type="email" class="inputs txt-black" id="email" name="email" placeholder="ایمیل خود را وارد کنید" required>
+                        <input type="email" class="inputs txt-black" id="email" name="email" placeholder="ایمیل خود را وارد کنید">
                     </div>
                     <div class="mb-3">
                         <label for="phone" class="txt-black txt-black">شماره تماس:</label>
@@ -37,13 +37,72 @@
 
                     <div class="mb-3">
                         <label for="password" class="form-label txt-black">رمز عبور</label>
-                        <input type="password" class="inputs txt-black" id="password" name="password" placeholder="یک رمز عبور بسازید" required>
+                        <div class="password-wrapper d-flex flex-nowrap">
+                            <input type="password" class="inputs txt-black ps-2 pe-2" id="password" name="password" placeholder="یک رمز عبور بسازید" required>
+                            <button type="button" id="togglePassword" class="btn header-tabs password-toggle txt-black">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black">ثبت‌نام</button>
+                    
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label txt-black ps-2">تکرار رمز عبور</label>
+                        <div class="password-wrapper d-flex flex-nowrap">
+                            <input type="password" class="inputs txt-black pe-2" id="confirmPassword" name="confirmPassword" placeholder="رمز عبور را دوباره وارد کنید" required>
+                            <button type="button" id="toggleConfirmPassword" class="btn header-tabs password-toggle txt-black">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div id="passwordMatchMessage" class="form-text mt-1"></div>
+                    </div>
+                    <p class="text-center mt-3 txt-black">
+                      با <a href="{{ url_for('main.privacy') }}" class="btn-privacy-policy">سیاست حریم خصوصی</a> موافقم
+                    </p>
+                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black" style="background-color: #9B1B30;">ثبت‌نام</button>
                     <a href="{{ url_for('main.login') }}" class="btn btn-link">قبلاً ثبت‌نام کرده‌اید؟ وارد شوید</a>
                 </form>
             </div>
         </div>
     </div>
 </div>
+<script>
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const passwordMatchMessage = document.getElementById('passwordMatchMessage');
+    const togglePasswordBtn = document.getElementById('togglePassword');
+    const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
+
+    togglePasswordBtn.addEventListener('click', function () {
+        const icon = this.querySelector('i');
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        icon.classList.toggle('bi-eye');
+        icon.classList.toggle('bi-eye-slash');
+    });
+
+    toggleConfirmPasswordBtn.addEventListener('click', function () {
+        const icon = this.querySelector('i');
+        const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmPasswordInput.setAttribute('type', type);
+        icon.classList.toggle('bi-eye');
+        icon.classList.toggle('bi-eye-slash');
+    });
+
+    function checkPasswordsMatch() {
+        if (confirmPasswordInput.value === '') {
+            passwordMatchMessage.textContent = '';
+            return;
+        }
+        if (passwordInput.value === confirmPasswordInput.value) {
+            passwordMatchMessage.textContent = 'رمزها یکسان هستند';
+            passwordMatchMessage.style.color = 'green';
+        } else {
+            passwordMatchMessage.textContent = 'رمزها یکسان نیستند';
+            passwordMatchMessage.style.color = 'red';
+        }
+    }
+
+    passwordInput.addEventListener('input', checkPasswordsMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordsMatch);
+</script>
 {% endblock %}

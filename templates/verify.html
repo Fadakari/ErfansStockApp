@@ -1,21 +1,61 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="container my-5">
-        <h2 class="txt-black">تأیید شماره تلفن</h2>
-        <form method="POST">
-            <label for="code" class="txt-black">کد ارسال‌شده را وارد کنید:</label>
-            <input type="text" id="code" name="code" class="inputs txt-black" required>
-            <button type="submit" class="txt-black">تأیید</button>
-        </form>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <ul>
-              {% for category, message in messages %}
-                <li class="{{ category }}">{{ message }}</li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        {% endwith %}
-    </div>
-    {% endblock %}
+<div class="container my-5">
+    <h2 class="txt-black">تأیید شماره تلفن</h2>
+    <form method="POST" id="otp-form">
+        <div class="d-flex gap-2 flex-row-reverse">
+            <input type="text" maxlength="1" class="otp-input inputs txt-black text-center" required>
+            <input type="text" maxlength="1" class="otp-input inputs txt-black text-center" required>
+            <input type="text" maxlength="1" class="otp-input inputs txt-black text-center" required>
+            <input type="text" maxlength="1" class="otp-input inputs txt-black text-center" required>
+        </div>
+        <input type="hidden" name="code" id="otp-hidden">
+        <button type="submit" class="header-tabs mt-3 txt-black d-none">تأیید</button>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+</div>
+
+<script>
+    const inputs = document.querySelectorAll(".otp-input");
+    const hiddenInput = document.getElementById("otp-hidden");
+    const form = document.getElementById("otp-form");
+
+    inputs.forEach((input, index) => {
+        input.addEventListener("input", () => {
+            // فقط اعداد
+            input.value = input.value.replace(/[^0-9]/g, "");
+
+            // فوکوس روی بعدی
+            if (input.value && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+
+            // اگر همه پر بودن، ارسال فرم
+            const code = Array.from(inputs).map(i => i.value).join('');
+            if (code.length === 4) {
+                hiddenInput.value = code;
+                form.submit();
+            }
+        });
+
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Backspace" && !input.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+    });
+
+    // فوکوس اولیه روی اولین input
+    inputs[0].focus();
+</script>
+{% endblock %}

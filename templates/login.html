@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center mt-5 mb-5">
-    <div class="col-md-6">
+<div class="row d-flex justify-content-center m-auto my-5 px-1 w-100">
+    <div class="col-lg-3 col-md-6 col-sm-8 p-0 m-auto mx-3">
         <div class="card bg-very-black signuper">
             <div class="card-header">
                 <h4 class="mb-0 txt-black">ورود</h4>
@@ -15,13 +15,76 @@
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label txt-black">رمز عبور</label>
-                        <input type="password" class="inputs txt-black" id="password" placeholder="رمز عبور خود را وارد کنید" name="password" required>
+                        <div class="password-wrapper d-flex flex-nowrap">
+                            <input type="password" class="inputs txt-black pe-2" id="password" placeholder="رمز عبور خود را وارد کنید" name="password" required>
+                            <button type="button" id="togglePassword" class="btn password-toggle txt-black">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black">ورود</button>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                      {% if messages %}
+                        {% set seconds_left = None %}
+                        {% for category, message in messages %}
+                          {% if category == 'rate-limit-seconds' %}
+                            {% set seconds_left = message %}
+                          {% elif category == 'rate-limit' %}
+                            <div class="alert alert-danger mt-3" style="color: red;">
+                                <span id="rateLimitMessage">{{ message }}</span>
+                                {% if seconds_left %}
+                                  <div id="countdown" data-seconds="{{ seconds_left }}"></div>
+                                {% endif %}
+                            </div>
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+                    
+                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black" style="background-color: #9B1B30;">ورود</button>
                     <a href="{{ url_for('main.signup') }}" class="btn btn-link">حساب کاربری ندارید؟ ثبت‌نام کنید</a>
                 </form>
             </div>
         </div>
     </div>
 </div>
+<script>
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const passwordMatchMessage = document.getElementById('passwordMatchMessage');
+    const togglePasswordBtn = document.getElementById('togglePassword');
+    const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
+
+    togglePasswordBtn.addEventListener('click', function () {
+        const icon = this.querySelector('i');
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        icon.classList.toggle('bi-eye');
+        icon.classList.toggle('bi-eye-slash');
+    });
+
+    toggleConfirmPasswordBtn.addEventListener('click', function () {
+        const icon = this.querySelector('i');
+        const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmPasswordInput.setAttribute('type', type);
+        icon.classList.toggle('bi-eye');
+        icon.classList.toggle('bi-eye-slash');
+    });
+</script>
+<script>
+  const countdownElem = document.getElementById('countdown');
+  if (countdownElem) {
+    let seconds = parseInt(countdownElem.getAttribute('data-seconds'));
+    function updateCountdown() {
+      if (seconds > 0) {
+        countdownElem.innerText = ` (${seconds} ثانیه باقی مانده...)`;
+        seconds--;
+        setTimeout(updateCountdown, 1000);
+      } else {
+        countdownElem.innerText = ' لطفاً مجدد تلاش کنید.';
+      }
+    }
+    updateCountdown();
+  }
+</script>
+
 {% endblock %}

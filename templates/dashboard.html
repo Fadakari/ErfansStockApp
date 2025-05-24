@@ -1,26 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-<div class="container-fluid">
-    <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
+<button class="btn header-tabs py-2 px-3 float-start">
+    <a href="{{ url_for('main.index') }}">
         <i class="bi bi-arrow-left fs-3 txt-black"></i>
-    </button>
+    </a>
+</button><br>
+<div class="container-fluid">
     <!-- Tabs at Top -->
-    <ul class="nav nav-tabs justify-content-start shadow-sm mt-5" id="tabMenu" role="tablist" style="top: 60px; z-index: 1030;" dir="rtl">
+    <ul class="nav nav-tabs justify-content-start shadow-sm mt-5 d-flex flex-nowrap p-0" id="tabMenu" role="tablist" style="top: 60px; z-index: 1030;" dir="rtl">
         <li class="nav-item header-tabs">
-            <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">خانه</button>
+            <button class="naver-items nav-link active txt-black" style="outline: none; border: none; background-color: rgba(240, 248, 255, 0);" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">خانه</button>
         </li>
-        <li class="nav-item header-tabs">
-            <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">اطلاعات شما</button>
+        <li class="naver-items nav-item header-tabs">
+            <button class="nav-link txt-black" style="outline: none; border: none; background-color: rgba(240, 248, 255, 0);" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">اطلاعات شما</button>
         </li>
-        <li class="nav-item header-tabs">
-            <button class="nav-link" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">محصولات من</button>
+        <li class="naver-items nav-item header-tabs">
+            <button class="nav-link txt-black" style="outline: none; border: none; background-color: rgba(240, 248, 255, 0);" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">محصولات من</button>
         </li>
     </ul>
 
     <!-- Home Tab -->
-    
+
 
     <!-- Tab Contents -->
     <div class="tab-content pt-4 px-3" id="tabContent" style="padding-top: 80px;">
@@ -38,7 +39,9 @@
             
             <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
                 <div class="col">
-                    <div class="card header-tabs shadow-sm" style="background-color: var(--dark-green);">
+                    <div class="card header-tabs shadow-sm w-100" 
+                         style="background-color: var(--dark-green); cursor: pointer;" 
+                         id="goToProductsTab">
                         <div class="card-body text-center">
                             <i class="bi bi-box-seam fs-2 mb-2 txt-black"></i>
                             <h5 class="card-title txt-black">محصولات ثبت‌شده</h5>
@@ -85,6 +88,11 @@
                     {{ form.email(class="inputs txt-black", id="email") }}
                 </div>
 
+                <div class="form-group mt-3 mb-1">
+                    <label for="phone" class="txt-black">شماره تماس جدید</label>
+                    {{ form.phone(class="inputs txt-black", id="phone") }}
+                </div>
+
                 <button type="submit" class="btn btn-primary header-tabs mt-3"> {{ form.submit.label }} </button>
             </form>
         </div>
@@ -92,8 +100,8 @@
         <!-- Products Tab -->
         <div class="tab-pane fade" id="products" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="txt-black">محصولات من</h2>
-                <a href="{{ url_for('main.new_product') }}" class="btn btn-primary d-flex align-items-center">اضافه کردن محصول <i class="bi bi-plus fw-bolder fs-4"></i></a>
+                <h2 class="txt-black fs-5 ms-3" style="white-space: nowrap;">محصولات من</h2>
+                <a href="{{ url_for('main.new_product') }}" class="btn btn-primary d-flex align-items-center"><p class="displayer mt-2"></p><i class="bi bi-plus fw-bolder fs-4"></i></a>
             </div>
 
             <div class="row row-cols-1 row-cols-md-3 g-4" style="margin-bottom: 6rem;">
@@ -111,18 +119,65 @@
                             {% else %}
                             <p class="card-text txt-black"><strong>{{ "{:,.2f}".format(product.price) }} تومان</strong></p>
                             {% endif %}
-                            <div class="d-flex justify-content-between">
-                                <a href="{{ url_for('main.edit_product', id=product.id) }}" class="btn btn-secondary header-tabs m-0">ویرایش</a>
-                                <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST" class="d-inline m-0">
-                                    <button type="submit" class="btn btn-danger header-tabs m-0" onclick="return confirm('Are you sure?')">حذف محصول</button>
-                                </form>
-                                {% if product.user_id == current_user.id %}
-                                    <form action="{{ url_for('main.remove_promotion', product_id=product.id) }}" method="POST" class="header-tabs m-0">
-                                        <button type="submit" class="btn btn-danger m-0">حذف نردبان</button>
+
+                            <!-- {% if product.promoted_until %}
+                                {% if product.remaining_seconds is not none %}
+                                    {% if product.remaining_seconds <= 0 %}
+                                        <p class="text-danger">این محصول منقضی شده است!</p>
+                                    {% elif product.remaining_seconds <= 3 %}
+                                        <p class="text-warning">تنها {{ product.remaining_seconds }} روز تا انقضا باقی مانده. <a href="{{ url_for('payment.pay_for_renew', product_id=product.id) }}">برای تمدید کلیک کنید</a></p>
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %} -->
+
+                            {% if product.status == 'pending' %}
+                              <span class="text-warning">در انتظار تایید</span>
+                              <p>محصول شما پس از بررسی کارشناسان ما نهایت پس از یک روز کاری منتشر خواهد شد</p>
+                            {% elif product.status == 'awaiting_payment' %}
+                            <form method="POST" action="{{ url_for('main.pay_to_publish', product_id=product.id) }}">
+                                <p class="text-success">محصول شما تایید شد</p>
+                                <button type="submit" class="btn btn-primary">منتشر کردن</button>
+                            </form>
+                            {% elif product.status == 'published' %}
+                              <span class="text-success">منتشر شده</span>
+                            {% endif %}
+
+                            <div class="d-flex flex-wrap justify-content-between">
+                                <div class="p-1" style="width: 50%;">
+                                    <a href="{{ url_for('main.edit_product', id=product.id) }}" class="btn btn-secondary header-tabs w-100 text-nowrap" style="font-size: 13px;">ویرایش</a>
+                                </div>
+                                <div class="p-1" style="width: 50%;">
+                                    <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST">
+                                        <button type="submit" class="btn btn-danger header-tabs w-100" onclick="return confirm('آیا از حذف محصول اطمینان دارید؟')">حذف محصول</button>
                                     </form>
-                                    <a href="{{ url_for('main.start_payment', product_id=product.id) }}" class="btn btn-success m-0">نردبان کردن</a>
+                                </div>
+                            
+                                {% if product.user_id == current_user.id %}
+                                    <div class="p-1" style="width: 50%;">
+                                        <form action="{{ url_for('main.remove_promotion', product_id=product.id) }}" method="POST">
+                                            <button type="submit" class="btn btn-danger header-tabs w-100">حذف نردبان</button>
+                                        </form>
+                                    </div>
+                                    {% if can_promote %}
+                                        <form method="POST" action="{{ url_for('main.promote_product', product_id=product.id) }}">
+                                            <button type="submit" class="btn btn-primary">نردبان کردن</button>
+                                        </form>
+                                    {% else %}
+                                      <button type="button" class="btn btn-secondary" onclick="alert('در صورتی تعداد محصولات شما به ۵ عدد برسد امکان نردبان کردن به صورت رایگان را خواهید داشت')">
+                                        نردبان کردن
+                                      </button>
+                                    {% endif %}
                                 {% endif %}
                             </div>
+
+
+                            <!-- {% for product in products %}
+                              {% if product.status == 'pending' and not product.promoted_until %}
+                                <form method="post" action="{{ url_for('main.renew_product', product_id=product.id) }}">
+                                  <button class="btn btn-warning">تمدید انتشار (۳۰ روز)</button>
+                                </form>
+                              {% endif %}
+                            {% endfor %} -->
                         </div>
                     </div>
                 </div>
@@ -138,6 +193,8 @@
     const themeIcon = document.getElementById("themeIcon");
     const root = document.documentElement;
 
+    const headerTabs = document.querySelectorAll(".header-tabs");
+
     const savedTheme = localStorage.getItem("theme");
 
     if (savedTheme) {
@@ -152,8 +209,12 @@
         root.style.setProperty("--light-green", "#9B1B30");
         root.style.setProperty("--light-white", "#f1f1f1");
         root.style.setProperty("--txt-color", "#F8F8F8");
+        root.style.setProperty("--txt-light", "#1C1C1E");
         themeIcon.classList.replace("bi-moon", "bi-brightness-high");
         localStorage.setItem("theme", "dark");
+
+        // حذف ripple روشن در حالت دارک
+        headerTabs.forEach(el => el.classList.remove("light-mode"));
     }
 
     function setLightMode() {
@@ -162,8 +223,12 @@
         root.style.setProperty("--light-green", "#9B1B30");
         root.style.setProperty("--light-white", "#F1F1F1");
         root.style.setProperty("--txt-color", "#1C1C1E");
+        root.style.setProperty("--txt-light", "#F8F8F8");
         themeIcon.classList.replace("bi-brightness-high", "bi-moon");
         localStorage.setItem("theme", "light");
+
+        // اضافه کردن ripple تیره در لایت‌مود
+        headerTabs.forEach(el => el.classList.add("light-mode"));
     }
 
     button.addEventListener("click", () => {
@@ -171,9 +236,9 @@
         currentTheme === "light" ? setDarkMode() : setLightMode();
     });
 
-    document.getElementById("goToProfileTab").addEventListener("click", function () {
-        var profileTab = new bootstrap.Tab(document.querySelector('#profile-tab'));
-        profileTab.show();
+    document.getElementById("goToProductsTab").addEventListener("click", function () {
+        var tab = new bootstrap.Tab(document.querySelector('#products-tab'));
+        tab.show();
     });
 </script>
 {% endblock %}

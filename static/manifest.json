@@ -1,10 +1,21 @@
-
 {
-  "name": "فروشگاه ابزار استوک",
-  "short_name": "ابزار استوک",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000"
-  
+	"name": "Stock divar",
+	"short_name": "Stock",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#1c1c1e00",
+	"theme_color": "#1c1c1e00",
+	"orientation": "portrait",
+	"icons": [
+		{
+			"src": "/static/icons/Icon.png",
+			"sizes": "192x192",
+			"type": "image/png"
+		},
+		{
+			"src": "/static/icons/Icon.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}
+	]
 }

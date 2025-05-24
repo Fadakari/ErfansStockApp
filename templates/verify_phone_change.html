@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-5">
+    <h4 class="txt-black">تأیید شماره جدید</h4>
+    <form method="POST" id="otp-form">
+        <label for="code" class="form-label txt-black">کد تأیید ارسال شده:</label>
+        <div class="d-flex gap-2 mb-3">
+            <input type="text" maxlength="1" class="otp-input inputs text-center txt-black" required>
+            <input type="text" maxlength="1" class="otp-input inputs text-center txt-black" required>
+            <input type="text" maxlength="1" class="otp-input inputs text-center txt-black" required>
+            <input type="text" maxlength="1" class="otp-input inputs text-center txt-black" required>
+        </div>
+        <input type="hidden" name="code" id="otp-hidden">
+        <button type="submit" class="btn btn-success d-none">تأیید</button>
+    </form>
+</div>
+
+<script>
+    const inputs = document.querySelectorAll(".otp-input");
+    const hiddenInput = document.getElementById("otp-hidden");
+    const form = document.getElementById("otp-form");
+
+    inputs.forEach((input, index) => {
+        input.addEventListener("input", () => {
+            input.value = input.value.replace(/[^0-9]/g, "");
+
+            if (input.value && index > 0) {
+                inputs[index - 1].focus();  // چون چپ به راست چیدیم
+            }
+
+            const code = Array.from(inputs).reverse().map(i => i.value).join('');
+            if (code.length === 4) {
+                hiddenInput.value = code;
+                form.submit();
+            }
+        });
+
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Backspace" && !input.value && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        });
+    });
+
+    inputs[inputs.length - 1].focus();
+</script>
+{% endblock %}

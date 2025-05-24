@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row justify-content-center mt-5 mb-5">
+<div class="row justify-content-center mt-5 mb-5" id="page-content" class="page-transition">
     <div class="col-md-8">
         <div class="card signuper mb-4">
             <div class="card-header" style="background: var(--dark-green);">
-                <button class="btn header-tabs float-start py-2 px-3" onclick="history.back()">
-                    <i class="bi bi-arrow-left fs-3 txt-black"></i>
+                <button class="btn header-tabs py-2 px-3 float-start">
+                    <a href="{{ url_for('main.index') }}">
+                        <i class="bi bi-arrow-left fs-3 txt-black"></i>
+                    </a>
                 </button>
                 <h4 class="mb-0 txt-black">{% if product %}ویرایش محصول{% else %}محصول جدید{% endif %}</h4>
             </div>
@@ -15,17 +17,18 @@
                 <form method="POST" enctype="multipart/form-data" id="productForm">
                     <div class="mb-3">
                         <label for="name" class="form-label txt-black">نام محصول</label>
-                        <input type="text" class="inputs" placeholder="نام محصول را وارد کنید" id="name" name="name" 
+                        <input type="text" class="inputs txt-black" placeholder="نام محصول را وارد کنید" id="name" name="name" 
                                value="{{ product.name if product else '' }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label txt-black">توضیحات</label>
-                        <textarea class="inputs" placeholder="توضیحات راجب محصول و ویژگی های آن..." id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
+                        <textarea class="inputs txt-black" placeholder="توضیحات راجب محصول و ویژگی های آن..." id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="price" class="form-label txt-black">قیمت (تومان)</label>
-                        <input type="number" class="inputs" placeholder="قیمت محصول را وارد کنید" id="price" name="price" 
-                               value="{{ product.price if product else '' }}" required>
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="inputs txt-black"
+                            placeholder="قیمت محصول را وارد کنید" id="price" name="price"
+                            value="{{ product.price if product else '' }}" required>
                     </div>
                     <div class="mb-3">
                         <label for="category_id" class="form-label txt-black">دسته‌بندی</label>
@@ -66,9 +69,28 @@
                     
                     <div class="mb-3">
                         <label for="postal_code" class="form-label txt-black">کد پستی</label>
-                        <input type="text" class="inputs" placeholder="کد پستی محل فروش (اختیاری)" id="postal_code" name="postal_code" 
+                        <input type="text" class="inputs txt-black" placeholder="کد پستی محل فروش (اختیاری)" id="postal_code" name="postal_code" 
                                value="{{ product.postal_code if product else '' }}">
                     </div>
+
+
+                   <div class="mb-3">
+                        <label for="brand" class="form-label txt-black">برند</label>
+                        <select class="form-select txt-black" id="brand" name="brand" required>
+                            <option class="txt-black" value="" disabled selected>انتخاب برند</option>
+                            <option class="txt-black" value="bosch" {% if product and product.brand == "bosch" %}selected{% endif %}>Bosch</option>
+                            <option class="txt-black" value="makita" {% if product and product.brand == "makita" %}selected{% endif %}>Makita</option>
+                            <option class="txt-black" value="dewalt" {% if product and product.brand == "dewalt" %}selected{% endif %}>DeWalt</option>
+                            <option class="txt-black" value="milwaukee" {% if product and product.brand == "milwaukee" %}selected{% endif %}>Milwaukee</option>
+                            <option class="txt-black" value="hilti" {% if product and product.brand == "hilti" %}selected{% endif %}>Hilti</option>
+                            <option class="txt-black" value="stanley" {% if product and product.brand == "stanley" %}selected{% endif %}>Stanley</option>
+                            <option class="txt-black" value="ronix" {% if product and product.brand == "ronix" %}selected{% endif %}>Ronix</option>
+                            <option class="txt-black" value="ingco" {% if product and product.brand == "ingco" %}selected{% endif %}>INGCO</option>
+                            <option class="txt-black" value="total" {% if product and product.brand == "total" %}selected{% endif %}>TOTAL</option>
+                        </select>
+                    </div>
+
+
                     <div class="mb-3">
                         <label for="product_type" class="form-label txt-black">نوع محصول</label>
                         <select class="form-select txt-black" id="product_type" name="product_type" required>
@@ -78,18 +100,45 @@
                             <option class="txt-black" value="NEEDS_REPAIR" {% if product and product.product_type.name == "NEEDS_REPAIR" %}selected{% endif %}>نیاز به تعمیر جزئی</option>
                         </select>
                     </div>
+
+
                     <div class="mb-3">
                         <label for="image" class="form-label txt-black">تصویر محصول</label>
-                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                    
+                        <!-- دکمه انتخاب فایل با طراحی مربع -->
+                        <div class="custom-file">
+                            <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*">
+
+                            <!-- مربع با علامت + و نوشته "انتخاب عکس" -->
+                            <div class="image-upload-box" onclick="document.getElementById('image').click();">
+                                <span class="image-upload-plus">+</span>
+                                <p class="image-upload-text">انتخاب عکس</p>
+                            </div>
+                        </div>
+                        <input type="hidden" name="uploaded_image_path" id="uploaded_image_path" value="">
+                        <!-- نمایش تصویر انتخاب شده -->
                         {% if product and product.image_path %}
                         <div class="mt-2">
                             <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" 
                                  alt="تصویر فعلی" class="img-thumbnail" style="max-height: 200px;">
                         </div>
                         {% endif %}
+                    
+                        <!-- نمایش تصویر انتخابی به‌صورت پیش‌نمایش -->
+                        <div class="mt-2" id="imagePreview" style="display: none;">
+                            <img src="" alt="تصویر انتخابی" class="img-thumbnail" style="max-height: 200px;">
+                            <!-- دکمه ضربدر برای لغو انتخاب عکس -->
+                            <button type="button" class="btn btn-danger btn-sm mt-2" onclick="removeImage()">لغو انتخاب</button>
+                        </div>
+                        <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                          <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
+                          <p class="txt-black">در حال آپلود عکس</p>
+                        </div>
                     </div>
+
+
                     <div class="d-grid">
-                        <button type="submit" class="btn header-tabs py-3 txt-black">
+                        <button type="submit" id="submitBtn" class="btn btn-danger header-tabs py-3 txt-black" disabled>
                             {% if product %}به‌روزرسانی محصول{% else %}ایجاد محصول{% endif %}
                         </button>
                     </div>
@@ -104,6 +153,248 @@
     const initialProvince = "{{ product.address.split('-')[0] if product else '' }}";
     const initialCity = "{{ product.address.split('-')[1] if product else '' }}";
 </script>
+<style>
+    .image-upload-box {
+        width: 120px;
+        height: 120px;
+        border: 2px dashed #0d6efd;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .image-upload-plus {
+        font-size: 40px;
+        color: #0d6efd;
+    }
+
+    .image-upload-text {
+        font-size: 12px;
+        color: #0d6efd;
+        margin-top: 5px;
+    }
+
+    .image-upload-box:hover {
+        background-color: var(--dark-green);
+    }
+
+    .image-upload-box:active {
+        background-color: var(--black-color);
+    }
+    .progress {
+    height: 20px;
+    background-color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    color: white;
+}
+
+.progress-bar {
+    line-height: 20px;
+    font-size: 12px;
+    transition: width 0.4s ease;
+}
+#uploadProgress {
+    display: block;
+    height: 20px !important;
+    background-color: #444;
+    border: 1px solid #999;
+}
+
+#uploadProgressBar {
+    background-color: #28a745;
+    width: 0%;
+    height: 100%;
+    color: white;
+    text-align: center;
+}
+</style>
+<script>
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    const threshold = 80; // حداقل فاصله افقی برای تغییر صفحه
+    const minHorizontalMove = 30; // حداقل اختلاف افقی برای فعال شدن سوایپ
+    const maxVerticalMove = 50;   // حداکثر اختلاف عمودی که اجازه سوایپ رو میده
+    let page = document.getElementById("page-content");
+
+    window.addEventListener("touchstart", (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        page.style.transition = "none"; // لغو انیمیشن برای حرکت زنده
+    });
+
+    window.addEventListener("touchmove", (e) => {
+        currentX = e.touches[0].clientX;
+        currentY = e.touches[0].clientY;
+        let diffX = currentX - startX;
+        let diffY = currentY - startY;
+
+        // فقط اگر حرکت افقی بیشتر از حداقل بود و حرکت عمودی کمتر از حداکثر، اجازه حرکت بده
+        if (Math.abs(diffX) > minHorizontalMove && Math.abs(diffY) < maxVerticalMove) {
+            page.style.transform = `translateX(${diffX}px)`;
+        }
+    });
+
+    window.addEventListener("touchend", () => {
+        let diffX = currentX - startX;
+        let diffY = currentY - startY;
+
+        page.style.transition = "transform 0.3s ease"; // بازگرداندن انیمیشن
+
+        // فقط اگر حرکت افقی بزرگتر از آستانه و حرکت عمودی کمتر از حد بود، صفحه رو جابجا کن
+        if (Math.abs(diffX) > threshold && Math.abs(diffY) < maxVerticalMove) {
+            if (diffX > 0) {
+                // سوایپ به راست ← رفتن به صفحه قبلی
+                page.style.transform = "translateX(100%)";
+                setTimeout(() => {
+                    window.location.href = "https://stockdivar.ir"; // مسیر مد نظر شما
+                }, 300);
+            } else {
+                // سوایپ به چپ → رفتن به صفحه بعدی
+                page.style.transform = "translateX(-100%)";
+                setTimeout(() => {
+                    window.location.href = "https://stockdivar.ir"; // مسیر مد نظر شما
+                }, 300);
+            }
+        } else {
+            // برگرداندن صفحه به جای قبلی
+            page.style.transform = "translateX(0)";
+        }
+
+        startX = 0;
+        currentX = 0;
+        startY = 0;
+        currentY = 0;
+    });
+
+</script>
+<script>
+document.getElementById('image').addEventListener('change', previewImage);
+
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    console.log("📁 فایل انتخابی:", file.name);
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+            const MAX_WIDTH = 1000;
+            const MAX_HEIGHT = 1000;
+
+            let width = img.width;
+            let height = img.height;
+
+            // نسبت تصویر حفظ بشه
+            if (width > height && width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+            } else if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // خروجی تصویر فشرده‌شده
+            canvas.toBlob(function (blob) {
+                const formData = new FormData();
+                formData.append('image', blob, file.name); // فشرده شده
+
+                uploadCompressedImage(formData);
+            }, 'image/jpeg', 0.8);  // کیفیت 80%
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function uploadCompressedImage(formData) {
+    const progressContainer = document.getElementById("uploadProgress");
+    const progressBar = document.getElementById("uploadProgressBar");
+    progressContainer.style.display = "block";
+    progressBar.style.width = "0%";
+    progressBar.innerText = "0%";
+
+    document.getElementById("submitBtn").disabled = true;
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", function (e) {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + "%";
+            progressBar.innerText = percent + "%";
+        }
+    });
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            setTimeout(() => {
+                progressContainer.style.display = "none";
+            }, 500);
+
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                if (data.image_path) {
+                    const preview = document.getElementById("imagePreview");
+                    preview.style.display = "block";
+                    preview.querySelector("img").src = `/static/uploads/${data.image_path}`;
+                    document.getElementById("uploaded_image_path").value = data.image_path;
+                    document.getElementById("submitBtn").disabled = false;
+                    console.log("✅ آپلود موفق");
+                } else {
+                    alert("❌ خطا در آپلود تصویر");
+                    document.getElementById("submitBtn").disabled = true;
+                }
+            } else {
+                alert("❌ ارتباط با سرور برقرار نشد");
+                document.getElementById("submitBtn").disabled = true;
+            }
+        }
+    };
+
+    xhr.open("POST", "/upload-image", true);
+    xhr.send(formData);
+}
+
+function removeImage() {
+    document.getElementById("imagePreview").style.display = "none";
+    const fileInput = document.getElementById("image");
+    fileInput.type = '';
+    fileInput.type = 'file';
+    document.getElementById("uploaded_image_path").value = "";
+    document.getElementById("submitBtn").disabled = true;
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+    const existingImage = "{{ product.image_path if product else '' }}";
+    if (existingImage) {
+        document.getElementById("submitBtn").disabled = false;
+        document.getElementById("uploaded_image_path").value = existingImage;
+    }
+});
+</script>
+<script>
+    const toEnglishDigits = (str) => str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+    
+    document.getElementById('price').addEventListener('input', function(e) {
+        this.value = toEnglishDigits(this.value);
+    });
+  </script>
 <script>
     // لیست شهرهای مربوط به هر استان
     if (!window.citiesByProvince) {
@@ -616,6 +907,64 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
     console.log(citiesByProvince["تهران"]);
+
+
+     function previewImage(event) {
+        var output = document.getElementById('imagePreview');
+        var file = event.target.files[0];
+        var reader = new FileReader();
+        
+        reader.onload = function() {
+            output.style.display = 'block';
+            output.querySelector('img').src = reader.result;
+        }
+        
+        if (file) {
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // لغو انتخاب تصویر
+    function removeImage() {
+        const imagePath = document.getElementById('uploaded_image_path').value;
+        
+        if (imagePath) {
+            fetch('/delete-uploaded-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image_path: imagePath })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    console.log("✅ فایل تصویر از سرور حذف شد.");
+                } else {
+                    console.error("❌ خطا در حذف فایل:", data.error);
+                }
+            })
+            .catch(err => {
+                console.error("❌ خطای ارتباط با سرور:", err);
+            });
+        }
+    
+        // پاک‌سازی UI
+        const preview = document.getElementById('imagePreview');
+        preview.style.display = 'none';
+        preview.querySelector("img").src = '';
+    
+        const fileInput = document.getElementById('image');
+        fileInput.value = '';
+        if (fileInput.value) {
+            const newInput = fileInput.cloneNode(true);
+            fileInput.parentNode.replaceChild(newInput, fileInput);
+            newInput.addEventListener('change', previewImage);
+        }
+    
+        document.getElementById('uploaded_image_path').value = "";
+        document.getElementById("submitBtn").disabled = true;
+    }
 
 </script>
 

@@ -1,13 +1,37 @@
-<!-- {% extends "base.html" %}
+{% extends "base.html" %}
+
 {% block content %}
-<h3>مکالمه‌های شما</h3>
-<ul>
-  {% for convo in conversations %}
-    {% if convo.user1.id != current_user.id %}
-      <li><a href="{{ url_for('main.chat', user_id=convo.user1.id) }}">{{ convo.user1.username }}</a></li>
-    {% else %}
-      <li><a href="{{ url_for('main.chat', user_id=convo.user2.id) }}">{{ convo.user2.username }}</a></li>
-    {% endif %}
-  {% endfor %}
-</ul>
-{% endblock %} -->
+    <div class="container my-5">
+        <h2 class="text-center mb-4">مکالمات</h2>
+        <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
+    <i class="bi bi-arrow-left fs-3 txt-black"></i>
+    </button><br>
+        <div class="row">
+            {% for convo in conversations %}
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm rounded">
+                        <a href="{{ url_for('main.conversation', conversation_id=convo.id) }}" class="text-decoration-none text-dark">
+                        <div class="card-body">
+                            <h5 class="card-title txt-black">
+                                
+                                    گفتگو با {{ convo.user2.username if convo.user1_id == current_user.id else convo.user1.username }}
+                                
+                            </h5>
+                            <p class="card-text text-muted">
+                                {% if convo.messages %}
+                                    {{ convo.messages[-1].content[:50] }}...
+                                {% else %}
+                                    هیچ پیامی ارسال نشده.
+                                {% endif %}
+                            </p>
+                            <small class="text-muted">
+                                {{ convo.messages[-1].timestamp.strftime('%Y-%m-%d %H:%M') if convo.messages else 'هیچ تاریخ مشخصی' }}
+                            </small>
+                        </div>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

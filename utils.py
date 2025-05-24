@@ -10,7 +10,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def save_image(file):
+def save_image(file, filename=None):
     """
     Simple file save function without image processing
     """
@@ -23,7 +23,7 @@ def save_image(file):
             logging.warning(f"File type not allowed: {file.filename}")
             return None
 
-        filename = secure_filename(file.filename)
+        filename = filename or secure_filename(file.filename)  # ← این تغییر مهم
         upload_dir = current_app.config['UPLOAD_FOLDER']
         os.makedirs(upload_dir, exist_ok=True)
 
