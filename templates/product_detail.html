@@ -28,11 +28,11 @@
       </div>
 <div class="container mt-4" id="page-content" class="page-transition">
     <div class="row">
-        <button class="btn header-tabs py-2 px-3 float-start">
-            <a href="{{ url_for('main.index') }}">
-                <i class="bi bi-arrow-left fs-3 txt-black"></i>
-            </a>
-        </button>
+        <div class="py-2 px-3">
+           <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
+            <i class="bi bi-arrow-left fs-3 txt-black"></i>
+        </button><br>
+        </div>
         <div class="col-lg-4 col-md-6">
             {% if product.image_path %}
             <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}"
@@ -97,6 +97,19 @@
         
     </div>
 </div>
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">  <!-- modal-lg برای بزرگتر شدن -->
+      <div class="modal-content" style="background: var(--black-color);">
+        <div class="modal-header">
+          <h5 class="modal-title txt-black" id="imageModalLabel"></h5>
+          <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="بستن"></button>
+        </div>
+        <div class="modal-body d-flex justify-content-center">
+          <img id="modalImage" src="" alt="تصویر بزرگ" style="max-width: 100%; height: auto;">
+        </div>
+      </div>
+    </div>
+  </div>
 <script>
     function copyText(element) {
             const text = element.innerText || element.textContent;

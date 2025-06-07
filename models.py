@@ -151,6 +151,8 @@ class ProductForm(FlaskForm):
         ('tactix', 'Tactix'),
         ('kress', 'Kress'),
         ('skil', 'Skil'),
+        ('AEG', 'AEG'),
+        ('wurth', 'wurth')
     ], validators=[DataRequired()])
     submit = SubmitField('Add Product')
 

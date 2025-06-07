@@ -14,7 +14,7 @@
             </div>
             <div class="card-body bg-very-black">
                 <!-- فرم بدون جاوا اسکریپت -->
-                <form method="POST" enctype="multipart/form-data" id="productForm">
+                <form method="POST" id="productForm">
                     <div class="mb-3">
                         <label for="name" class="form-label txt-black">نام محصول</label>
                         <input type="text" class="inputs txt-black" placeholder="نام محصول را وارد کنید" id="name" name="name" 
@@ -77,16 +77,29 @@
                    <div class="mb-3">
                         <label for="brand" class="form-label txt-black">برند</label>
                         <select class="form-select txt-black" id="brand" name="brand" required>
-                            <option class="txt-black" value="" disabled selected>انتخاب برند</option>
+                            <option class="txt-black" value="" disabled {% if not product %}selected{% endif %}>انتخاب برند</option>
                             <option class="txt-black" value="bosch" {% if product and product.brand == "bosch" %}selected{% endif %}>Bosch</option>
                             <option class="txt-black" value="makita" {% if product and product.brand == "makita" %}selected{% endif %}>Makita</option>
                             <option class="txt-black" value="dewalt" {% if product and product.brand == "dewalt" %}selected{% endif %}>DeWalt</option>
                             <option class="txt-black" value="milwaukee" {% if product and product.brand == "milwaukee" %}selected{% endif %}>Milwaukee</option>
                             <option class="txt-black" value="hilti" {% if product and product.brand == "hilti" %}selected{% endif %}>Hilti</option>
                             <option class="txt-black" value="stanley" {% if product and product.brand == "stanley" %}selected{% endif %}>Stanley</option>
+                            <option class="txt-black" value="ingersoll_rand" {% if product and product.brand == "ingersoll_rand" %}selected{% endif %}>Ingersoll Rand</option>
+                            <option class="txt-black" value="black_decker" {% if product and product.brand == "black_decker" %}selected{% endif %}>Black & Decker</option>
+                            <option class="txt-black" value="metabo" {% if product and product.brand == "metabo" %}selected{% endif %}>Metabo</option>
+                            <option class="txt-black" value="hitachi" {% if product and product.brand == "hitachi" %}selected{% endif %}>Hitachi</option>
+                            <option class="txt-black" value="ridgid" {% if product and product.brand == "ridgid" %}selected{% endif %}>Ridgid</option>
+                            <option class="txt-black" value="ryobi" {% if product and product.brand == "ryobi" %}selected{% endif %}>Ryobi</option>
+                            <option class="txt-black" value="festool" {% if product and product.brand == "festool" %}selected{% endif %}>Festool</option>
+                            <option class="txt-black" value="einhell" {% if product and product.brand == "einhell" %}selected{% endif %}>Einhell</option>
                             <option class="txt-black" value="ronix" {% if product and product.brand == "ronix" %}selected{% endif %}>Ronix</option>
                             <option class="txt-black" value="ingco" {% if product and product.brand == "ingco" %}selected{% endif %}>INGCO</option>
                             <option class="txt-black" value="total" {% if product and product.brand == "total" %}selected{% endif %}>TOTAL</option>
+                            <option class="txt-black" value="tactix" {% if product and product.brand == "tactix" %}selected{% endif %}>Tactix</option>
+                            <option class="txt-black" value="kress" {% if product and product.brand == "kress" %}selected{% endif %}>Kress</option>
+                            <option class="txt-black" value="skil" {% if product and product.brand == "skil" %}selected{% endif %}>Skil</option>
+                            <option class="txt-black" value="AEG" {% if product and product.brand == "AEG" %}selected{% endif %}>AEG</option>
+                            <option class="txt-black" value="wurth" {% if product and product.brand == "wurth" %}selected{% endif %}>wurth</option>
                         </select>
                     </div>
 
@@ -354,6 +367,7 @@ function uploadCompressedImage(formData) {
                     preview.style.display = "block";
                     preview.querySelector("img").src = `/static/uploads/${data.image_path}`;
                     document.getElementById("uploaded_image_path").value = data.image_path;
+                    document.getElementById("image").disabled = true;
                     document.getElementById("submitBtn").disabled = false;
                     console.log("✅ آپلود موفق");
                 } else {

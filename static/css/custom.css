@@ -107,7 +107,7 @@ body {
   user-select: none;
   outline: none;
   overflow: hidden;
-  transition: box-shadow 0.3s ease, background 0.3s ease, opacity 1s ease, transform 1s ease, scale 0.3s ease;
+  transition: box-shadow 0.3s ease, background 0.3s ease, opacity 1s ease, transform 1s ease, scale 0.3s ease!important;
   --mouse-x: 50%;
   --mouse-y: 50%;
 }
@@ -175,6 +175,7 @@ body {
   .inputs:focus {
     outline: none;
     box-shadow: 0 0 1rem var(--light-green);
+    background-color: var(--dark-green);
   }
 
   .form-select{
@@ -632,15 +633,24 @@ body.loaded #loader {
       width: 100%;
       margin-bottom: 10px;
   }
+  #floatingChatButton {
+    bottom: 100px!important;
+  }
 }
 @media (max-width: 400px) {
   .displayer{
     display: none!important;
   }
+  #floatingChatButton {
+    bottom: 70px!important;
+  }
 }
 @media (max-width: 350px) {
   .loader-div{
     margin: 0 0.5rem;
+  }
+  #floatingChatButton {
+    bottom: 190px!important;
   }
 }
 
@@ -669,7 +679,20 @@ body.loaded #loader {
   --vh: 100%;
 }
 
-.chat-box { max-width: 600px; margin: auto; background: var(--black-color); padding: 20px; position: relative; border-radius: 10px; box-shadow: 0 0 2rem var(--light-green); height: calc(var(--vh, 1vh) * 100); overflow-y: auto;}
+.chat-box {
+  flex: 1 1 auto;  /* فضای باقی‌مانده رو اشغال کن */
+  overflow-y: auto;
+  max-width: 600px;
+  margin: auto;
+  background: var(--black-color);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 2rem var(--light-green);
+}
+.ccp{
+  flex-shrink: 0; /* فرم همیشه اندازه خودش رو حفظ کنه */
+  width: 100%;
+}
 .message { margin: 10px 0; padding: 10px; border-radius: 8px; max-width: 70%; }
 .sent { background: var(--light-green); align-self: flex-end; margin-left: auto; }
 .received { background: var(--dark-green); align-self: flex-start; margin-right: auto; }
@@ -801,6 +824,9 @@ input[type="file"] {
 .shadower{
   box-shadow: 0 0 1rem var(--light-green),
   inset 0 0 0.5rem var(--light-green);
+  transition: scale .5s ease!important;
+}.shadower:hover{
+  transform: scale(1.025);
 }
 
 .shadower-light{
@@ -811,4 +837,50 @@ input[type="file"] {
 .page-transition {
   transition: transform 0.3s ease;
   will-change: transform;
+}
+
+#floatingChatButton {
+  position: fixed; /* مهم: برای شناور ماندن */
+  bottom: 0;    /* فاصله از پایین صفحه */
+  left: 20px;      /* فاصله از چپ صفحه */
+  z-index: 1030;   /* برای اطمینان از اینکه روی سایر عناصر قرار می‌گیرد (معمولاً z-index مدال‌های بوت‌استرپ 1050+ است، پس اگر با مدال تداخل داشت این را بیشتر کنید) */
+  width: 60px;     /* عرض دکمه */
+  height: 60px;    /* ارتفاع دکمه */
+  padding: 0;      /* برای اینکه آیکون در مرکز قرار بگیرد */
+  display: flex;   /* برای وسط‌چین کردن آیکون */
+  align-items: center;
+  justify-content: center;
+  /* می‌توانید رنگ پس‌زمینه و رنگ آیکون را اینجا سفارشی کنید */
+  background-color: var(--light-green); /* استفاده از متغیر رنگی شما، یا یک رنگ ثابت مثل #9B1B30 */
+  border: none; /* حذف حاشیه پیش‌فرض دکمه */
+  transition: all 0.3s ease;
+}
+
+#floatingChatButton i {
+  font-size: 1.8rem; /* اندازه آیکون داخل دکمه */
+  color: white;     /* رنگ آیکون، می‌توانید از var(--txt-color) هم استفاده کنید اگر سفید است */
+}
+
+/* تغییر ظاهر دکمه هنگام هاور (اختیاری) */
+#floatingChatButton:hover {
+  background-color: #7a1526; /* کمی تیره‌تر کردن رنگ var(--light-green) شما به صورت دستی */
+  opacity: 0.9;
+  width: 12rem;
+  border-radius: 2rem!important;
+}
+#floatingChatButton .chat-label {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-width 0.4s ease, opacity 1s ease;
+}
+
+#floatingChatButton:hover .chat-label {
+  max-width: 200px;
+  opacity: 1;
+  margin-right: 0.5rem;
+}
+
+#floatingChatButton:active {
+  scale: 0.9;
 }

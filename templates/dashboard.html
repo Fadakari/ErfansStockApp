@@ -148,26 +148,40 @@
                                 </div>
                                 <div class="p-1" style="width: 50%;">
                                     <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST">
-                                        <button type="submit" class="btn btn-danger header-tabs w-100" onclick="return confirm('آیا از حذف محصول اطمینان دارید؟')">حذف محصول</button>
+                                        <button type="submit" class="btn btn-danger header-tabs w-100" style="font-size: 0.75rem;" onclick="return confirm('آیا از حذف محصول اطمینان دارید؟')">حذف محصول</button>
                                     </form>
                                 </div>
                             
+                                {% set is_promoted = product.promoted_until and product.promoted_until > now %}
+
                                 {% if product.user_id == current_user.id %}
-                                    <div class="p-1" style="width: 50%;">
+
+                                    {% if is_promoted %}
                                         <form action="{{ url_for('main.remove_promotion', product_id=product.id) }}" method="POST">
-                                            <button type="submit" class="btn btn-danger header-tabs w-100">حذف نردبان</button>
+                                            <button type="submit" class="btn btn-danger header-tabs w-100">
+                                                حذف نردبان
+                                            </button>
                                         </form>
-                                    </div>
-                                    {% if can_promote %}
-                                        <form method="POST" action="{{ url_for('main.promote_product', product_id=product.id) }}">
-                                            <button type="submit" class="btn btn-primary">نردبان کردن</button>
-                                        </form>
-                                    {% else %}
-                                      <button type="button" class="btn btn-secondary" onclick="alert('در صورتی تعداد محصولات شما به ۵ عدد برسد امکان نردبان کردن به صورت رایگان را خواهید داشت')">
-                                        نردبان کردن
-                                      </button>
                                     {% endif %}
+                                    
+                                    {% if is_promoted %}
+                                        <button type="button" class="btn btn-secondary w-100" disabled>نردبان کردن</button>
+                                    {% else %}
+                                        {% if can_promote %}
+                                            <form method="POST" action="{{ url_for('main.promote_product', product_id=product.id) }}">
+                                                <button type="submit" class="btn btn-primary w-100">نردبان کردن</button>
+                                            </form>
+                                        {% else %}
+                                            <button type="button" class="btn btn-secondary w-100"
+                                                onclick="alert('در صورتی تعداد محصولات شما به ۵ عدد برسد امکان نردبان کردن به صورت رایگان را خواهید داشت')">
+                                                نردبان کردن
+                                            </button>
+                                        {% endif %}
+                                    {% endif %}
+                                        
                                 {% endif %}
+                                        
+                                        
                             </div>
 
 

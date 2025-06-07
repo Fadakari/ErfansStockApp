@@ -11,6 +11,7 @@ import logging
 import random
 import requests
 import re
+from flask_jwt_extended import jwt_required, create_access_token, create_refresh_token, get_jwt_identity
 
 # ایجاد blueprint برای مسیرها
 bp = Blueprint('api', __name__)
@@ -20,6 +21,8 @@ logging.basicConfig(level=logging.DEBUG)
 # توابع کمکی برای تبدیل اطلاعات به JSON
 
 def format_user(user, include_sensitive=False):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """تبدیل اطلاعات کاربر به فرمت JSON"""
     data = {
         'id': user.id,
@@ -29,7 +32,7 @@ def format_user(user, include_sensitive=False):
         'avatar': user.avatar if hasattr(user, 'avatar') else None,
     }
     
-    if include_sensitive and current_user.is_authenticated and current_user.id == user.id:
+    if include_sensitive and user.is_authenticated and user.id == user.id:
         data.update({
             'email': user.email if hasattr(user, 'email') else None,
             'phone': user.phone if hasattr(user, 'phone') else None,
@@ -356,7 +359,8 @@ def verify_login():
             }), 400
 
         # لاگین موفق
-        login_user(user, remember=True)
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)        
         current_app.logger.info(f"User {user.phone} logged in successfully.")
 
         # پاک کردن سشن‌ها
@@ -366,6 +370,8 @@ def verify_login():
         return jsonify({
             'status': 'success',
             'message': 'ورود با موفقیت انجام شد!',
+            'access_token': access_token,   # ✅ توکن دسترسی
+            'refresh_token': refresh_token, # ✅ توکن رفرش
             'redirect': url_for('main.index'),
             'user': format_user(user, include_sensitive=True)
         })
@@ -376,8 +382,19 @@ def verify_login():
         'message': 'لطفا کد تایید دریافتی را وارد کنید'
     })
 
+
+@bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True) # ✅ این مسیر فقط با توکن رفرش معتبر قابل دسترسی است
+def refresh():
+    """تمدید توکن دسترسی با استفاده از توکن رفرش"""
+    identity = get_jwt_identity() # هویت کاربر را از توکن رفرش می‌خواند
+    access_token = create_access_token(identity=identity) # یک توکن دسترسی جدید صادر می‌کند
+    return jsonify(access_token=access_token)
+
+
+
 @bp.route('/logout', methods=['POST'])
-@login_required
+@jwt_required()
 def logout():
     """خروج کاربر از سیستم"""
     logout_user()
@@ -388,11 +405,13 @@ def logout():
     })
 
 @bp.route('/dashboard', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 def dashboard():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """داشبورد کاربر"""
     if request.method == 'GET':
-        user = current_user
+        user = user
         products = Product.query.filter_by(user_id=user.id).all()
         return jsonify({
             'status': 'success',
@@ -408,9 +427,9 @@ def dashboard():
         
         if form.validate_on_submit():
             # بررسی یکتا بودن نام کاربری و ایمیل
-            username_exists = User.query.filter(User.username == form.username and User.id != current_user.id).first()
-            email_exists = User.query.filter(User.email == form.email and User.id != current_user.id).first()
-            phone_exists = User.query.filter(User.phone == form.phone and User.id != current_user.id).first()
+            username_exists = User.query.filter(User.username == form.username and User.id != user.id).first()
+            email_exists = User.query.filter(User.email == form.email and User.id != user.id).first()
+            phone_exists = User.query.filter(User.phone == form.phone and User.id != user.id).first()
             
             if username_exists:
                 return jsonify({
@@ -432,12 +451,12 @@ def dashboard():
             
             # اعمال تغییرات
             if form.username:
-                current_user.username = form.username
+                user.username = form.username
             if form.email:
-                current_user.email = form.email
+                user.email = form.email
                 
             # اگر شماره تلفن تغییر کرده باشد، باید تایید شود
-            if form.phone and form.phone != current_user.phone:
+            if form.phone and form.phone != user.phone:
                 # ایجاد کد تایید
                 verification_code = str(random.randint(1000, 9999))
                 session['verification_code'] = verification_code
@@ -464,7 +483,7 @@ def dashboard():
             return jsonify({
                 'status': 'success',
                 'message': 'پروفایل با موفقیت به‌روزرسانی شد',
-                'user': format_user(current_user, include_sensitive=True)
+                'user': format_user(user, include_sensitive=True)
             })
         else:
             return jsonify({
@@ -474,8 +493,10 @@ def dashboard():
             }), 400
 
 @bp.route('/verify-phone-change', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 def verify_phone_change():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """تایید تغییر شماره تلفن"""
     if request.method == 'POST':
         # برای درخواست‌های JSON
@@ -503,7 +524,7 @@ def verify_phone_change():
             }), 400
             
         # تغییر شماره تلفن
-        current_user.phone = new_phone
+        user.phone = new_phone
         db.session.commit()
         
         # پاک کردن سشن‌ها
@@ -514,7 +535,7 @@ def verify_phone_change():
             'status': 'success',
             'message': 'شماره تلفن با موفقیت تغییر یافت.',
             'redirect': url_for('main.dashboard'),
-            'user': format_user(current_user, include_sensitive=True)
+            'user': format_user(user, include_sensitive=True)
         })
         
     # اگر درخواست GET باشد
@@ -525,13 +546,15 @@ def verify_phone_change():
     })
 
 @bp.route('/renew_product/<int:product_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def renew_product(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """تمدید آگهی محصول"""
     product = Product.query.get_or_404(product_id)
     
     # فقط صاحب محصول می‌تواند آن را تمدید کند
-    if current_user.id != product.user_id:
+    if user.id != product.user_id:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه تمدید این محصول را ندارید'
@@ -560,8 +583,10 @@ def user_dashboard(user_id):
     })
 
 @bp.route('/products/new', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 def new_product():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """ایجاد محصول جدید"""
     if request.method == 'POST':
         # برای درخواست‌های JSON
@@ -647,7 +672,7 @@ def new_product():
             description=description,
             price=price,
             image_path=image_path,
-            user_id=current_user.id,
+            user_id=user.id,
             category_id=category_id,
             address=address,
             postal_code=postal_code,
@@ -678,13 +703,15 @@ def new_product():
     })
 
 @bp.route('/products/<int:id>/edit', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 def edit_product(id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """ویرایش محصول"""
     product = Product.query.get_or_404(id)
     
     # فقط صاحب محصول یا ادمین می‌تواند محصول را ویرایش کند
-    if current_user.id != product.user_id and not current_user.is_admin:
+    if user.id != product.user_id and not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه ویرایش این محصول را ندارید'
@@ -801,13 +828,15 @@ def edit_product(id):
     })
 
 @bp.route('/products/<int:id>/delete', methods=['POST'])
-@login_required
+@jwt_required()
 def delete_product(id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف محصول"""
     product = Product.query.get_or_404(id)
     
     # فقط صاحب محصول یا ادمین می‌تواند محصول را حذف کند
-    if current_user.id != product.user_id and not current_user.is_admin:
+    if user.id != product.user_id and not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه حذف این محصول را ندارید'
@@ -849,7 +878,7 @@ def product_detail(product_id):
     })
 
 @bp.route('/init-categories', methods=['POST'])
-@login_required
+@jwt_required()
 def init_categories():
     """ایجاد دسته‌بندی‌های پیش‌فرض (فقط برای ادمین)"""
     if not current_user.is_admin:
@@ -1098,13 +1127,15 @@ def verify():
     })
 
 @bp.route('/start_payment/<int:product_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def start_payment(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """شروع فرآیند پرداخت برای ارتقای محصول"""
     product = Product.query.get_or_404(product_id)
     
     # فقط صاحب محصول می‌تواند آن را ارتقا دهد
-    if current_user.id != product.user_id:
+    if user.id != product.user_id:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه ارتقای این محصول را ندارید'
@@ -1173,10 +1204,12 @@ def payment_callback():
         }), 400
 
 @bp.route('/promote_product/<int:product_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def promote_product(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """ارتقای محصول (نردبان) به صورت دستی - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1196,10 +1229,12 @@ def promote_product(product_id):
     })
 
 @bp.route('/remove_promotion/<int:product_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def remove_promotion(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف ارتقای محصول (نردبان) به صورت دستی - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1219,10 +1254,12 @@ def remove_promotion(product_id):
     })
 
 @bp.route('/admin_dashboard')
-@login_required
+@jwt_required()
 def admin_dashboard():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """داشبورد ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند به این صفحه دسترسی داشته باشد'
@@ -1245,10 +1282,12 @@ def admin_dashboard():
     })
 
 @bp.route('/approve_product/<int:product_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def approve_product(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """تأیید محصول - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1267,8 +1306,10 @@ def approve_product(product_id):
     })
 
 @bp.route('/report_violation/<int:product_id>', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 def report_violation(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """گزارش تخلف محصول"""
     product = Product.query.get_or_404(product_id)
     
@@ -1290,7 +1331,7 @@ def report_violation(product_id):
         # بررسی گزارش تکراری
         existing_report = Report.query.filter_by(
             product_id=product.id,
-            reporter_id=current_user.id
+            reporter_id=user.id
         ).first()
         
         if existing_report:
@@ -1302,7 +1343,7 @@ def report_violation(product_id):
         # ایجاد گزارش جدید
         report = Report(
             product_id=product.id,
-            reporter_id=current_user.id,
+            reporter_id=user.id,
             text=text
         )
         
@@ -1323,10 +1364,12 @@ def report_violation(product_id):
     })
 
 @bp.route('/delete_report/<int:report_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def delete_report(report_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف گزارش - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1343,10 +1386,12 @@ def delete_report(report_id):
     })
 
 @bp.route('/make_admin/<int:user_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def make_admin(user_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """ارتقای کاربر به ادمین - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1364,10 +1409,12 @@ def make_admin(user_id):
     })
 
 @bp.route('/remove_admin/<int:user_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def remove_admin(user_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف دسترسی ادمین از کاربر - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1393,10 +1440,12 @@ def remove_admin(user_id):
     })
 
 @bp.route('/add_category', methods=['POST'])
-@login_required
+@jwt_required()
 def add_category():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """افزودن دسته‌بندی جدید - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1449,10 +1498,12 @@ def add_category():
     })
 
 @bp.route('/delete_user/<int:user_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def delete_user(user_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف کاربر - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1494,10 +1545,12 @@ def delete_user(user_id):
     })
 
 @bp.route('/delete_category/<int:category_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def delete_category(category_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف دسته‌بندی - فقط برای ادمین"""
-    if not current_user.is_admin:
+    if not user.is_admin:
         return jsonify({
             'status': 'error',
             'message': 'فقط ادمین می‌تواند این عملیات را انجام دهد'
@@ -1557,13 +1610,15 @@ def fake_payment():
     })
 
 @bp.route('/pay_to_publish/<int:product_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def pay_to_publish(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """پرداخت برای انتشار محصول"""
     product = Product.query.get_or_404(product_id)
     
     # فقط صاحب محصول می‌تواند برای انتشار پرداخت کند
-    if current_user.id != product.user_id:
+    if user.id != product.user_id:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه انجام این عملیات را ندارید'
@@ -1587,12 +1642,14 @@ def pay_to_publish(product_id):
     })
 
 @bp.route('/conversations')
-@login_required
+@jwt_required()
 def conversations():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """لیست مکالمات کاربر"""
     # یافتن مکالمات کاربر
     user_conversations = Conversation.query.filter(
-        (Conversation.user1_id == current_user.id) | (Conversation.user2_id == current_user.id)
+        (Conversation.user1_id == user.id) | (Conversation.user2_id == user.id)
     ).all()
     
     return jsonify({
@@ -1601,13 +1658,15 @@ def conversations():
     })
 
 @bp.route('/conversation/<int:conversation_id>')
-@login_required
+@jwt_required()
 def conversation(conversation_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """نمایش پیام‌های یک مکالمه"""
     conversation = Conversation.query.get_or_404(conversation_id)
     
     # بررسی دسترسی کاربر به مکالمه
-    if current_user.id != conversation.user1_id and current_user.id != conversation.user2_id:
+    if user.id != conversation.user1_id and user.id != conversation.user2_id:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه دسترسی به این مکالمه را ندارید'
@@ -1617,7 +1676,7 @@ def conversation(conversation_id):
     messages = Message.query.filter_by(conversation_id=conversation.id).order_by(Message.timestamp).all()
     
     # دریافت اطلاعات طرف مقابل
-    other_user_id = conversation.user2_id if conversation.user1_id == current_user.id else conversation.user1_id
+    other_user_id = conversation.user2_id if conversation.user1_id == user.id else conversation.user1_id
     other_user = User.query.get(other_user_id)
     
     return jsonify({
@@ -1628,13 +1687,15 @@ def conversation(conversation_id):
     })
 
 @bp.route('/start_conversation/<int:user_id>', methods=['GET', 'POST'])
-@login_required
+@jwt_required()
 def start_conversation(user_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """شروع مکالمه جدید با کاربر دیگر"""
     other_user = User.query.get_or_404(user_id)
     
     # بررسی عدم شروع مکالمه با خود
-    if current_user.id == other_user.id:
+    if user.id == other_user.id:
         return jsonify({
             'status': 'error',
             'message': 'نمی‌توانید با خودتان مکالمه کنید'
@@ -1642,8 +1703,8 @@ def start_conversation(user_id):
         
     # بررسی وجود مکالمه قبلی
     existing_conversation = Conversation.query.filter(
-        ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == other_user.id)) |
-        ((Conversation.user1_id == other_user.id) & (Conversation.user2_id == current_user.id))
+        ((Conversation.user1_id == user.id) & (Conversation.user2_id == other_user.id)) |
+        ((Conversation.user1_id == other_user.id) & (Conversation.user2_id == user.id))
     ).first()
     
     if existing_conversation:
@@ -1672,7 +1733,7 @@ def start_conversation(user_id):
             
         # ایجاد مکالمه جدید
         conversation = Conversation(
-            user1_id=current_user.id,
+            user1_id=user.id,
             user2_id=other_user.id
         )
         db.session.add(conversation)
@@ -1680,7 +1741,7 @@ def start_conversation(user_id):
         
         # ایجاد پیام جدید
         message = Message(
-            sender_id=current_user.id,
+            sender_id=user.id,
             receiver_id=other_user.id,
             content=content,
             conversation_id=conversation.id
@@ -1703,8 +1764,10 @@ def start_conversation(user_id):
     })
 
 @bp.route('/send_message', methods=['POST'])
-@login_required
+@jwt_required()
 def send_message():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """ارسال پیام جدید در مکالمه"""
     # برای درخواست‌های JSON
     if request.is_json:
@@ -1740,7 +1803,7 @@ def send_message():
         
     # بررسی دسترسی کاربر به مکالمه
     conversation = Conversation.query.get_or_404(conversation_id)
-    if current_user.id != conversation.user1_id and current_user.id != conversation.user2_id:
+    if user.id != conversation.user1_id and user.id != conversation.user2_id:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه دسترسی به این مکالمه را ندارید'
@@ -1764,7 +1827,7 @@ def send_message():
             
     # ایجاد پیام جدید
     message = Message(
-        sender_id=current_user.id,
+        sender_id=user.id,
         receiver_id=receiver_id,
         content=content,
         conversation_id=conversation_id,
@@ -1782,13 +1845,15 @@ def send_message():
     })
 
 @bp.route('/delete_message/<int:message_id>', methods=['POST'])
-@login_required
+@jwt_required()
 def delete_message(message_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """حذف پیام"""
     message = Message.query.get_or_404(message_id)
     
     # فقط فرستنده پیام می‌تواند آن را حذف کند
-    if current_user.id != message.sender_id:
+    if user.id != message.sender_id:
         return jsonify({
             'status': 'error',
             'message': 'شما اجازه حذف این پیام را ندارید'
@@ -1805,6 +1870,8 @@ def delete_message(message_id):
 
 @bp.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """چت‌بات هوش مصنوعی"""
     if request.method == 'POST':
         # برای درخواست‌های JSON
@@ -1834,9 +1901,9 @@ def chatbot():
         }
         
         # ذخیره تعامل با چت‌بات در صورت لاگین بودن کاربر
-        if current_user.is_authenticated:
+        if user.is_authenticated:
             interaction = ChatBotInteraction(
-                user_id=current_user.id,
+                user_id=user.id,
                 user_query=user_query,
                 bot_response=bot_response
             )
@@ -1925,11 +1992,13 @@ def api_products():
 
 @bp.route('/api/product/<int:product_id>')
 def api_product_detail(product_id):
+    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
+    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
     """API برای دریافت جزئیات محصول"""
     product = Product.query.get_or_404(product_id)
     
     # افزایش تعداد بازدید
-    if not current_user.is_authenticated or current_user.id != product.user_id:
+    if not user.is_authenticated or user.id != product.user_id:
         product.views += 1
         db.session.commit()
     

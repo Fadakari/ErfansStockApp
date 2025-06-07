@@ -4,18 +4,17 @@
     <div class="container my-5">
         <h2 class="text-center mb-4">مکالمات</h2>
         <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
-    <i class="bi bi-arrow-left fs-3 txt-black"></i>
-    </button><br>
-        <div class="row">
-            {% for convo in conversations %}
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm rounded">
-                        <a href="{{ url_for('main.conversation', conversation_id=convo.id) }}" class="text-decoration-none text-dark">
+            <i class="bi bi-arrow-left fs-3 txt-black"></i>
+        </button><br>
+    <div class="row">
+        {% for convo in conversations %}
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm rounded">
+                    <a href="{{ request.host_url.rstrip('/') + url_for('main.conversation', conversation_id=convo.id) }}" 
+                       class="text-decoration-none text-dark" target="_blank" rel="noopener noreferrer">
                         <div class="card-body">
                             <h5 class="card-title txt-black">
-                                
-                                    گفتگو با {{ convo.user2.username if convo.user1_id == current_user.id else convo.user1.username }}
-                                
+                                گفتگو با {{ convo.user2.username if convo.user1_id == current_user.id else convo.user1.username }}
                             </h5>
                             <p class="card-text text-muted">
                                 {% if convo.messages %}
@@ -28,10 +27,11 @@
                                 {{ convo.messages[-1].timestamp.strftime('%Y-%m-%d %H:%M') if convo.messages else 'هیچ تاریخ مشخصی' }}
                             </small>
                         </div>
-                        </a>
-                    </div>
+                    </a>
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% endfor %}
+    </div>
+    
     </div>
 {% endblock %}

@@ -46,15 +46,35 @@ def index():
     category_id = request.args.get('category', '').strip()  # جستجو بر اساس دسته‌بندی
     address_search = request.args.get('address_search', '').strip()
 
+
     query = Product.query.filter(Product.status == 'published')
 
     # جستجو بر اساس نام محصول و توضیحات
     if search:
+        search_keywords = search.lower().split() # تبدیل به لیست کلمات کلیدی برای جستجوی دقیق‌تر برند
+        
+        # <<<<<<< شروع تغییر برای جستجوی برند >>>>>>>
+        name_desc_filters = []
+        brand_filters = []
+
+        for keyword in search_keywords:
+            name_desc_filters.append(Product.name.ilike(f'%{keyword}%'))
+            name_desc_filters.append(Product.description.ilike(f'%{keyword}%'))
+            # جستجو در فیلد برند هم برای نام محصول و هم برای کلمه کلیدی مجزا
+            brand_filters.append(Product.brand.ilike(f'%{keyword}%'))
+
+        # اگر کاربر فقط نام برند را جستجو کرده باشد، ممکن است بخواهیم فقط برندها را نشان دهیم
+        # یا ترکیبی از همه. در اینجا جستجوی ترکیبی انجام می‌دهیم:
         search_filter = db.or_(
-            Product.name.ilike(f'%{search}%'),
-            Product.description.ilike(f'%{search}%')
+            Product.name.ilike(f'%{search}%'),       # جستجو در نام کامل
+            Product.description.ilike(f'%{search}%'), # جستجو در توضیحات کامل
+            *brand_filters                            # جستجو برای هر کلمه کلیدی در فیلد برند
         )
+        # اگر می‌خواهید جستجو در نام و توضیحات هم بر اساس کلمات کلیدی باشد:
+        # search_filter = db.or_(*name_desc_filters, *brand_filters)
+        
         query = query.filter(search_filter)
+        # <<<<<<< پایان تغییر برای جستجوی برند >>>>>>>
 
     # فیلتر بر اساس استان (استان در آدرس محصول باشد)
     if province_search:
@@ -455,7 +475,8 @@ def dashboard():
         top_products=top_products,
         free_publish_granted=free_publish_granted,
         unpaid_product_ids=unpaid_product_ids,
-        can_promote=can_promote
+        can_promote=can_promote,
+        now=datetime.utcnow()
     )
 
 @bp.route('/verify-phone-change', methods=['GET', 'POST'])
@@ -854,22 +875,24 @@ def signup():
 
         try:
             username = request.form.get('username')
-            email = request.form.get('email')
+            email = request.form.get('email')  # این می‌تونه None یا '' باشه
             phone = request.form.get('phone')
             national_id = request.form.get('national_id')
             password = request.form.get('password')
 
-            if not all([username, email, phone, national_id, password]):
-                flash('لطفاً تمام فیلدها را پر کنید.', 'danger')
+            # اینجا ایمیل رو از شرط پر بودن حذف می‌کنیم چون اختیاریه
+            if not all([username, phone, national_id, password]):
+                flash('لطفاً تمام فیلدهای الزامی را پر کنید.', 'danger')
                 return render_template('signup.html')
 
             if User.query.filter_by(username=username).first():
                 flash('این نام کاربری قبلاً ثبت شده است.', 'danger')
                 return render_template('signup.html')
 
-            if User.query.filter_by(email=email).first():
-                flash('این ایمیل قبلاً ثبت شده است.', 'danger')
-                return render_template('signup.html')
+            if email:
+                if User.query.filter_by(email=email).first():
+                    flash('این ایمیل قبلاً ثبت شده است.', 'danger')
+                    return render_template('signup.html')
 
             if User.query.filter_by(phone=phone).first():
                 flash('این شماره تماس قبلاً ثبت شده است.', 'danger')
@@ -883,17 +906,18 @@ def signup():
                 flash('شماره تماس نامعتبر است. باید با 09 شروع شده و 11 رقم باشد.', 'danger')
                 return render_template('signup.html')
 
-            verification_code = random.randint(1000, 9999)
-            session['verification_code'] = str(verification_code)
+            # ذخیره اطلاعات در session با ایمیل اختیاری
             session['signup_data'] = {
                 'username': username,
-                'email': email,
+                'email': email,  # می‌تواند None یا '' باشد
                 'phone': phone,
                 'national_id': national_id,
                 'password': password
             }
 
-            # 🔥 فقط کد را ارسال می‌کنیم (نه متن آماده)
+            verification_code = random.randint(1000, 9999)
+            session['verification_code'] = str(verification_code)
+
             print(f"📲 ارسال پیامک برای: {phone} با کد {verification_code}")
             send_verification_code(phone, str(verification_code))
             print('✅ ثبت نام موفق! هدایت به صفحه verify...')
@@ -929,10 +953,15 @@ def verify():
             entered_code = verification_code
 
         if entered_code == verification_code:
+            # چک کردن ایمیل و تبدیل '' یا مقدار خالی به None
+            email = signup_data.get('email')
+            if not email:
+                email = None
+
             # ساخت حساب کاربری
             user = User(
                 username=signup_data['username'],
-                email=signup_data['email'],
+                email=email,
                 phone=signup_data['phone'],
                 national_id=signup_data['national_id']
             )
@@ -941,18 +970,20 @@ def verify():
             db.session.add(user)
             db.session.commit()
 
+            # لاگین خودکار
+            login_user(user)
+
             # پاکسازی سشن
             session.pop('verification_code', None)
             session.pop('signup_data', None)
 
-            flash('ثبت‌نام با موفقیت انجام شد.', 'success')
-            return redirect(url_for('main.login'))
+            flash('ثبت‌نام با موفقیت انجام شد و وارد شدید.', 'success')
+            return redirect(url_for('main.index'))  # یا هر صفحه دلخواه
+
         else:
             flash('کد وارد شده اشتباه است!', 'danger')
 
     return render_template('verify.html')
-
-
 
 
 @bp.route('/delete-uploaded-image', methods=['POST'])
@@ -1494,6 +1525,73 @@ def edit_message_inline(message_id):
     return redirect(url_for('main.conversation', conversation_id=msg.conversation_id))
 
 
+@bp.route("/send_message", methods=["POST"])
+@login_required
+def send_message():
+    data = request.form
+    conversation_id = int(data.get("conversation_id"))
+    content = data.get("content", "").strip()
+    file = request.files.get("file")
+    filename = None
+
+    convo = Conversation.query.get_or_404(conversation_id)
+    if current_user.id not in [convo.user1_id, convo.user2_id]:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    if file and file.filename:
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+        file.save(file_path)
+
+    receiver_id = convo.user2_id if current_user.id == convo.user1_id else convo.user1_id
+
+    new_msg = Message(
+        sender_id=current_user.id,
+        receiver_id=receiver_id,
+        content=content,
+        conversation_id=conversation_id,
+        file_path=filename
+    )
+    db.session.add(new_msg)
+    db.session.commit()
+
+    return jsonify({
+        "message_id": new_msg.id,
+        "sender_id": current_user.id,
+        "content": new_msg.content,
+        "timestamp": new_msg.timestamp.strftime('%Y-%m-%d %H:%M'),
+        "file_path": new_msg.file_path
+    })
+
+
+
+@bp.route("/get_new_messages")
+@login_required
+def get_new_messages():
+    convo_id = request.args.get("conversation_id", type=int)
+    after_id = request.args.get("after_id", type=int, default=0)
+
+    convo = Conversation.query.get_or_404(convo_id)
+    if current_user.id not in [convo.user1_id, convo.user2_id]:
+        return jsonify([])
+
+    new_messages = Message.query.filter(
+        Message.conversation_id == convo_id,
+        Message.id > after_id,
+        Message.sender_id != current_user.id
+    ).order_by(Message.timestamp.asc()).all()
+
+    return jsonify([
+        {
+            "id": m.id,
+            "sender_id": m.sender_id,
+            "content": m.content,
+            "timestamp": m.timestamp.strftime('%Y-%m-%d %H:%M'),
+            "file_path": m.file_path
+        } for m in new_messages
+    ])
+
+
 
 
 @bp.errorhandler(404)
@@ -1506,83 +1604,445 @@ def privacy():
     return render_template("security.html")
 
 
-@bp.route('/chatbot', methods=['GET', 'POST'])
+@bp.route('/chatbot', methods=['GET']) # فقط به درخواست‌های GET پاسخ می‌دهد
 @login_required
-def chatbot_page():
-    bot_response = None
+def chatbot_page_render(): # نام تابع را می‌توان تغییر داد تا با تابع قبلی chatbot_page تداخل نداشته باشد
+    # این تابع فقط صفحه HTML اولیه را رندر می‌کند.
+    # هیچ منطق POST یا پردازش چت در اینجا وجود ندارد.
+    # bot_response اولیه را می‌توانید None یا یک پیام خوشامدگویی قرار دهید.
+    return render_template('ai_chat.html', bot_response=None)
+
+
+def find_related_products(query_text, limit=3):
+    if not query_text:
+        return []
+    keywords = query_text.lower().split()
+    if not keywords:
+        return []
+    search_conditions = []
+    for kw in keywords:
+        search_conditions.append(Product.name.ilike(f'%{kw}%'))
+        search_conditions.append(Product.description.ilike(f'%{kw}%'))
+        search_conditions.append(Product.brand.ilike(f'%{kw}%'))
+    products = Product.query.filter(
+        Product.status == 'published',
+        db.or_(*search_conditions)
+    ).order_by(Product.views.desc()).limit(limit).all()
+    return products
+
+
+
+@bp.route('/api/chatbot_ajax', methods=['POST'])
+@login_required
+def chatbot_ajax():
+    data = request.get_json()
+    if not data or 'query' not in data: # بررسی اینکه آیا 'query' در JSON وجود دارد
+        current_app.logger.warning("درخواست JSON فاقد کلید 'query' بود.")
+        return jsonify({'error': 'ساختار درخواست نامعتبر است.', 'detail': "کلید 'query' در بدنه درخواست یافت نشد."}), 400
+
+    user_query = data.get('query', '').strip()
+
+    if not user_query:
+        current_app.logger.info("کاربر یک سوال خالی ارسال کرد.")
+        return jsonify({'error': 'سؤال نمی‌تواند خالی باشد.', 'detail': 'متن سوال ارسال نشده است.'}), 400
+
+    bot_response_content = "متاسفانه پاسخی دریافت نشد." # مقدار پیش‌فرض برای پاسخ ربات
     products_info = []
 
-    if request.method == 'POST':
-        user_query = request.form.get('query')
-        if not user_query:
-            flash('سؤال نمی‌تواند خالی باشد.', 'warning')
-            return redirect(url_for('main.chatbot_page'))
+    avalai_api_key = current_app.config.get("AVALAI_API_KEY")
+    avalai_model = current_app.config.get("AVALAI_CHAT_MODEL")
 
-        # فراخوانی DeepSeek API
-        try:
-            response = requests.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {current_app.config['DEEPSEEK_API_KEY']}"},
-                json={
-                    "model": "deepseek-chat",
-                    "messages": [{"role": "user", "content": user_query}],
-                    "max_tokens": 1000
-                }
-            )
-
-            # بررسی وضعیت پاسخ و استخراج محتوا
-            if response.status_code == 200:
-                data = response.json()
-                # بررسی وجود کلید choices
-                if "choices" in data and len(data["choices"]) > 0:
-                    bot_response = data["choices"][0]["message"]["content"]
-                else:
-                    bot_response = "پاسخی از ربات دریافت نشد."
-            else:
-                bot_response = f"خطا در درخواست API: {response.status_code}"
-
-        except Exception as e:
-            flash(f'خطا در تماس با API: {str(e)}', 'danger')
-            return redirect(url_for('main.chatbot_page'))
-
-        # ذخیره تعامل
+    if not avalai_api_key or not avalai_model:
+        current_app.logger.error("کلید API یا نام مدل AvalAI در پیکربندی اپلیکیشن (app.config) تنظیم نشده یا خالی است.")
+        bot_response_content = "خطا: سرویس چت در حال حاضر به دلیل مشکل در پیکربندی سرور در دسترس نیست."
+        # ذخیره تعامل با پیام خطا (این بخش را برای سازگاری نگه می‌داریم اما می‌توان آن را در صورت عدم نیاز به ذخیره خطاهای پیکربندی، حذف کرد)
         interaction = ChatBotInteraction(
             user_id=current_user.id,
             user_query=user_query,
-            bot_response=bot_response
+            bot_response=bot_response_content,
+            products_related=None
         )
         db.session.add(interaction)
         db.session.commit()
+        return jsonify({'bot_response': bot_response_content, 'products': products_info})
 
-        # پیدا کردن محصولات مرتبط
-        related_products = find_related_products(user_query)
-        if related_products:
-            interaction.products_related = ",".join(str(p.id) for p in related_products)
-            db.session.commit()
+    # <<<<<<< شروع: تعریف پیام سیستمی >>>>>>>
+    # این پیام را مطابق با نیازهای دقیق‌تر خودتان ویرایش کنید
+    system_prompt_content = (
+        "شما یک دستیار هوشمند برای پلتفرم 'استوک دیوار' (stockdivar.ir) هستید. "
+        "وظیفه شما پاسخ به سوالات کاربران در مورد محصولات دست دوم و نو و همچنین برندهای مختلف است. "
+        "پاسخ‌های شما باید مودبانه، مفید و دقیق باشد. "
+        "اگر کاربر نام یک برند خاص را ذکر کرد (مثلاً 'بوش'، 'ماکیتا'، 'هیلتی' و غیره)، علاوه بر پاسخ به سوال او، "
+        "علاوه بر پاسخ به سوال او، در انتهای پاسخ خود یک لینک قابل کلیک با فرمت HTML به این شکل ارائه دهید: "
+        "<a href='https://stockdivar.ir/?search=[عبارت جستجو یا نام لاتین برند]' target='_blank'>محصولات برند [نام لاتین برند] در استوک دیوار</a> "
+        "حتماً به جای `[نام لاتین برند جایگزین شود]`، نام لاتین دقیق برندی که کاربر ذکر کرده یا شما تشخیص داده‌اید را قرار دهید. "
+        "یا اگر مستقیماً به محصولی اشاره می‌کنید که لینکش را دارید (مثلاً از طریق تابع find_related_products)، بگویید: "
+        "'می‌توانید <a href='https://stockdivar.ir/product/[ID محصول مرتبط در دیتابیس]' target='_blank'>[نام محصولی که کاربر خواسته پیدا کند]</a> را اینجا ببینید.' "
+        "اطمینان حاصل کنید که تگ `<a>` به درستی بسته شده و دارای `target='_blank'` برای باز شدن در تب جدید است. "
+        "سعی کنید کلمات کلیدی مناسب برای جستجوی محصول را نیز در پاسخ خود بگنجانید. "
+        "همیشه از وبسایت و دیتابیس سایت خودمان (stockdivar.ir) برای یافتن محصولات استفاده کن و به هیچ عنوان از سایت‌های دیگر جستجو نکن. "
+        "از دادن وعده‌هایی که نمی‌توانید انجام دهید یا اطلاعاتی که از آن مطمئن نیستید، خودداری کنید."
+    )
+    # <<<<<<< پایان: تعریف پیام سیستمی >>>>>>>
 
-            products_info = [{
+    try:
+        messages_payload = [
+            {"role": "system", "content": system_prompt_content},
+            {"role": "user", "content": user_query}
+        ]
+        current_app.logger.debug(f"پیام ارسالی به AvalAI: {messages_payload}")
+
+        response = requests.post(
+            "https://api.avalai.ir/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {avalai_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": avalai_model,
+                "messages": messages_payload, # <<<<<<< تغییر: استفاده از messages_payload
+                "max_tokens": 1000, # می‌توانید بر اساس نیاز کمتر یا بیشتر کنید
+                "temperature": 0.7  # بین 0 (دقیق) تا 1 (خلاق)
+            },
+            timeout=30 # افزایش timeout به ۳۰ ثانیه
+        )
+        current_app.logger.info(f"AvalAI API Status: {response.status_code}")
+        current_app.logger.debug(f"AvalAI API Response (raw text summary): {response.text[:300]}")
+
+        if response.status_code == 200:
+            api_data = response.json()
+            if "choices" in api_data and api_data["choices"] and \
+               "message" in api_data["choices"][0] and "content" in api_data["choices"][0]["message"]:
+                bot_response_content = api_data["choices"][0]["message"]["content"].strip()
+                current_app.logger.info(f"پاسخ دریافت شده از AvalAI: {bot_response_content[:200]}")
+            else:
+                bot_response_content = "متاسفانه ساختار پاسخ دریافتی از سرویس چت نامعتبر بود."
+                current_app.logger.error(f"ساختار نامعتبر پاسخ از AvalAI: {api_data}")
+        else:
+            bot_response_content = f"خطا در ارتباط با سرویس چت AvalAI. کد وضعیت: {response.status_code}."
+            try:
+                error_details = response.json()
+                if 'error' in error_details and 'message' in error_details['error']:
+                    bot_response_content += f" پیام خطا: {error_details['error']['message']}"
+                current_app.logger.error(f"خطای API از AvalAI: Status {response.status_code}, Body: {error_details if 'error_details' in locals() else response.text}")
+            except ValueError: # اگر پاسخ خطا JSON نباشد
+                current_app.logger.error(f"خطای API از AvalAI (پاسخ غیر JSON): Status {response.status_code}, Body: {response.text}")
+
+    except requests.exceptions.Timeout:
+        bot_response_content = "پاسخ از سرویس چت با تاخیر مواجه شد. لطفاً کمی بعد دوباره تلاش کنید."
+        current_app.logger.error("Timeout error connecting to AvalAI API.")
+    except requests.exceptions.RequestException as e:
+        bot_response_content = "خطا در برقراری ارتباط با سرویس چت. لطفاً از اتصال اینترنت خود مطمئن شوید."
+        current_app.logger.error(f"Network error or other RequestException calling AvalAI API: {str(e)}")
+    except Exception as e: # برای خطاهای پیش‌بینی نشده دیگر
+        bot_response_content = "یک خطای پیش‌بینی نشده در سرویس چت رخ داد. در حال بررسی هستیم."
+        current_app.logger.error(f"An unexpected error occurred in chatbot_ajax: {str(e)}", exc_info=True) # اضافه کردن exc_info برای جزئیات بیشتر خطا
+
+
+    # پیدا کردن محصولات مرتبط
+    # می‌توانید انتخاب کنید که بر اساس user_query جستجو کنید یا bot_response_content
+    # جستجو بر اساس پاسخ ربات ممکن است دقیق‌تر باشد اگر ربات کلمات کلیدی خوبی استخراج کرده باشد.
+    # برای شروع، جستجو بر اساس سوال کاربر (user_query) ساده‌تر است.
+    related_products_models = find_related_products(user_query, limit=3) # یا find_related_products(bot_response_content, limit=3)
+    
+    if related_products_models:
+        for p in related_products_models:
+            products_info.append({
                 'id': p.id,
                 'name': p.name,
-                'price': p.price,
-                'image': url_for('main.uploaded_file', filename=p.image_path) if p.image_path else None
-            } for p in related_products]
+                'price': float(p.price) if p.price is not None else None, # اطمینان از اینکه قیمت float است یا None
+                'image_url': url_for('main.uploaded_file', filename=p.image_path, _external=True, _scheme='https') if p.image_path else None
+            })
+    
+    # ذخیره تعامل در دیتابیس
+    product_ids_str = ",".join(str(p.id) for p in related_products_models) if related_products_models else None
+    
+    interaction = ChatBotInteraction(
+        user_id=current_user.id,
+        user_query=user_query,
+        bot_response=bot_response_content, # این مقدار همیشه باید یک رشته باشد
+        products_related=product_ids_str
+    )
+    db.session.add(interaction)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"خطا در ذخیره تعامل در دیتابیس: {str(e)}", exc_info=True)
+        # در این حالت، ممکن است بخواهید به کاربر اطلاع دهید یا فقط خطا را لاگ کنید و پاسخ قبلی را برگردانید.
 
-    return render_template('ai_chat.html', bot_response=bot_response, products=products_info)
+    return jsonify({
+        'bot_response': bot_response_content,
+        'products': products_info
+    })
 
 
-def find_related_products(query):
-    # تجزیه و تحلیل کوئری کاربر
-    keywords = query.lower().split()
 
-    # جستجوی محصولات بر اساس کلمات کلیدی
-    products = Product.query.filter(
-        db.or_(
-            *[Product.name.ilike(f'%{kw}%') for kw in keywords],
-            *[Product.description.ilike(f'%{kw}%') for kw in keywords]
-        )
-    ).limit(5).all()
 
-    return products
+
+
+# @bp.route('/api/search_by_image_ajax', methods=['POST'])
+# @login_required
+# def search_by_image_ajax():
+#     if 'image_file' not in request.files:
+#         current_app.logger.warning("SearchByImage: فایل تصویری ارسال نشده است.")
+#         return jsonify({'error': 'فایل تصویری ارسال نشده است.'}), 400
+
+#     image_file = request.files['image_file']
+
+#     if image_file.filename == '':
+#         current_app.logger.warning("SearchByImage: فایلی انتخاب نشده است (نام فایل خالی).")
+#         return jsonify({'error': 'فایلی انتخاب نشده است.'}), 400
+
+#     allowed_extensions = {'png', 'jpg', 'jpeg', 'webp'}
+#     filename = secure_filename(image_file.filename)
+#     if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+#         current_app.logger.warning(f"SearchByImage: فرمت فایل نامعتبر: {filename}")
+#         return jsonify({'error': 'فرمت فایل تصویری نامعتبر است.'}), 400
+        
+#     image_bytes = image_file.read()
+
+#     analyzed_keywords = []
+#     bot_message_for_image = "خطا در تحلیل تصویر. لطفا دوباره تلاش کنید." # پیام پیش‌فرض در صورت بروز خطا
+
+#     # --- مرحله ۱: فراخوانی واقعی API تحلیل تصویر ---
+#     try:
+#         #مثال ۱: اگر API شما بایت‌های تصویر را مستقیماً می‌پذیرد (به عنوان فایل multipart)
+#         #---------------------------------------------------------------------------
+#         avalai_api_key = current_app.config.get("AVALAI_VISION_API_KEY") # کلید API مخصوص سرویس تصویر
+#         avalai_vision_endpoint = "https://api.avalai.ir/v1/vision/detect_objects" # آدرس واقعی API شما        
+#         files_payload = {'image': (filename, image_bytes, image_file.mimetype)}
+#         headers_payload = {"Authorization": f"Bearer {avalai_api_key}"}
+#         current_app.logger.info(f"SearchByImage: ارسال عکس به {avalai_vision_endpoint}")
+#         response_vision = requests.post(
+#             avalai_vision_endpoint,
+#             headers=headers_payload,
+#             files=files_payload,
+#             timeout=45
+#         )
+#         response_vision.raise_for_status() # اگر خطا بود، exception ایجاد می‌کند
+#         vision_data = response_vision.json()
+#         current_app.logger.debug(f"SearchByImage: پاسخ از سرویس تحلیل تصویر: {vision_data}")        # --- پردازش پاسخ سرویس (مثال) ---
+#         # این بخش کاملاً به فرمت پاسخ API شما بستگی دارد
+#         if vision_data.get("status") == "success" and "objects" in vision_data:
+#             for obj in vision_data["objects"]:
+#                 if obj.get("confidence", 0) > 0.5: # یک آستانه برای اطمینان
+#                     analyzed_keywords.append(obj["name"])
+#             if analyzed_keywords:
+#                 bot_message_for_image = f"بر اساس تصویر، موارد زیر تشخیص داده شد: {', '.join(analyzed_keywords)}. در حال جستجوی محصولات مشابه..."
+#             else:
+#                 bot_message_for_image = "موردی در تصویر برای جستجو تشخیص داده نشد."
+#         else:
+#             bot_message_for_image = f"تحلیل تصویر موفقیت‌آمیز نبود. پیام سرور: {vision_data.get('message', 'نامشخص')}"
+#         #------------------------------------------------------------------------------------
+#         client = google.cloud.vision.ImageAnnotatorClient() # نیاز به تنظیمات احراز هویت گوگل دارد
+#         content = image_bytes
+#         gcp_image = google.cloud.vision.Image(content=content)
+#                 # انتخاب ویژگی‌های مورد نظر برای استخراج (مثلاً لیبل‌ها یا اشیاء)
+#         response_gcp = client.label_detection(image=gcp_image)
+#         # یا response_gcp = client.object_localization(image=gcp_image)
+#         if response_gcp.error.message:
+#             raise Exception(f"Google Vision API error: {response_gcp.error.message}")
+#         labels = response_gcp.label_annotations
+#         for label in labels:
+#             if label.score > 0.6: # یک آستانه برای اطمینان
+#                 analyzed_keywords.append(label.description)
+#         if analyzed_keywords:
+#             bot_message_for_image = f"بر اساس تصویر، موارد زیر تشخیص داده شد: {', '.join(analyzed_keywords)}. در حال جستجوی محصولات مشابه..."
+#         else:
+#             bot_message_for_image = "موردی در تصویر برای جستجو تشخیص داده نشد."
+
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        # <<<<<<< بخش شبیه‌سازی موقت شما (که باید با کد واقعی بالا جایگزین شود) >>>>>>>
+        # <<<<<<< اگر هنوز API واقعی ندارید، این بخش را برای تست نگه دارید       >>>>>>>
+        # <<<<<<< اما برای عملکرد واقعی، این بخش کافی نیست.                    >>>>>>>
+        # current_app.logger.info(f"SearchByImage: فایل '{filename}' با نوع '{image_file.mimetype}' دریافت شد، شبیه‌سازی تحلیل...")
+        # temp_keywords_from_filename = []
+        # fn_lower = filename.lower()
+        # common_brands = ["دریل", "drill", "هیلتی", "hilti", "بوش", "bosch", "ماکیتا", "makita", "رونیکس", "ronix"] # لیست برندها یا کلمات کلیدی مهم
+        # for brand_kw in common_brands:
+        #     if brand_kw in fn_lower:
+        #         # سعی کنید نام فارسی برند را هم اضافه کنید اگر انگلیسی بود و بالعکس
+        #         if brand_kw == "drill": temp_keywords_from_filename.extend(["دریل", "ابزار"])
+        #         elif brand_kw == "دریل": temp_keywords_from_filename.extend(["دریل", "ابزار برقی"])
+        #         elif brand_kw == "hilti": temp_keywords_from_filename.extend(["هیلتی", "ابزار"])
+        #         elif brand_kw == "هیلتی": temp_keywords_from_filename.extend(["هیلتی", "ابزار ساختمانی"])
+        #         elif brand_kw == "bosch": temp_keywords_from_filename.extend(["بوش", "ابزار"])
+        #         elif brand_kw == "بوش": temp_keywords_from_filename.extend(["بوش", "لوازم خانگی", "ابزار"])
+        #         else: temp_keywords_from_filename.append(brand_kw)
+        
+        # if temp_keywords_from_filename:
+        #     analyzed_keywords = list(set(temp_keywords_from_filename)) # حذف موارد تکراری
+        #     bot_message_for_image = f"بر اساس نام فایل، به نظر می‌رسد تصویر مربوط به '{', '.join(analyzed_keywords)}' باشد. در حال جستجو..."
+        # else:
+        #     analyzed_keywords = [] 
+        #     bot_message_for_image = "کلمات کلیدی خاصی از نام فایل تصویر استخراج نشد."
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    # except requests.exceptions.HTTPError as http_err: # خطاهای HTTP خاص
+    #     current_app.logger.error(f"SearchByImage: خطای HTTP در ارتباط با سرویس تحلیل تصویر: {http_err.response.text}", exc_info=True)
+    #     bot_message_for_image = "خطا در تحلیل تصویر (خطای سرور سرویس تصویر)."
+    # except requests.exceptions.RequestException as req_err: # خطاهای کلی شبکه
+    #     current_app.logger.error(f"SearchByImage: خطا در ارتباط با سرویس تحلیل تصویر: {req_err}", exc_info=True)
+    #     bot_message_for_image = "خطا در ارتباط با سرویس تحلیل تصویر. لطفاً اتصال اینترنت و پیکربندی را بررسی کنید."
+    # except Exception as e: # سایر خطاهای پیش‌بینی نشده
+    #     current_app.logger.error(f"SearchByImage: خطای ناشناخته در طول تحلیل تصویر: {e}", exc_info=True)
+    #     bot_message_for_image = "خطای داخلی پیش‌بینی نشده در پردازش تصویر رخ داد."
+            
+    # products_info = []
+    # related_products_models = []
+
+    # if analyzed_keywords:
+    #     current_app.logger.info(f"SearchByImage: جستجو در محصولات برای کلمات کلیدی: {analyzed_keywords}")
+    #     # تابع find_related_products شما لیست کلمات کلیدی را به عنوان یک رشته واحد می‌پذیرد
+    #     search_query_from_image = " ".join(analyzed_keywords) 
+    #     related_products_models = find_related_products(search_query_from_image, limit=6)
+        
+    #     if related_products_models:
+    #         # اگر قبلاً پیامی از تحلیل تصویر داشتیم، پیام موفقیت را به آن اضافه می‌کنیم
+    #         if "تشخیص داده شد" in bot_message_for_image or "به نظر می‌رسد" in bot_message_for_image:
+    #              bot_message_for_image += f" {len(related_products_models)} محصول مرتبط یافت شد."
+    #         else: # اگر پیام قبلی خطا بوده یا عمومی بوده
+    #             bot_message_for_image = f"بر اساس تحلیل تصویر، {len(related_products_models)} محصول مرتبط یافت شد."
+
+    #         for p in related_products_models:
+    #             products_info.append({
+    #                 'id': p.id,
+    #                 'name': p.name,
+    #                 'price': float(p.price) if p.price is not None else None,
+    #                 'image_url': url_for('main.uploaded_file', filename=p.image_path, _external=True, _scheme='https') if p.image_path else None
+    #             })
+    #     elif analyzed_keywords: # کلمه کلیدی بوده ولی محصولی یافت نشده
+    #          bot_message_for_image = f"بر اساس تحلیل تصویر و کلمات کلیدی '{', '.join(analyzed_keywords)}'، محصول مشابهی در حال حاضر یافت نشد."
+    # elif not analyzed_keywords and "خطا" not in bot_message_for_image : # اگر هیچ کلمه کلیدی استخراج نشده و خطایی هم رخ نداده
+    #     bot_message_for_image = "متاسفانه تحلیل تصویر نتیجه‌ای برای جستجو در بر نداشت. لطفا عکس دیگری را امتحان کنید."
+        
+    # return jsonify({
+    #     'bot_response': bot_message_for_image,
+    #     'products': products_info,
+    #     'analyzed_keywords': analyzed_keywords # برای دیباگ یا نمایش به کاربر
+    # })
+
+
+
+# @bp.route('/chatbot', methods=['GET', 'POST'])
+# @login_required
+# def chatbot_page():
+#     bot_response_content = None # نام متغیر را برای وضوح بیشتر تغییر دادم
+
+#     if request.method == 'POST':
+#         user_query = request.form.get('query', '').strip()
+
+#         if not user_query:
+#             flash('سؤال نمی‌تواند خالی باشد.', 'warning')
+#             return redirect(url_for('main.chatbot_page'))
+
+#         # <<<<<<< شروع تغییر >>>>>>>
+#         # خواندن متغیرها از app.config به جای os.getenv
+#         avalai_api_key = current_app.config.get("AVALAI_API_KEY")
+#         avalai_model = current_app.config.get("AVALAI_CHAT_MODEL")
+#         # <<<<<<< پایان تغییر >>>>>>>
+
+#         # ----- خطوط اشکال‌زدایی موقت (می‌توانید فعال نگه دارید تا مطمئن شوید مقادیر درست هستند) -----
+#         current_app.logger.debug(f"DEBUG - AVALAI_API_KEY from app.config: '{avalai_api_key}'")
+#         current_app.logger.debug(f"DEBUG - AVALAI_CHAT_MODEL from app.config: '{avalai_model}'")
+#         # ---------------------------------
+
+#         if not avalai_api_key or not avalai_model:
+#             current_app.logger.error("کلید API یا نام مدل AvalAI در پیکربندی اپلیکیشن (app.config) تنظیم نشده یا خالی است.")
+#             bot_response_content = "خطا: سرویس چت در حال حاضر در دسترس نیست (پیکربندی سرور ناقص است)."
+#             # ... بقیه کد برای ذخیره تعامل و رندر قالب ...
+#             interaction = ChatBotInteraction(
+#                 user_id=current_user.id,
+#                 user_query=user_query,
+#                 bot_response=bot_response_content
+#             )
+#             db.session.add(interaction)
+#             db.session.commit()
+#             return render_template('ai_chat.html', bot_response=bot_response_content)
+
+
+#         try:
+#             response = requests.post(
+#                 "https://api.avalai.ir/v1/chat/completions",
+#                 headers={
+#                     "Authorization": f"Bearer {avalai_api_key}",
+#                     "Content-Type": "application/json"
+#                 },
+#                 json={
+#                     "model": avalai_model,
+#                     "messages": [{"role": "user", "content": user_query}],
+#                     "max_tokens": 1000,  # می‌توانید این مقدار را بر اساس نیاز تغییر دهید
+#                     "temperature": 0.7    # میزان خلاقیت پاسخ، قابل تنظیم
+#                 },
+#                 timeout=30 # اضافه کردن timeout برای جلوگیری از انتظار نامحدود
+#             )
+
+#             current_app.logger.debug(f"AvalAI API Status Code: {response.status_code}")
+#             current_app.logger.debug(f"AvalAI API Response Text: {response.text}")
+
+#             if response.status_code == 200:
+#                 data = response.json()
+#                 if "choices" in data and data["choices"] and "message" in data["choices"][0] and "content" in data["choices"][0]["message"]:
+#                     bot_response_content = data["choices"][0]["message"]["content"]
+#                 else:
+#                     bot_response_content = "پاسخ دریافتی از سرویس چت ساختار معتبری نداشت."
+#                     current_app.logger.error(f"Unexpected AvalAI response structure: {data}")
+#             else:
+#                 bot_response_content = f"خطا در ارتباط با سرویس چت AvalAI. کد وضعیت: {response.status_code}"
+#                 try:
+#                     # تلاش برای لاگ کردن جزئیات بیشتر از خطای API
+#                     error_details = response.json()
+#                     current_app.logger.error(f"AvalAI API Error Details: {error_details}")
+#                     if 'error' in error_details and 'message' in error_details['error']:
+#                          bot_response_content += f" پیام: {error_details['error']['message']}"
+#                 except ValueError: # اگر پاسخ JSON معتبر نباشد
+#                     current_app.logger.error(f"AvalAI API Error (non-JSON response): {response.text}")
+
+
+#         except requests.exceptions.Timeout:
+#             bot_response_content = "پاسخ از سرویس چت با تاخیر مواجه شد. لطفاً دوباره تلاش کنید."
+#             current_app.logger.error("Timeout error connecting to AvalAI API.")
+#         except requests.exceptions.RequestException as e:
+#             bot_response_content = "خطا در برقراری ارتباط با سرویس چت. لطفاً وضعیت شبکه خود را بررسی کنید."
+#             current_app.logger.error(f"Network error or other RequestException calling AvalAI API: {str(e)}")
+#         except Exception as e: # یک خطای عمومی برای موارد پیش‌بینی نشده
+#             bot_response_content = "یک خطای پیش‌بینی نشده در سرویس چت رخ داد."
+#             current_app.logger.error(f"An unexpected error occurred in chatbot_page: {str(e)}")
+
+
+#         # ذخیره تعامل کاربر و پاسخ ربات در دیتابیس
+#         # اطمینان از اینکه bot_response_content همیشه مقداری دارد
+#         if bot_response_content is None:
+#             bot_response_content = "پاسخی از ربات دریافت نشد (خطای داخلی)."
+
+#         interaction = ChatBotInteraction(
+#             user_id=current_user.id,
+#             user_query=user_query,
+#             bot_response=bot_response_content
+#         )
+#         db.session.add(interaction)
+#         db.session.commit()
+
+#     # برای درخواست GET یا پس از اتمام POST، صفحه را با پاسخ ربات (یا None) رندر می‌کنیم.
+#     # از آنجایی که گفتید "فقط برای چت"، بخش محصولات مرتبط حذف شده است.
+#     return render_template('ai_chat.html', bot_response=bot_response_content)
+
+
+
+# def find_related_products(query):
+#     # تجزیه و تحلیل کوئری کاربر
+#     keywords = query.lower().split()
+
+#     # جستجوی محصولات بر اساس کلمات کلیدی
+#     products = Product.query.filter(
+#         db.or_(
+#             *[Product.name.ilike(f'%{kw}%') for kw in keywords],
+#             *[Product.description.ilike(f'%{kw}%') for kw in keywords]
+#         )
+#     ).limit(5).all()
+
+#     return products
 
 
 
@@ -2141,3 +2601,17 @@ def api_dashboard():
         'free_publish_granted': free_publish_granted,
         'unpaid_product_ids': unpaid_product_ids
     })
+
+
+
+
+# llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+# llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+
+
+@limiter.limit("5 per minute")
+@bp.route("/my_store", methods=["GET", "POST"])
+@login_required
+def my_store():
+    user_products = Product.query.filter_by(user_id=current_user.id).all()
+    return render_template('my_store.html', products=user_products)

@@ -547,6 +547,13 @@
         </button>
         <div class="collapse navbar-collapse flex-column text-end p-3" style="background: var(--black-color);" id="mobileMenu">
           
+            <!-- <a class="nav-link text-success mb-2" href="{{ url_for('main.conversations') }}">
+                <i class="bi bi-chat-left-text me-2 ms-2"></i> گفت‌وگوها
+            </a> -->
+
+            <a class="nav-link text-info mb-2" href="{{ url_for('main.chatbot_page_render') }}"> {# فرض بر این است که route شما chatbot_page_render نام دارد #}
+                <i class="bi bi-robot me-2 ms-2"></i> چت هوشمند
+            </a>
         
           {% if current_user.is_admin %}
             <a class="nav-link text-danger mb-2" href="{{ url_for('main.admin_dashboard') }}">
@@ -559,7 +566,7 @@
               <i class="bi bi-box-arrow-left me-2 ms-2"></i> خروج
             </a>
           {% else %}
-            <a class="nav-link text-success mb-2" href="{{ url_for('main.bazaar_auth') }}">
+            <a class="nav-link text-success mb-2" href="{{ url_for('main.login') }}">
                 <i class="bi bi-box-arrow-in-left me-2 ms-2"></i> ورود/ثبت‌نام
             </a>
           {% endif %}
@@ -577,9 +584,9 @@
                 </button>
 
                 <form class="d-lg-flex d-md-none d-sm-none w-100" action="{{ url_for('main.index') }}" method="GET">
-                    <div class="d-flex w-75 m-auto gap-2">
-                        
-                        <!-- Dropdown انتخاب استان -->
+                    <div class="d-flex w-75 m-auto gap-2 align-items-center"> {# اضافه کردن align-items-center #}
+
+                        {# ... کد دراپ‌دان استان شما ... #}
                         <div class="dropdown w-25">
                             <button class="btn dropdown-toggle w-100 p-2 txt-black chooser" type="button"
                                     id="provinceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -591,16 +598,15 @@
                                     <input type="text" id="provinceSearch" class="form-control mb-2"
                                            placeholder="جستجوی استان..." onkeyup="filterProvinces()" onclick="event.stopPropagation();">
                                 </li>
-                                <li><a class="dropdown-item txt-black" href="#" onclick="selectProvince('')">انتخاب استان</a></li>
+                                <li><a class="dropdown-item txt-black" href="https://stockdivar.ir" onclick="selectProvince('desktop', '')">همه استان ها</a></li>
                                 {% for province in provinces %}
                                 <li class="province-item text-end"><a class="dropdown-item txt-black" href="#" onclick="selectProvince('desktop', '{{ province }}')">{{ province }}</a></li>
                                 {% endfor %}
                             </ul>
                             <input type="hidden" name="province_search" id="provinceInput" value="{{ request.args.get('province_search', '') }}">
                         </div>
-
                     
-                        <!-- Dropdown انتخاب شهر -->
+                        {# ... کد دراپ‌دان شهر شما ... #}
                         <div class="dropdown w-25">
                             <button class="btn dropdown-toggle w-100 p-2 txt-black chooser" type="button" id="cityDropdown"
                                 data-bs-toggle="dropdown" aria-expanded="false">
@@ -608,16 +614,26 @@
                             </button>
                             <ul class="dropdown-menu w-100 p-2" aria-labelledby="cityDropdown"
                                 id="cityList" style="max-height: 20rem; overflow-y: auto; background-color: #3A3A3C;">
-                                <li><a class="dropdown-item txt-black" href="#" onclick="selectCity('')">انتخاب شهر</a></li>
+                                <li><a class="dropdown-item txt-black" href="#" onclick="selectCity('desktop', '')">انتخاب شهر</a></li>
                             </ul>
                             <input type="hidden" name="city_search" id="cityInput" value="{{ request.args.get('city_search', '') }}">
                         </div>
                     
-                        <input class="inputs w-75 me-2 txt-black" type="search" placeholder="جستجو..." name="search"
-                            value="{{ request.args.get('search', '') }}">
+                        {# <<<<<<< شروع تغییرات برای جستجوی تصویری در دسکتاپ >>>>>>> #}
+                        <div class="input-group w-75 me-2"> {# استفاده از input-group برای چسباندن آیکون #}
+                            <input class="form-control inputs txt-black" type="search" placeholder="جستجو..." name="search"
+                                value="{{ request.args.get('search', '') }}">
+                            
+                        </div>
+                        {# <<<<<<< پایان تغییرات برای جستجوی تصویری در دسکتاپ >>>>>>> #}
+                    
                         <button class="btn w-25 header-tabs txt-black" type="submit">جستجو</button>
                     </div>
                 </form>
+                <input type="file" id="imageSearchInput" accept="image/*" style="display: none;"> {# فیلد مخفی برای آپلود عکس #}
+                <div id="imageSearchSpinner" class="spinner-border text-primary" role="status" style="display: none; position: fixed; top: 50%; left: 50%;">
+                    <span class="visually-hidden">در حال بارگذاری...</span>
+                </div>
 
                 
                 
@@ -646,7 +662,12 @@
                         </li>
                     {% endif %}
 
-                    
+                    <!-- <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
+                        <a class="nav-link text-primary m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.chatbot_page_render') }}">
+                            <i class="bi bi-person text-primary txt-lighter fs-3 m-0 p-0 me-1 m-auto"></i><br> 
+                            <span class="text-nowrap text-end text-primary">چت هوشمند</span>
+                        </a>
+                    </li> -->
                     
                     {% if current_user.is_admin %}
                         <li class="nav-item header-tabs pt-1 pb-2 pe-3 ps-3 text-center font-300 position-relative">
@@ -682,19 +703,20 @@
 
     
    <!-- فرم موبایل -->
+    {# در فایل base.html، داخل فرم جستجوی موبایل #}
     <form class="d-lg-none d-md-flex d-sm-flex w-100 {{ 'd-none' if 'chat.html' in request.path else '' }}" action="{{ url_for('main.index') }}" method="GET">
         <div class="d-flex w-100 m-auto flex-wrap">
             
-            <!-- Dropdown استان (مخصوص موبایل) -->
-            <div class="dropdown w-50 m-0">
+            {# ... کد دراپ‌دان استان موبایل شما ... #}
+             <div class="dropdown w-50 m-0">
                 <button class="btn p-2 dropdown-toggle w-100 outline-none txt-black m-0" type="button" id="provinceDropdownMobile" style="font-size: 1.25rem;" data-bs-toggle="dropdown" aria-expanded="false">
                     انتخاب استان
                 </button>
-                <ul class="dropdown-menu chooser w-100 overflow-auto" id="provinceListMobile" style="max-height: 20rem; z-index: 99999;">
+                <ul class="dropdown-menu text-end chooser w-100 overflow-auto" id="provinceListMobile" style="max-height: 20rem; z-index: 99999;">
                     <li>
                         <input type="text" id="provinceSearchMobile" class="form-control w-100 p-2 mb-2" placeholder="جستجوی استان..." onkeyup="filterProvincesMobile()" onclick="keepDropdownOpen(event)">
                     </li>
-                    <li><a class="dropdown-item txt-black" href="#" style="font-size: 1.5rem;" onclick="selectProvince('mobile', '')">انتخاب استان</a></li>
+                    <li><a class="dropdown-item txt-black" href="https://stockdivar.ir" style="font-size: 1.5rem;" onclick="selectProvince('mobile', '')">همه استان ها</a></li>
                     {% for province in provinces %}
                     <li class="province-item-mobile"><a class="dropdown-item txt-black" href="#" onclick="selectProvince('mobile', '{{ province }}')">{{ province }}</a></li>
                     {% endfor %}
@@ -702,23 +724,28 @@
                 <input type="hidden" name="province_search" id="provinceInputMobile" value="{{ request.args.get('province_search', '') }}">
             </div>
         
-            <!-- Dropdown شهر (مخصوص موبایل) -->
+            {# ... کد دراپ‌دان شهر موبایل شما ... #}
             <div class="dropdown w-50 m-0 txt-black">
                 <button class="btn p-2 dropdown-toggle w-100 outline-none txt-black m-0" style="font-size: 1.25rem;" type="button" id="cityDropdownMobile" data-bs-toggle="dropdown" aria-expanded="false">
                     انتخاب شهر
                 </button>
-                <ul class="dropdown-menu chooser w-100 txt-black" id="cityListMobile" style="background-color: #3A3A3C; z-index: 99999;">
+                <ul class="dropdown-menu text-end chooser w-100 txt-black" id="cityListMobile" style="background-color: #3A3A3C; z-index: 99999;">
                     <li><a class="dropdown-item txt-black" href="#" style="font-size: 1.5rem;" onclick="selectCity('mobile', '')">انتخاب شهر</a></li>
                 </ul>
                 <input type="hidden" name="city_search" id="cityInputMobile" value="{{ request.args.get('city_search', '') }}">
             </div>
         
-            <div class="d-flex flex-nowrap w-100 mt-3">
-                <input class="me-2 inputs searcher w-75 txt-black" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
-                <button class="btn header-tabs w-25 txt-black" type="submit">جستجو</button>
+            <div class="d-flex flex-nowrap w-100 mt-3 align-items-center"> {# اضافه کردن align-items-center #}
+                {# <<<<<<< شروع تغییرات برای جستجوی تصویری در موبایل >>>>>>> #}
+                <div class="input-group flex-grow-1 me-2"> {# استفاده از input-group و flex-grow-1 #}
+                    <input class="form-control inputs searcher txt-black" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
+                </div>
+                 {# <<<<<<< پایان تغییرات برای جستجوی تصویری در موبایل >>>>>>> #}
+                <button class="btn header-tabs w-auto txt-black" type="submit">جستجو</button> {# تغییر w-25 به w-auto #}
             </div>
         </div>
     </form>
+    {# فیلد مخفی آپلود عکس و اسپینر که در بالا تعریف شد، برای هر دو فرم استفاده می‌شود و نیازی به تکرار نیست #}
 
     <!-- <button id="toggleButton">تغییر تم</button> -->
 
@@ -737,6 +764,11 @@
 
         {% block content %}{% endblock %}
     </div>
+
+    <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg rounded-circle shadow mb-5" id="floatingChatButton" title="چت با هوش مصنوعی">
+        <i class="bi bi-robot"></i>
+        <p class="chat-label mt-1 text-nowrap">چت هوشمند</p>
+    </a>
 
     
     <div class="bottom-div sticky-bottom d-lg-none d-md-none d-sm-flex flex-nowrap" style="background-color: var(--dark-green);">
@@ -767,6 +799,7 @@
         
     </div>
 
+    
     <footer class="w-100 text-start pt-4 px-3 {{ 'd-none' if 'chat.html' in request.path else '' }}" style="background-color: #1f1f1f; color: #f1f1f1; z-index: 2;">
         <div class="w-100 d-flex flex-column flex-md-row align-items-start justify-content-between gap-4 {{ 'd-none' if 'chat.html' in request.path else '' }}">
             <!-- Carousel بخش عکس -->
@@ -822,7 +855,7 @@
                 <li class="mb-2">سایت ما: <a href="https://stockheydari.ir" class="text-decoration-none" style="color: #00bcd4;">stockheydari.ir</a></li>
                 <li class="mb-2">تلفن ثابت: <span dir="ltr">021 91691502</span></li>
                 <li class="mb-2">تماس با پشتیبانی: <span dir="ltr">021 56699640</span></li>
-                <li class="mb-2">توسعه دهنده: 09228192173</li>
+                <li class="mb-2">توسعه دهنده: سید عرفان حسینی 09228192173</li>
                 <li class="mb-2">ارسال بازخورد(واتساپ): <span dir="ltr">09910948335</span></li>
                 <li class="mb-2">آدرس شرکت: تهران، اسلامشهر، سرنوری، ک لادن، پ 12</li>
                 <li class="mb-2"><a href="https://stockheydari.ir/abut-us/" class="text-decoration-none" style="color: #00bcd4;">درباره ما</a></li>
@@ -1097,5 +1130,8 @@ function keepDropdownOpen(event) {
     console.log(window.citiesByProvince);
 
     </script>
+
+</body>
+
 </body>
 </html>

@@ -1,7 +1,7 @@
 import os
 import logging
 from dotenv import load_dotenv
-from flask import Flask, render_template
+from flask import Flask, render_template, Response, url_for
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -12,6 +12,9 @@ from flask_limiter.util import get_remote_address
 from flask_apscheduler import APScheduler  # ✅ اضافه شده
 import redis
 from flask_cors import CORS
+from datetime import date
+from flask_jwt_extended import JWTManager
+
 
 
 
@@ -63,6 +66,7 @@ def create_app():
        
     # بارگذاری کلید مخفی و اطلاعات دیتابیس از محیط
     app.secret_key = os.environ.get("SECRET_KEY", "کلید_پیش‌فرض_اما_غیر_امن")
+    app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "your-super-secret-and-strong-jwt-key")
     app.config["ZIBAL_MERCHANT"] = os.environ.get("ZIBAL_MERCHANT")
     app.config["ZIBAL_CALLBACK_URL"] = os.environ.get("ZIBAL_CALLBACK_URL")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
@@ -74,7 +78,8 @@ def create_app():
         "pool_recycle": 300,
         "pool_pre_ping": True,
     }
-    app.config["DEEPSEEK_API_KEY"] = os.environ.get("DEEPSEEK_API_KEY")
+    app.config["AVALAI_API_KEY"] = os.environ.get("AVALAI_API_KEY")
+    app.config["AVALAI_CHAT_MODEL"] = os.environ.get("AVALAI_CHAT_MODEL")
     app.config["BAZAAR_MERCHANT_ID"] = os.environ.get("BAZAAR_MERCHANT_ID")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     print("ZIBAL_MERCHANT:", app.config["ZIBAL_MERCHANT"])
@@ -107,6 +112,47 @@ def create_app():
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
+    
+
+
+    @app.route('/sitemap.xml')
+    def sitemap():
+        pages = []
+        lastmod = date.today().isoformat()
+
+        for rule in app.url_map.iter_rules():
+            excluded_routes = [
+                '/logout', '/verify_login', '/init-categories',
+                '/payment/callback', '/test/expire-soon', '/get_new_messages',
+                '/ionicApp-server', '/sitemap.xml', '/my_store', '/chatbot', '/bazaar-login', '/bazaar-callback', '/bazaar-auth', '/verify-phone-change'
+            ]
+            # حذف APIها و مسیرهای دارای پارامتر
+            if "GET" in rule.methods and len(rule.arguments) == 0 and not rule.rule.startswith("/api") and rule.rule not in excluded_routes:
+                try:
+                    url = url_for(rule.endpoint, _external=True)
+                    priority = "1.0" if rule.rule == "/" else "0.8"
+                    pages.append({
+                        "loc": url,
+                        "lastmod": lastmod,
+                        "priority": priority
+                    })
+                except Exception as e:
+                    logging.warning(f"خطا در پردازش مسیر {rule}: {e}")
+
+        sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        sitemap_xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+
+        for page in pages:
+            sitemap_xml += f"""  <url>
+        <loc>{page['loc']}</loc>
+        <lastmod>{page['lastmod']}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>{page['priority']}</priority>
+        </url>\n"""
+
+        sitemap_xml += '</urlset>'
+
+        return Response(sitemap_xml, mimetype='application/xml')
 
     # ایجاد جداول دیتابیس در صورت نیاز
     with app.app_context():
