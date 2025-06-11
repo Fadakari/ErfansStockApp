@@ -26,9 +26,12 @@
                     </div>
                     <div class="mb-3">
                         <label for="price" class="form-label txt-black">قیمت (تومان)</label>
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="inputs txt-black"
-                            placeholder="قیمت محصول را وارد کنید" id="price" name="price"
-                            value="{{ product.price if product else '' }}" required>
+
+                        <input type="text" inputmode="numeric" class="inputs txt-black"
+                               placeholder="قیمت محصول را وارد کنید" id="price" name="price"
+                               value="{{ product.price if product else '' }}" required>
+
+                        <small id="price-in-words" class="form-text mt-1 d-block text-success">&nbsp;</small>
                     </div>
                     <div class="mb-3">
                         <label for="category_id" class="form-label txt-black">دسته‌بندی</label>
@@ -76,30 +79,31 @@
 
                    <div class="mb-3">
                         <label for="brand" class="form-label txt-black">برند</label>
-                        <select class="form-select txt-black" id="brand" name="brand" required>
+                        <select class="form-select txt-black" id="brand-select" name="brand" required>
                             <option class="txt-black" value="" disabled {% if not product %}selected{% endif %}>انتخاب برند</option>
-                            <option class="txt-black" value="bosch" {% if product and product.brand == "bosch" %}selected{% endif %}>Bosch</option>
-                            <option class="txt-black" value="makita" {% if product and product.brand == "makita" %}selected{% endif %}>Makita</option>
-                            <option class="txt-black" value="dewalt" {% if product and product.brand == "dewalt" %}selected{% endif %}>DeWalt</option>
-                            <option class="txt-black" value="milwaukee" {% if product and product.brand == "milwaukee" %}selected{% endif %}>Milwaukee</option>
-                            <option class="txt-black" value="hilti" {% if product and product.brand == "hilti" %}selected{% endif %}>Hilti</option>
-                            <option class="txt-black" value="stanley" {% if product and product.brand == "stanley" %}selected{% endif %}>Stanley</option>
-                            <option class="txt-black" value="ingersoll_rand" {% if product and product.brand == "ingersoll_rand" %}selected{% endif %}>Ingersoll Rand</option>
-                            <option class="txt-black" value="black_decker" {% if product and product.brand == "black_decker" %}selected{% endif %}>Black & Decker</option>
-                            <option class="txt-black" value="metabo" {% if product and product.brand == "metabo" %}selected{% endif %}>Metabo</option>
-                            <option class="txt-black" value="hitachi" {% if product and product.brand == "hitachi" %}selected{% endif %}>Hitachi</option>
-                            <option class="txt-black" value="ridgid" {% if product and product.brand == "ridgid" %}selected{% endif %}>Ridgid</option>
-                            <option class="txt-black" value="ryobi" {% if product and product.brand == "ryobi" %}selected{% endif %}>Ryobi</option>
-                            <option class="txt-black" value="festool" {% if product and product.brand == "festool" %}selected{% endif %}>Festool</option>
-                            <option class="txt-black" value="einhell" {% if product and product.brand == "einhell" %}selected{% endif %}>Einhell</option>
-                            <option class="txt-black" value="ronix" {% if product and product.brand == "ronix" %}selected{% endif %}>Ronix</option>
-                            <option class="txt-black" value="ingco" {% if product and product.brand == "ingco" %}selected{% endif %}>INGCO</option>
-                            <option class="txt-black" value="total" {% if product and product.brand == "total" %}selected{% endif %}>TOTAL</option>
-                            <option class="txt-black" value="tactix" {% if product and product.brand == "tactix" %}selected{% endif %}>Tactix</option>
-                            <option class="txt-black" value="kress" {% if product and product.brand == "kress" %}selected{% endif %}>Kress</option>
-                            <option class="txt-black" value="skil" {% if product and product.brand == "skil" %}selected{% endif %}>Skil</option>
-                            <option class="txt-black" value="AEG" {% if product and product.brand == "AEG" %}selected{% endif %}>AEG</option>
-                            <option class="txt-black" value="wurth" {% if product and product.brand == "wurth" %}selected{% endif %}>wurth</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/bosch.png') }}" value="bosch" {% if product and product.brand == "bosch" %}selected{% endif %}>Bosch/بوش</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Makita-Logo.png') }}" value="makita" {% if product and product.brand == "makita" %}selected{% endif %}>Makita/ماکیتا</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/dewalt.png') }}" value="dewalt" {% if product and product.brand == "dewalt" %}selected{% endif %}>DeWalt/دیوالت</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Milwaukee-Logo.png') }}" value="milwaukee" {% if product and product.brand == "milwaukee" %}selected{% endif %}>Milwaukee/میلواکی</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Hilti-Logo-700x394.png') }}" value="hilti" {% if product and product.brand == "hilti" %}selected{% endif %}>Hilti/هیلتی</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Stanley-Logo.png') }}" value="stanley" {% if product and product.brand == "stanley" %}selected{% endif %}>Stanley/استنلی</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Brand-Ingersoll_Rand_Logo.png') }}" value="ingersoll_rand" {% if product and product.brand == "ingersoll_rand" %}selected{% endif %}>Ingersoll Rand/اینگرسول رند</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/black.png') }}" value="black_decker" {% if product and product.brand == "black_decker" %}selected{% endif %}>Black & Decker/بلک اند دکر</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/metabo-logo-vector-removebg-preview.png') }}" value="metabo" {% if product and product.brand == "metabo" %}selected{% endif %}>Metabo/متابو</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/hitachi.png') }}" value="hitachi" {% if product and product.brand == "hitachi" %}selected{% endif %}>Hitachi/هیتاچی</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/ridgid.png') }}" value="ridgid" {% if product and product.brand == "ridgid" %}selected{% endif %}>Ridgid/ریجید</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Ryobi_company_logo.svg.png') }}" value="ryobi" {% if product and product.brand == "ryobi" %}selected{% endif %}>Ryobi/ریوبی</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Festool-logo.png') }}" value="festool" {% if product and product.brand == "festool" %}selected{% endif %}>Festool/فستول</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/einhell.png') }}" value="einhell" {% if product and product.brand == "einhell" %}selected{% endif %}>Einhell/اینهل</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/ronix.png') }}" value="ronix" {% if product and product.brand == "ronix" %}selected{% endif %}>Ronix/رونیکس</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/ingco.png') }}" value="ingco" {% if product and product.brand == "ingco" %}selected{% endif %}>INGCO/اینکو</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/total.png') }}" value="total" {% if product and product.brand == "total" %}selected{% endif %}>TOTAL/توتال</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/tactix.png') }}" value="tactix" {% if product and product.brand == "tactix" %}selected{% endif %}>Tactix/تکتیکس</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/kress.png') }}" value="kress" {% if product and product.brand == "kress" %}selected{% endif %}>Kress/کرس</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/skil.png') }}" value="skil" {% if product and product.brand == "skil" %}selected{% endif %}>Skil/اسکیل</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/aeg.png') }}" value="AEG" {% if product and product.brand == "AEG" %}selected{% endif %}>AEG/آاگ</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/wurth.png') }}" value="wurth" {% if product and product.brand == "wurth" %}selected{% endif %}>wurth/وورث</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/new_1000-removebg-preview.png') }}" value="wiha" {% if product and product.brand == "wiha" %}selected{% endif %}>wiha/ویها</option>
                         </select>
                     </div>
 
@@ -116,38 +120,40 @@
 
 
                     <div class="mb-3">
-                        <label for="image" class="form-label txt-black">تصویر محصول</label>
-                    
-                        <!-- دکمه انتخاب فایل با طراحی مربع -->
-                        <div class="custom-file">
-                            <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*">
+                        <label for="image" class="form-label txt-black">تصویر محصول (حداکثر ۳ عدد)</label>
+                        <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد</p>
 
-                            <!-- مربع با علامت + و نوشته "انتخاب عکس" -->
+                        <div class="custom-file">
+                            <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*" multiple>
+                        
                             <div class="image-upload-box" onclick="document.getElementById('image').click();">
                                 <span class="image-upload-plus">+</span>
-                                <p class="image-upload-text">انتخاب عکس</p>
+                                <p class="image-upload-text">انتخاب عکس‌ها</p>
                             </div>
                         </div>
-                        <input type="hidden" name="uploaded_image_path" id="uploaded_image_path" value="">
-                        <!-- نمایش تصویر انتخاب شده -->
-                        {% if product and product.image_path %}
-                        <div class="mt-2">
-                            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" 
-                                 alt="تصویر فعلی" class="img-thumbnail" style="max-height: 200px;">
+
+                        <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths" value="{% if product %}{% for img in product.images %}{{ img.image_path }}{% if not loop.last %},{% endif %}{% else %}{{ product.image_path or '' }}{% endfor %}{% endif %}">
+
+                        <div id="image-previews" class="d-flex flex-wrap mt-2">
+                            {% if product %}
+                                {% if product.images %}
+                                    {% for img in product.images %}
+                                        {% endfor %}
+                                {% elif product.image_path %}
+                                    <div class="m-1 position-relative" data-filename="{{ product.image_path }}">
+                                        <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="img-thumbnail" style="height: 150px; width: auto;">
+                                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removePreview(this)">&times;</button>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
                         </div>
-                        {% endif %}
                     
-                        <!-- نمایش تصویر انتخابی به‌صورت پیش‌نمایش -->
-                        <div class="mt-2" id="imagePreview" style="display: none;">
-                            <img src="" alt="تصویر انتخابی" class="img-thumbnail" style="max-height: 200px;">
-                            <!-- دکمه ضربدر برای لغو انتخاب عکس -->
-                            <button type="button" class="btn btn-danger btn-sm mt-2" onclick="removeImage()">لغو انتخاب</button>
-                        </div>
                         <div class="progress mt-2" id="uploadProgress" style="display: none;">
                           <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
                           <p class="txt-black">در حال آپلود عکس</p>
                         </div>
                     </div>
+
 
 
                     <div class="d-grid">
@@ -160,7 +166,131 @@
         </div>
     </div>
 </div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        
+        // تابعی برای فرمت‌دهی به گزینه‌های لیست
+        function formatBrand(brand) {
+            if (!brand.id) {
+                return brand.text;
+            }
+            
+            var logoPath = $(brand.element).data('logo');
+            if (!logoPath) {
+                return brand.text;
+            }
+            
+            var $brand = $(
+                '<span><img src="' + logoPath + '" class="logo-image" /> ' + brand.text + '</span>'
+            );
+            return $brand;
+        };
+
+        // فعال‌سازی Select2 روی المان مورد نظر
+        $('#brand-select').select2({
+            templateResult: formatBrand,
+            templateSelection: formatBrand,
+            minimumResultsForSearch: Infinity
+        });
+
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const priceInput = document.getElementById('price');
+    const priceWordsElement = document.getElementById('price-in-words');
+
+    // تابع برای تبدیل عدد به حروف فارسی
+    function numberToWords(num) {
+        if (num === 0) return 'صفر';
+        if (!num) return '';
+
+        const ones = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
+        const teens = ['ده', 'یازده', 'دوازده', 'سیزده', 'چهارده', 'پانزده', 'شانزده', 'هفده', 'هجده', 'نوزده'];
+        const tens = ['', '', 'بیست', 'سی', 'چهل', 'پنجاه', 'شصت', 'هفتاد', 'هشتاد', 'نود'];
+        const hundreds = ['', 'یکصد', 'دویست', 'سیصد', 'چهارصد', 'پانصد', 'ششصد', 'هفتصد', 'هشتصد', 'نهصد'];
+        const scales = ['', 'هزار', 'میلیون', 'میلیارد', 'تریلیون'];
+
+        function convertThreeDigits(n) {
+            let word = '';
+            const h = Math.floor(n / 100);
+            const t = Math.floor((n % 100) / 10);
+            const o = n % 10;
+
+            if (h > 0) {
+                word += hundreds[h];
+                if (t > 0 || o > 0) word += ' و ';
+            }
+
+            if (t === 1) {
+                word += teens[o];
+            } else {
+                if (t > 0) {
+                    word += tens[t];
+                    if (o > 0) word += ' و ';
+                }
+                if (o > 0) {
+                    word += ones[o];
+                }
+            }
+            return word;
+        }
+
+        const numStr = String(num);
+        let words = [];
+        let chunkCount = Math.ceil(numStr.length / 3);
+
+        for (let i = 0; i < chunkCount; i++) {
+            const startIndex = numStr.length - (i + 1) * 3;
+            const endIndex = numStr.length - i * 3;
+            const chunk = parseInt(numStr.substring(startIndex < 0 ? 0 : startIndex, endIndex));
+
+            if (chunk > 0) {
+                const chunkWord = convertThreeDigits(chunk);
+                words.push(chunkWord + (i > 0 ? ' ' + scales[i] : ''));
+            }
+        }
+        
+        return words.reverse().join(' و ');
+    }
+
+
+    // رویداد برای هر بار تایپ کردن در فیلد قیمت
+    priceInput.addEventListener('input', function(e) {
+        // 1. دریافت مقدار خام و حذف کاماهای قبلی
+        let rawValue = e.target.value.replace(/,/g, '');
+        
+        // اگر مقدار غیرعددی بود، آن را پاک می‌کنیم
+        if (isNaN(rawValue)) {
+            rawValue = rawValue.replace(/\D/g, '');
+        }
+
+        // 2. فرمت‌دهی عدد با جداکننده سه‌رقمی
+        const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        
+        // 3. قرار دادن مقدار فرمت‌شده در فیلد
+        e.target.value = formattedValue;
+
+        // 4. تبدیل عدد به حروف و نمایش آن
+        const numberValue = parseInt(rawValue, 10);
+        if (numberValue > 0) {
+            priceWordsElement.textContent = numberToWords(numberValue) + ' تومان';
+        } else {
+            priceWordsElement.innerHTML = '&nbsp;'; // پاک کردن متن در صورت خالی بودن
+        }
+    });
+    
+    // اجرای اولیه برای مقادیری که از قبل در فیلد وجود دارند
+    if(priceInput.value){
+        priceInput.dispatchEvent(new Event('input'));
+    }
+
+});
+</script>
 <script>
     // مقادیر از Jinja درون جاوااسکریپت:
     const initialProvince = "{{ product.address.split('-')[0] if product else '' }}";
@@ -227,6 +357,23 @@
 }
 </style>
 <script>
+    // پیدا کردن فرم با id مشخص شده
+    const loginForm = document.getElementById('productForm');
+
+    // اضافه کردن یک event listener برای رویداد 'submit' فرم
+    loginForm.addEventListener('submit', function() {
+        // پیدا کردن دکمه submit در داخل همین فرم
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        
+        if (submitButton) {
+            // حالا دکمه را غیرفعال کرده و اسپینر را نمایش می‌دهیم
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
+        }
+    });
+</script>
+
+<script>
     let startX = 0;
     let startY = 0;
     let currentX = 0;
@@ -288,25 +435,51 @@
 
 </script>
 <script>
-document.getElementById('image').addEventListener('change', previewImage);
+document.addEventListener('DOMContentLoaded', function () {
+    // بازسازی پیش‌نمایش‌ها برای عکس‌های موجود در حالت ویرایش
+    const hiddenInput = document.getElementById('uploaded_image_paths');
+    if (hiddenInput.value) {
+        const existingPaths = hiddenInput.value.split(',');
+        existingPaths.forEach(path => {
+            if (path) addPreview(path);
+        });
+    }
 
-function previewImage(event) {
-    const file = event.target.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    // اتصال رویداد به اینپوت فایل
+    document.getElementById('image').addEventListener('change', handleFileSelect);
+});
 
-    console.log("📁 فایل انتخابی:", file.name);
+function handleFileSelect(event) {
+    const files = event.target.files;
+    const previewContainer = document.getElementById('image-previews');
+    const existingImagesCount = previewContainer.children.length;
 
+    if (files.length + existingImagesCount > 3) {
+        alert("شما حداکثر می‌توانید ۳ تصویر انتخاب کنید.");
+        // پاک کردن انتخاب فعلی تا کاربر دوباره انتخاب کند
+        event.target.value = ''; 
+        return;
+    }
+
+    for (const file of files) {
+        if (file && file.type.startsWith('image/')) {
+            compressAndUpload(file);
+        }
+    }
+    // پاک کردن مقدار اینپوت تا کاربر بتواند همان فایل را دوباره انتخاب کند
+    event.target.value = ''; 
+}
+
+function compressAndUpload(file) {
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = function(e) {
         const img = new Image();
-        img.onload = function () {
+        img.onload = function() {
             const MAX_WIDTH = 1000;
             const MAX_HEIGHT = 1000;
-
             let width = img.width;
             let height = img.height;
 
-            // نسبت تصویر حفظ بشه
             if (width > height && width > MAX_WIDTH) {
                 height *= MAX_WIDTH / width;
                 width = MAX_WIDTH;
@@ -318,35 +491,30 @@ function previewImage(event) {
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
-
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            // خروجی تصویر فشرده‌شده
-            canvas.toBlob(function (blob) {
+            canvas.toBlob(function(blob) {
                 const formData = new FormData();
-                formData.append('image', blob, file.name); // فشرده شده
-
-                uploadCompressedImage(formData);
-            }, 'image/jpeg', 0.8);  // کیفیت 80%
+                formData.append('image', blob, file.name);
+                uploadToServer(formData);
+            }, 'image/jpeg', 0.8);
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
 
-function uploadCompressedImage(formData) {
+function uploadToServer(formData) {
     const progressContainer = document.getElementById("uploadProgress");
     const progressBar = document.getElementById("uploadProgressBar");
     progressContainer.style.display = "block";
     progressBar.style.width = "0%";
     progressBar.innerText = "0%";
-
     document.getElementById("submitBtn").disabled = true;
 
     const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener("progress", function (e) {
+    xhr.upload.addEventListener("progress", function(e) {
         if (e.lengthComputable) {
             const percent = Math.round((e.loaded / e.total) * 100);
             progressBar.style.width = percent + "%";
@@ -354,30 +522,23 @@ function uploadCompressedImage(formData) {
         }
     });
 
-    xhr.onreadystatechange = function () {
+    xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
-            setTimeout(() => {
-                progressContainer.style.display = "none";
-            }, 500);
-
             if (xhr.status === 200) {
                 const data = JSON.parse(xhr.responseText);
                 if (data.image_path) {
-                    const preview = document.getElementById("imagePreview");
-                    preview.style.display = "block";
-                    preview.querySelector("img").src = `/static/uploads/${data.image_path}`;
-                    document.getElementById("uploaded_image_path").value = data.image_path;
-                    document.getElementById("image").disabled = true;
-                    document.getElementById("submitBtn").disabled = false;
-                    console.log("✅ آپلود موفق");
+                    addPreview(data.image_path);
+                    updateHiddenInput();
+                    console.log("✅ آپلود موفق:", data.image_path);
                 } else {
                     alert("❌ خطا در آپلود تصویر");
-                    document.getElementById("submitBtn").disabled = true;
                 }
             } else {
                 alert("❌ ارتباط با سرور برقرار نشد");
-                document.getElementById("submitBtn").disabled = true;
             }
+            // بعد از اتمام هر آپلود، دکمه را فعال و پروگرس را مخفی کن
+            progressContainer.style.display = "none";
+            document.getElementById("submitBtn").disabled = false;
         }
     };
 
@@ -385,22 +546,47 @@ function uploadCompressedImage(formData) {
     xhr.send(formData);
 }
 
-function removeImage() {
-    document.getElementById("imagePreview").style.display = "none";
-    const fileInput = document.getElementById("image");
-    fileInput.type = '';
-    fileInput.type = 'file';
-    document.getElementById("uploaded_image_path").value = "";
-    document.getElementById("submitBtn").disabled = true;
+function addPreview(imagePath) {
+    const previewContainer = document.getElementById('image-previews');
+    const wrapper = document.createElement('div');
+    wrapper.className = 'm-1 position-relative';
+    wrapper.setAttribute('data-filename', imagePath);
+
+    const img = document.createElement('img');
+    img.src = `/static/uploads/${imagePath}`;
+    img.className = 'img-thumbnail';
+    img.style.height = '150px';
+    img.style.width = 'auto';
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.onclick = function() {
+        removePreview(removeBtn);
+    };
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(removeBtn);
+    previewContainer.appendChild(wrapper);
 }
 
-window.addEventListener('DOMContentLoaded', function () {
-    const existingImage = "{{ product.image_path if product else '' }}";
-    if (existingImage) {
-        document.getElementById("submitBtn").disabled = false;
-        document.getElementById("uploaded_image_path").value = existingImage;
+function removePreview(buttonElement) {
+    // پیدا کردن والد div که عکس و دکمه را در بر دارد
+    const wrapper = buttonElement.parentElement;
+    if (wrapper) {
+        wrapper.remove();
+        // پس از حذف از UI، فیلد مخفی را آپدیت کن
+        updateHiddenInput();
     }
-});
+}
+
+function updateHiddenInput() {
+    const previewContainer = document.getElementById('image-previews');
+    const images = previewContainer.querySelectorAll('div[data-filename]');
+    const paths = Array.from(images).map(div => div.getAttribute('data-filename'));
+    document.getElementById('uploaded_image_paths').value = paths.join(',');
+}
 </script>
 <script>
     const toEnglishDigits = (str) => str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));

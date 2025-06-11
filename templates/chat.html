@@ -21,13 +21,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
 
-html, body {
-  height: 100%;
+ body {
+    height: 50rem;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
 }
+/* body {
+    border: 3px solid red !important;
+}
+.chat-page-container {
+    border: 3px solid blue !important;
+}
+.chat-box {
+    border: 3px solid green !important;
+}
+form.myform {
+    border: 3px solid orange !important;
+} */
 /* برای اینکه پیش‌نمایش داخل label و بالای آیکون باشه */
 .custom-file-upload {
     position: relative; /* مهم برای position:absolute پیش‌نمایش */
@@ -67,7 +79,26 @@ html, body {
     border-radius: 6px;
     display: block;
 }
-
+/* .spinner {
+          width: 32px;
+          height: 32px;
+          border: 4px solid #ccc;
+          border-top: 4px solid var(--light-green);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          background: transparent;
+          position: fixed;
+          top: -60px;   
+          left: 80%;
+          transform: translateX(-80%);
+          transition: top 0.3s ease;
+          z-index: 10000;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        } */
 /* دکمه ضربدر حذف */
 .preview-close-btn {
     position: absolute;
@@ -83,94 +114,129 @@ html, body {
 .preview-close-btn:hover {
     opacity: 1;
 }
+/* این کد را به انتهای تگ <style> اضافه کنید */
 
+.message-meta {
+    display: block;
+    text-align: left; /* چینش از چپ برای زمان و تیک */
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 5px;
+}
+
+.message.sent .message-meta .status-icon {
+    margin-left: 5px; /* کمی فاصله بین زمان و تیک */
+}
+
+.message.sent .message-meta {
+    direction: ltr; /* برای نمایش صحیح زمان و تیک در پیام‌های ارسالی */
+}
     </style>
 </head>
 <body class="text-dark" style="background: var(--black-color);">
-    <button class="btn header-tabs m-auto py-2 px-3 float-start w-25" onclick="history.back()">
+    <!-- <div id="pull-spinner" style="position: fixed; top: -60px; left: 50%; transform: translateX(-50%); z-index: 9999; transition: top 0.3s;">
+        <div class="spinner"></div>
+      </div> -->
+    <button class="btn header-tabs m-auto py-1 px-3 float-start w-25" onclick="history.back()">
         <i class="bi bi-arrow-left fs-3 txt-black"></i>
     </button><br>
-    <div class="chat-box my-5">
-        <div class="chat">
-            {% for msg in messages %}
-                <div class="message {{ 'sent' if msg.sender_id == current_user.id else 'received' }} txt-black position-relative" id="message-{{ msg.id }}">
-                    {% if msg.sender_id == current_user.id %}
-                    <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
-                        <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
-                        <ul class="dropdown-menu" style="background: var(--black-color);">
-                            <li>
-                                <button class="dropdown-item text-primary" onclick="enableEdit(${msg.id}, decodeURIComponent('${encodeURIComponent(msg.content)}'))">ویرایش</button>
-                            </li>
-                            <li>
-                                <form method="POST" action="{{ url_for('main.delete_message', message_id=msg.id) }}" onsubmit="return confirm('حذف پیام؟')">
-                                    <button type="submit" class="dropdown-item text-danger">حذف</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                    {% endif %}
-                
-                    <div id="msg-text-{{ msg.id }}">
-                        {{ msg.content }} <br>
-                        <small>{{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
-                    </div>
-                    {% if msg.file_path %}
-                        {% if msg.file_path.endswith('.pdf') %}
-                            <a href="{{ url_for('static', filename='uploads/' ~ msg.file_path) }}" target="_blank">📎 مشاهده فایل PDF</a>
-                        {% else %}
-                            <img src="{{ url_for('static', filename='uploads/' ~ msg.file_path) }}" 
-                                alt="فایل ارسال‌شده" 
-                                style="max-width: 100%; max-height: 200px; cursor: pointer;" 
-                                class="img-thumbnail" 
-                                data-bs-toggle="modal" data-bs-target="#imageModal" 
-                                onclick="showImage('{{ url_for('static', filename='uploads/' ~ msg.file_path) }}')">
+        <div class="chat-box">
+            <div class="chat">
+                {% for msg in messages %}
+                    <div class="message {{ 'sent' if msg.sender_id == current_user.id else 'received' }} txt-black position-relative" id="message-{{ msg.id }}">
+                        {% if msg.sender_id == current_user.id %}
+                        <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
+                            <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
+                            <ul class="dropdown-menu" style="background: var(--black-color);">
+                                <li>
+                                    <button type="button" class="dropdown-item text-primary" onclick="enableEdit({{ msg.id }}, '{{ msg.content | urlencode }}')">ویرایش</button>
+                                </li>
+                                <li>
+                                    <form method="POST" action="{{ url_for('main.delete_message', message_id=msg.id) }}" onsubmit="return confirm('حذف پیام؟')">
+                                        <button type="submit" class="dropdown-item text-danger">حذف</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
                         {% endif %}
-                    {% endif %}
-                
-                    <form id="edit-form-{{ msg.id }}" method="POST" action="{{ url_for('main.edit_message_inline', message_id=msg.id) }}" class="d-none">
-                        <textarea name="content" class="form-control mb-2">{{ msg.content }}</textarea>
-                        <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
-                        <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit({{ msg.id }})">لغو</button>
-                    </form>
-                </div>
-            {% endfor %}
-            <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background: var(--black-color);">
-                  <div class="modal-header">
-                    <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="Close"></button>
+                    
+                        <div id="msg-text-{{ msg.id }}">
+                            {{ msg.content }}
+                            <div class="message-meta">
+                                <span>{{ msg.timestamp.strftime('%H:%M') }}</span>
+                                <span class="status-icon"><i class="bi bi-check"></i></span>
+                            </div>
+                        </div>
+                        {% if msg.file_path %}
+                            {% if msg.file_path.endswith('.pdf') %}
+                                <a href="{{ url_for('static', filename='uploads/' ~ msg.file_path) }}" target="_blank">📎 مشاهده فایل PDF</a>
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/' ~ msg.file_path) }}" 
+                                    alt="فایل ارسال‌شده" 
+                                    style="max-width: 100%; max-height: 200px; cursor: pointer;" 
+                                    class="img-thumbnail" 
+                                    data-bs-toggle="modal" data-bs-target="#imageModal" 
+                                    onclick="showImage('{{ url_for('static', filename='uploads/' ~ msg.file_path) }}')">
+                            {% endif %}
+                        {% endif %}
+                    
+                        <form id="edit-form-{{ msg.id }}" method="POST" action="{{ url_for('main.edit_message_inline', message_id=msg.id) }}" class="d-none">
+                            <textarea name="content" class="form-control mb-2">{{ msg.content }}</textarea>
+                            <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit({{ msg.id }})">لغو</button>
+                        </form>
+                    </div>
+                {% endfor %}
+                <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="background: var(--black-color);">
+                      <div class="modal-header">
+                        <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <img id="modalImage" src="" alt="تصویر بزرگ" style="width: 100%; height: auto;">
+                      </div>
+                    </div>
                   </div>
-                  <div class="modal-body">
-                    <img id="modalImage" src="" alt="تصویر بزرگ" style="width: 100%; height: auto;">
-                  </div>
                 </div>
-              </div>
             </div>
-        </div>
 
-        <form id="messageForm" enctype="multipart/form-data" class="myform sticky-bottom" onsubmit="return false;">
-            <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
-            <input type="text" class="myinput inputs" name="content" id="content" placeholder="پیام بنویسید..." required>
-            <label for="file-upload" class="custom-file-upload me-2 position-relative" style="display: inline-block;">
-                <i class="bi bi-paperclip"></i>
-                <input id="file-upload" type="file" name="file" accept="image/*,application/pdf" style="display: none;">
-                
-                <!-- باکس پیش‌نمایش شناور بالای آیکون انتخاب فایل -->
-                <div id="simple-preview" class="d-none preview-tooltip position-absolute">
-                    <button id="remove-preview" type="button" class="btn-close txt-black" aria-label="حذف"></button>
-                    <img id="simple-preview-img" src="" alt="پیش‌نمایش">
-                </div>
-            </label>
+            <form id="messageForm" enctype="multipart/form-data" class="myform sticky-bottom" onsubmit="return false;">
+                <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+                <input type="text" class="myinput inputs" name="content" id="content" placeholder="پیام بنویسید..." required>
+                <label for="file-upload" class="custom-file-upload me-2 position-relative" style="display: inline-block;">
+                    <i class="bi bi-paperclip"></i>
+                    <input id="file-upload" type="file" name="file" accept="image/*,application/pdf" style="display: none;">
+
+                    <div id="simple-preview" class="d-none preview-tooltip position-absolute">
+                        <button id="remove-preview" type="button" class="btn-close txt-black" aria-label="حذف"></button>
+                        <img id="simple-preview-img" src="" alt="پیش‌نمایش">
+                    </div>
+                </label>
+
+
+                <button type="submit" class="mybtn">ارسال</button>
+            </form>
+
             
 
-            <button type="submit" class="mybtn">ارسال</button>
-        </form>
-
-        <button class="btn refreshbtn btn-outline-secondary mt-3 positoion-fixed" onclick="location.reload()">
-            <i class="bi bi-arrow-clockwise"></i> بروزرسانی پیام‌ها
-        </button>
-        
-    </div>
+        </div>
+        <!-- <form id="messageForm" enctype="multipart/form-data" class="myform sticky-bottom" onsubmit="return false;">
+                <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+                <input type="text" class="myinput inputs" name="content" id="content" placeholder="پیام بنویسید..." required>
+                <label for="file-upload" class="custom-file-upload me-2 position-relative" style="display: inline-block;">
+                    <i class="bi bi-paperclip"></i>
+                    <input id="file-upload" type="file" name="file" accept="image/*,application/pdf" style="display: none;">
+                    
+                    <div id="simple-preview" class="d-none preview-tooltip position-absolute">
+                        <button id="remove-preview" type="button" class="btn-close txt-black" aria-label="حذف"></button>
+                        <img id="simple-preview-img" src="" alt="پیش‌نمایش">
+                    </div>
+                </label>
+                
+            
+                <button type="submit" class="mybtn">ارسال</button>
+        </form> -->
     <div class="ccp"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
 <script>
@@ -205,19 +271,7 @@ removePreviewBtn.addEventListener("click", function () {
 });
 
 </script>
-<script>
-    function setChatHeight() {
-        const innerHeight = window.innerHeight;
-        const chatBox = document.querySelector('.chat-box');
-        if (chatBox) {
-            chatBox.style.height = (innerHeight - 100) + 'px'; // مقدار 100 قابل تنظیمه (مثلاً ارتفاع هدر یا دکمه‌ها)
-            chatBox.style.overflowY = 'auto';
-        }
-    }
 
-    window.addEventListener('load', setChatHeight);
-    window.addEventListener('resize', setChatHeight);
-</script>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>
@@ -249,92 +303,235 @@ removePreviewBtn.addEventListener("click", function () {
     </script>
 
 <script>
-    document.querySelector("form.myform").addEventListener("submit", async function (e) {
+document.querySelector("form.myform").addEventListener("submit", async function (e) {
         e.preventDefault();
-    
+
         const form = e.target;
-        const formData = new FormData(form);
-        console.log("Sending message...");
-        const res = await fetch("{{ url_for('main.send_message') }}", {
-            method: "POST",
-            body: formData
-        });
-    
-        if (!res.ok) {
-            alert("ارسال پیام ناموفق بود");
-            return;
+        const contentInput = form.querySelector('#content');
+        const fileInput = form.querySelector('#file-upload');
+        const messageContent = contentInput.value.trim();
+        const previewImage = document.getElementById("simple-preview-img");
+
+        if (!messageContent && !fileInput.files.length) return;
+
+        let localImageUrl = null;
+        if (fileInput.files.length > 0 && fileInput.files[0].type.startsWith("image/")) {
+            localImageUrl = previewImage.src;
         }
-    
-        const data = await res.json();
+
+        const tempId = `temp-${Date.now()}`;
+        const tempMessage = {
+            id: tempId,
+            isTemp: true,
+            sender_id: {{ current_user.id }},
+            content: messageContent,
+            timestamp: new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' }),
+            status: 'pending',
+            local_image_url: localImageUrl
+        };
+        
+        addMessageToDOM(tempMessage);
+        scrollToBottom();
+
+        const formData = new FormData(form);
         form.reset();
         previewImage.src = "";
-        previewContainer.classList.add("d-none");
-        addMessageToDOM(data);
-        lastMessageId = data.id;
-        scrollToBottom();
-    });
-    </script>
+        document.getElementById("simple-preview").classList.add("d-none");
 
-<script>
-    function addMessageToDOM(msg) {
+        try {
+            const res = await fetch("{{ url_for('main.send_message') }}", {
+                method: "POST",
+                body: formData
+            });
 
-        if (shownMessageIds.has(msg.id)) {
-            return;  // قبلاً اضافه شده
+            const tempBubble = document.getElementById(tempId);
+            if (!tempBubble) return;
+
+            if (res.ok) {
+                const realMessage = await res.json();
+                
+                // >>>>>> راه حل نهایی: بازسازی کامل حباب پیام با ID واقعی <<<<<<
+                const finalMessageData = {
+                    ...realMessage, // شامل id, content, timestamp, file_path واقعی از سرور
+                    isTemp: false,
+                    status: 'sent'
+                };
+                const finalBubble = createMessageBubble(finalMessageData);
+                tempBubble.replaceWith(finalBubble); // جایگزینی حباب موقت با حباب نهایی
+                
+                // اضافه کردن ID جدید به لیست پیام‌های نمایش داده شده
+                shownMessageIds.add(realMessage.id);
+
+            } else {
+                const statusIcon = tempBubble.querySelector('.status-icon i');
+                if(statusIcon) statusIcon.className = 'bi bi-exclamation-triangle-fill text-danger';
+                tempBubble.title = 'ارسال ناموفق';
+            }
+
+        } catch (error) {
+            const tempBubble = document.getElementById(tempId);
+            if (tempBubble) {
+                const statusIcon = tempBubble.querySelector('.status-icon i');
+                if (statusIcon) statusIcon.className = 'bi bi-exclamation-triangle-fill text-danger';
+                tempBubble.title = 'خطای اتصال';
+            }
+            console.error("ارسال پیام با خطا مواجه شد:", error);
         }
-        shownMessageIds.add(msg.id);
+    });
+
+    // تابع بازنویسی شده برای ساختن پیام در DOM
+    // این تابع اکنون به عنوان یک تابع سازنده عمل می‌کند
+    function createMessageBubble(msg) {
         const chat = document.querySelector(".chat");
-    
         const isSent = msg.sender_id === {{ current_user.id }};
         const msgDiv = document.createElement("div");
         msgDiv.className = `message ${isSent ? "sent" : "received"} txt-black position-relative`;
-        msgDiv.id = `message-${msg.id}`;
-    
+        
+        const messageId = msg.isTemp ? msg.id : msg.id;
+        msgDiv.id = msg.isTemp ? messageId : `message-${messageId}`;
+
         let fileHtml = "";
-        if (msg.file_path) {
+        if (msg.local_image_url) {
+            fileHtml = `<br><img src="${msg.local_image_url}" style="max-width: 100%; max-height: 200px;" class="img-thumbnail">`;
+        } else if (msg.file_path) {
             const fileUrl = `/static/uploads/${msg.file_path}`;
-            if (msg.file_path.endsWith(".pdf")) {
-                fileHtml = `<br><a href="${fileUrl}" target="_blank">📎 مشاهده فایل PDF</a>`;
+            fileHtml = fileUrl.endsWith(".pdf")
+                ? `<br><a href="${fileUrl}" target="_blank">📎 مشاهده فایل PDF</a>`
+                : `<br><img src="${fileUrl}" style="max-width: 100%; max-height: 200px; cursor: pointer;" class="img-thumbnail" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImage('${fileUrl}')">`;
+        }
+
+        let statusIconHtml = '';
+        if (isSent) {
+            if (msg.status === 'pending') {
+                statusIconHtml = '<i class="bi bi-clock"></i>';
+            } else if (msg.status === 'failed') {
+                statusIconHtml = '<i class="bi bi-exclamation-triangle-fill text-danger"></i>';
             } else {
-                fileHtml = `<br><img src="${fileUrl}" 
-                    style="max-width: 100%; max-height: 200px; cursor: pointer;"
-                    class="img-thumbnail"
-                    data-bs-toggle="modal" data-bs-target="#imageModal"
-                    onclick="showImage('${fileUrl}')">`;
+                statusIconHtml = '<i class="bi bi-check"></i>';
             }
         }
-    
+
+        const editButtonOnclick = `enableEdit(${messageId}, '${encodeURIComponent(msg.content)}')`;
+        const cancelButtonOnclick = `cancelEdit(${messageId})`;
+
         msgDiv.innerHTML = `
-            ${isSent ? `
+            ${(isSent && !msg.isTemp) ? `
             <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
                 <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
                 <ul class="dropdown-menu" style="background: var(--black-color);">
-                    <li>
-                        <button class="dropdown-item text-primary" onclick="enableEdit(${msg.id}, '${msg.content.replace(/'/g, "\\'")}')">ویرایش</button>
-                    </li>
-                    <li>
-                        <form method="POST" action="/delete_message/${msg.id}" onsubmit="return confirm('حذف پیام؟')">
-                            <button type="submit" class="dropdown-item text-danger">حذف</button>
-                        </form>
-                    </li>
+                    <li><button type="button" class="dropdown-item text-primary" onclick="${editButtonOnclick}">ویرایش</button></li>
+                    <li><form method="POST" action="/delete_message/${messageId}" onsubmit="return confirm('حذف پیام؟')"><button type="submit" class="dropdown-item text-danger">حذف</button></form></li>
                 </ul>
             </div>` : ''}
-    
-            <div id="msg-text-${msg.id}">
-                ${msg.content}<br>
-                <small>${msg.timestamp}</small>
+        
+            <div id="msg-text-${messageId}">
+                ${msg.content}
                 ${fileHtml}
+                <div class="message-meta">
+                    <span>${msg.timestamp}</span>
+                    ${isSent ? `<span class="status-icon">${statusIconHtml}</span>` : ''}
+                </div>
             </div>
-    
+        
             ${isSent ? `
-            <form id="edit-form-${msg.id}" method="POST" action="/edit_message_inline/${msg.id}" class="d-none">
+            <form id="edit-form-${messageId}" method="POST" action="/edit_message_inline/${messageId}" class="d-none">
                 <textarea name="content" class="form-control mb-2">${msg.content}</textarea>
                 <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit(${msg.id})">لغو</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="${cancelButtonOnclick}">لغو</button>
             </form>` : ''}
         `;
-    
-        chat.appendChild(msgDiv);
+        return msgDiv;
     }
+
+    // تابع قدیمی addMessageToDOM حالا فقط یک پوشش برای تابع جدید است
+    function addMessageToDOM(msg) {
+        if (!msg.isTemp && shownMessageIds.has(msg.id)) {
+            return;
+        }
+        const chat = document.querySelector(".chat");
+        const bubble = createMessageBubble(msg);
+        chat.appendChild(bubble);
+        if (!msg.isTemp) {
+            shownMessageIds.add(msg.id);
+        }
+    }
+
+    </script>
+
+<script>
+function addMessageToDOM(msg) {
+    // جلوگیری از اضافه کردن پیام تکراری
+    if (!msg.isTemp && document.getElementById(`message-${msg.id}`)) {
+        return; 
+    }
+
+    const chat = document.querySelector(".chat");
+    const isSent = msg.sender_id === {{ current_user.id }};
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `message ${isSent ? "sent" : "received"} txt-black position-relative`;
+    
+    // ID پیام موقت یا واقعی را تنظیم می‌کند
+    const messageId = msg.isTemp ? msg.id : msg.id;
+    msgDiv.id = msg.isTemp ? msg.id : `message-${msg.id}`;
+
+    let fileHtml = "";
+    // <<<< شروع اصلاحیه 1: استفاده از عکس محلی برای نمایش فوری >>>>
+    if (msg.local_image_url) {
+        fileHtml = `<br><img src="${msg.local_image_url}" style="max-width: 100%; max-height: 200px;" class="img-thumbnail">`;
+    } else if (msg.file_path) {
+        const fileUrl = `/static/uploads/${msg.file_path}`;
+        if (msg.file_path.endsWith(".pdf")) {
+            fileHtml = `<br><a href="${fileUrl}" target="_blank">📎 مشاهده فایل PDF</a>`;
+        } else {
+            fileHtml = `<br><img src="${fileUrl}" style="max-width: 100%; max-height: 200px; cursor: pointer;" class="img-thumbnail" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImage('${fileUrl}')">`;
+        }
+    }
+    // <<<< پایان اصلاحیه 1 >>>>
+
+    let statusIconHtml = '';
+    if (isSent) {
+        if (msg.status === 'pending') {
+            statusIconHtml = '<i class="bi bi-clock"></i>';
+        } else {
+            statusIconHtml = '<i class="bi bi-check"></i>';
+        }
+    }
+
+    // در تابع addMessageToDOM
+
+    msgDiv.innerHTML = `
+        ${(isSent && !msg.isTemp) ? `
+        <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
+            <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
+            <ul class="dropdown-menu" style="background: var(--black-color);">
+                <li><button class="dropdown-item text-primary" onclick="enableEdit('${msg.id}', '${encodeURIComponent(msg.content)}')">ویرایش</button></li>
+                <li><form method="POST" action="/delete_message/${msg.id}" onsubmit="return confirm('حذف پیام؟')"><button type="submit" class="dropdown-item text-danger">حذف</button></form></li>
+            </ul>
+        </div>` : ''}
+    
+        <div id="msg-text-${msg.id}">
+            ${msg.content}
+            ${fileHtml}
+            <div class="message-meta">
+                <span>${msg.timestamp}</span>
+                ${isSent ? `<span class="status-icon">${statusIconHtml}</span>` : ''}
+            </div>
+        </div>
+    
+        ${isSent ? `
+        <form id="edit-form-${msg.id}" method="POST" action="/edit_message_inline/${msg.id}" class="d-none">
+            <textarea name="content" class="form-control mb-2">${msg.content}</textarea>
+            <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit('${msg.id}')">لغو</button>
+        </form>` : ''}
+    `;
+    // <<<< پایان اصلاحیه 2 >>>>
+    
+    chat.appendChild(msgDiv);
+    if (!msg.isTemp) {
+        shownMessageIds.add(msg.id);
+    }
+}
     </script>
 
 <script>
@@ -359,6 +556,34 @@ removePreviewBtn.addEventListener("click", function () {
     }, 5000);
     </script>
     
+    <script>
+    let lastMessageId = {{ messages[-1].id if messages else 0 }};
+    
+    setInterval(async () => {
+        const res = await fetch(`/get_new_messages?conversation_id={{ conversation.id }}&after_id=${lastMessageId}`);
+        if (!res.ok) return;
+    
+        const data = await res.json();
+        data.forEach(msg => {
+            addMessageToDOM(msg);
+            lastMessageId = msg.id;
+        });
+        scrollToBottom();
+    }, 5000);
+    </script>
+    <!-- <script>
+    function setChatHeight() {
+        const innerHeight = window.innerHeight;
+        const chatBox = document.querySelector('.chat-box');
+        if (chatBox) {
+            chatBox.style.height = (innerHeight - 100) + 'px'; // مقدار 100 قابل تنظیمه (مثلاً ارتفاع هدر یا دکمه‌ها)
+            chatBox.style.overflowY = 'auto';
+        }
+    }
+
+    window.addEventListener('load', setChatHeight);
+    window.addEventListener('resize', setChatHeight);
+</script>
 <script>
 function setChatBoxHeight() {
   let height = window.innerHeight;
@@ -377,7 +602,53 @@ window.addEventListener('resize', setChatBoxHeight);
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', setChatBoxHeight);
 }
-</script>
-    
+</script> -->
+    <!-- <script>
+        let startY = 0;
+        let isPulling = false;
+        let spinner = document.getElementById("pull-spinner");
+        
+        window.addEventListener("touchstart", function (e) {
+            if (window.scrollY === 0) {
+                startY = e.touches[0].clientY;
+                isPulling = true;
+            }
+        });
+        
+        window.addEventListener("touchmove", function (e) {
+            if (!isPulling) return;
+        
+            let currentY = e.touches[0].clientY;
+            let diffY = currentY - startY;
+        
+            if (diffY > 30 && diffY < 130) {
+                spinner.style.top = `${diffY - 60}px`; // اسپینر پایین‌تر نمایش داده می‌شود
+            }
+        
+            if (diffY >= 130) {
+                spinner.style.top = `150px`; // اسپینر در پایین نمایان می‌ماند
+                if (!spinner.dataset.loading) {  // جلوگیری از چندبار اجرا شدن رفرش
+                    spinner.dataset.loading = "true";
+                    location.reload(); // رفرش صفحه
+                }
+                isPulling = false;
+            }
+        });
+        
+        window.addEventListener("touchend", function () {
+            // اگر رفرش کامل نشده بود اسپینر رو پنهان کن
+            if (!spinner.dataset.loading) {
+                spinner.style.top = `-60px`; 
+            }
+            isPulling = false;
+        });
+        
+        // رویداد بارگذاری کامل صفحه
+        window.addEventListener("load", function () {
+            // وقتی صفحه کاملا لود شد، اسپینر رو پنهان کن بالا
+            spinner.style.top = `-60px`; 
+            spinner.dataset.loading = ""; // ریست کردن وضعیت لودینگ
+        });
+        </script> -->
 </body>
 </html>

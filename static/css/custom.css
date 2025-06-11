@@ -391,11 +391,6 @@ tbody {
   padding-bottom: 10px;
 }
 
-.chat-box{
-  overflow-y: auto;
-  max-height: 80vh;
-}
-
 .chat-message {
   display: inline-block;
   max-width: 70%;
@@ -678,11 +673,17 @@ body.loaded #loader {
 :root {
   --vh: 100%;
 }
-
+.chat-page-container {
+  flex-grow: 1; /* تمام فضای باقی‌مانده را اشغال می‌کند */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* مهم */
+  padding: 1rem;
+}
 .chat-box {
-  flex: 1 1 auto;  /* فضای باقی‌مانده رو اشغال کن */
   overflow-y: auto;
   max-width: 600px;
+  height: 100%!important;
   margin: auto;
   background: var(--black-color);
   padding: 20px;
@@ -697,7 +698,7 @@ body.loaded #loader {
 .sent { background: var(--light-green); align-self: flex-end; margin-left: auto; }
 .received { background: var(--dark-green); align-self: flex-start; margin-right: auto; }
 .chat { display: flex; flex-direction: column; gap: 10px;  height: 30rem; overflow-y: auto; }
-.myform { display: flex; margin-top: 20px; }
+.myform { display: flex; margin-top: 20px; flex-shrink: 0; padding-top: 10px;}
 .myinput[type="text"] { flex-grow: 1; padding: 10px; border-radius: 8px;}
 .mybtn { padding: 10px 20px; border: none; background: var(--light-green); color: white; border-radius: 8px; margin-right: 10px; }
 .refreshbtn{
@@ -840,12 +841,7 @@ input[type="file"] {
 }
 
 #floatingChatButton {
-  position: fixed; /* مهم: برای شناور ماندن */
-  bottom: 0;    /* فاصله از پایین صفحه */
-  left: 20px;      /* فاصله از چپ صفحه */
   z-index: 1030;   /* برای اطمینان از اینکه روی سایر عناصر قرار می‌گیرد (معمولاً z-index مدال‌های بوت‌استرپ 1050+ است، پس اگر با مدال تداخل داشت این را بیشتر کنید) */
-  width: 60px;     /* عرض دکمه */
-  height: 60px;    /* ارتفاع دکمه */
   padding: 0;      /* برای اینکه آیکون در مرکز قرار بگیرد */
   display: flex;   /* برای وسط‌چین کردن آیکون */
   align-items: center;
@@ -883,4 +879,150 @@ input[type="file"] {
 
 #floatingChatButton:active {
   scale: 0.9;
+}
+
+
+.custom-popup-class {
+    background-color: var(--dark-green);
+    display: none; /* در ابتدا مخفی است */
+    position: fixed;
+    bottom: 70px; /* کمی بالاتر از منوی پایین */
+    right: 45px;
+    background-color: var(--black-color);
+    border: 1px solid var(--dark-green);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1040;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.custom-popup-class.show {
+    display: block; /* نمایش پاپ‌آپ */
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* --- 1. استایل برای دسته بندی های افقی و فشرده --- */
+/* ========================================================== */
+/* === کدهای نهایی برای ظاهر دقیقاً شبیه به دیوار === */
+/* ========================================================== */
+
+/* --- 1. استایل دسته‌بندی‌های جدید (آیکون و متن) --- */
+.categories-scroll-container {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: wrap;
+    white-space: nowrap;
+    padding: 10px 0;
+    margin-bottom: 24px;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+.categories-scroll-container::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome, Safari */
+}
+
+.category-item-divar {
+    margin-top: 1rem;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--txt-color);
+    width: 80px; /* عرض ثابت برای هر آیتم */
+    vertical-align: top;
+}
+
+.category-item-divar .category-icon {
+    background-color: var(--dark-green); /* پس‌زمینه خاکستری روشن برای آیکون */
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem; /* اندازه آیکون */
+    margin-bottom: 8px;
+    transition: background-color 0.2s;
+}
+
+.category-item-divar .category-name {
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.category-item-divar:hover .category-icon {
+    background-color: #e0e0e0; /* کمی تیره‌تر هنگام هاور */
+}
+
+/* --- 2. استایل کارت محصولات دقیقاً مانند دیوار --- */
+/* ======================================================== */
+/* === کد نهایی و اصلاح شده برای کارت افقی === */
+/* ======================================================== */
+
+.divar-card-horizontal-link {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--black-color); /* استفاده از رنگ پس‌زمینه تم شما */
+    height: auto;
+    color: var(--txt-color); /* استفاده از رنگ متن تم شما */
+    text-decoration: none;
+}
+.divar-card-horizontal-link:hover {
+    background-color: #2c2c2e; /* کمی روشن‌تر هنگام هاور */
+}
+
+/* بخش تصویر */
+.divar-card-img {
+    width: 115px; /* کمی کوچک‌تر کردن عکس برای ایجاد فضای بیشتر برای متن */
+    height: 115px;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin: 5px; /* ایجاد فاصله از لبه‌های کارت */
+    border-radius: 4px;
+}
+
+/* بخش بدنه (محتوای متنی) */
+.divar-card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    min-height: 1rem;
+}
+
+.divar-card-title {
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1; /* فاصله خطوط مناسب */
+    margin: 0;
+    /* محدود کردن عنوان به حداکثر ۲ خط */
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: visible;
+    text-overflow: ellipsis;
+    /* این خط مهم است تا متن در دو خط نمایش داده شود */
+    white-space: normal; 
+}
+
+.divar-card-meta {
+    font-size: 0.75rem;
+    color: #a0a0a0;
+    margin-top: 1.7rem; /* کاهش فاصله */
+    /* کوتاه کردن متن در یک خط */
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: ellipsis;
+}
+
+.divar-card-price {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: auto; /* قیمت را به پایین هل می‌دهد */
+    padding-top: 6px;
+    text-align: left;
 }

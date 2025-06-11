@@ -2,114 +2,379 @@
 
 {% block content %}
 <style>
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 4px solid #ccc;
-      border-top: 4px solid var(--light-green);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      background: transparent;
-      position: fixed;
-      top: -60px;   /* اول پایین صفحه، پنهان */
-      left: 80%;
-      transform: translateX(-80%);
-      transition: top 0.3s ease;
-      z-index: 10000;
+    /* --- General Page Style --- */
+    /* body {
+        background-color: var(--dashboard-bg, #f8f9fa);
+    } */
+
+    .detail-container {
+        max-width: 800px;
+        margin: auto;
+    }
+
+    /* --- Header --- */
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+    }
+    .detail-header .actions a {
+        font-size: 1.5rem;
+        margin-left: 1rem;
+        color: var(--text-color);
+    }
+
+    /* --- Image Carousel --- */
+    .product-gallery .carousel-item img,
+    .product-gallery .single-image {
+        aspect-ratio: 1 / 1; /* نسبت تصویر ۱ در ۱ */
+        object-fit: cover;   /* جلوگیری از دفورمه شدن عکس */
+        border-radius: 1rem;
+        background-color: var(--border-color);
+    }
+    .single-image{
+        width: 25%;
+    }
+
+    /* --- Information Blocks --- */
+    .info-block {
+        background-color: var(--card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .product-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .product-price {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--primary-accent, #9B1B30);
     }
     
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .meta-info {
+        font-size: 0.9rem;
+        color: var(--text-muted-color);
     }
-    </style>
-    <div id="pull-spinner" style="position: fixed; top: -60px; left: 50%; transform: translateX(-50%); z-index: 9999; transition: top 0.3s;">
-        <div class="spinner"></div>
-      </div>
-<div class="container mt-4" id="page-content" class="page-transition">
-    <div class="row">
-        <div class="py-2 px-3">
-           <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
-            <i class="bi bi-arrow-left fs-3 txt-black"></i>
-        </button><br>
+
+    /* --- Call to Action Buttons --- */
+    .cta-block {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    .cta-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: 0.75rem;
+    }
+    .cta-button i {
+        font-size: 1.2rem;
+        margin-left: 0.5rem;
+    }
+    .btn-chat {
+        background-color: var(--primary-accent);
+        color: white;
+    }
+    .btn-contact {
+        background-color: transparent;
+        color: var(--primary-accent);
+    }
+
+    /* --- Specifications List --- */
+    .specs-list {
+        list-style: none;
+        padding: 0;
+    }
+    .specs-list li {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .specs-list li:last-child {
+        border-bottom: none;
+    }
+    .specs-list .spec-key {
+        color: var(--text-muted-color);
+    }
+    .specs-list .spec-value {
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    /* --- Description --- */
+    .description-text {
+        white-space: pre-wrap;
+        line-height: 1.8;
+        color: var(--text-color);
+    }
+    
+    /* --- Seller Info --- */
+    .seller-link {
+        color: var(--primary-accent);
+        text-decoration: none;
+        font-weight: 500;
+    }
+    /* --- Styles for Contact Bottom Sheet --- */
+.sheet-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.sheet-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.contact-sheet-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20rem; /* 40 درصد ارتفاع صفحه */
+    backdrop-filter: blur(15px);
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    z-index: 1050;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1.5rem 1.5rem;
+}
+.contact-sheet-container.active {
+    transform: translateY(0);
+}
+
+.sheet-handle {
+    width: 50px;
+    height: 5px;
+    background-color: var(--border-color);
+    border-radius: 2.5px;
+    margin: 0 auto 1rem;
+    flex-shrink: 0;
+}
+.sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+    flex-shrink: 0;
+}
+.sheet-body .seller-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.sheet-body .info-label {
+    color: var(--text-muted-color);
+}
+.sheet-body .info-value {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+    @media (min-width: 768px) {
+    /* این کد فقط برای صفحه‌هایی با عرض بیشتر از ۷۶۸ پیکسل (دسکتاپ و تبلت) اعمال می‌شود.
+      کانتینر عکس را به یک فلکس‌باکس تبدیل می‌کنیم تا عکس در آن وسط‌چین شود.
+    */
+    .product-gallery {
+        display: flex;
+        justify-content: center;
+    }
+
+    /* برای عکس تکی، حداکثر عرض را به ۶۰ درصد محدود می‌کنیم تا خیلی بزرگ نباشد.
+      همچنین w-100 را حذف می‌کنیم تا بوت‌استرپ آن را تمام‌عرض نکند.
+    */
+    .product-gallery .single-image {
+        max-width: 60%;
+        width: auto !important; /* برای غلبه بر کلاس w-100 بوت‌استرپ */
+    }
+}
+
+    /* --- Other Styles --- */
+    .spinner {
+      width: 32px; height: 32px; border: 4px solid #ccc;
+      border-top: 4px solid var(--light-green); border-radius: 50%;
+      animation: spin 1s linear infinite; background: transparent;
+      position: fixed; top: -60px; left: 50%;
+      transform: translateX(-50%); transition: top 0.3s ease; z-index: 10000;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+</style>
+
+<div id="page-content">
+
+    <div class="detail-header">
+        <button class="btn" onclick="history.back()">
+            <i class="bi bi-arrow-right fs-3 txt-black"></i>
+        </button>
+        <div class="actions">
+            <a href="#" id="share-btn"><i class="bi bi-share txt-black"></i></a>
+            <a href="#" class="bookmark-toggle" data-product-id="{{ product.id }}">
+                {% if current_user.is_authenticated and product in current_user.saved_products %}
+                    <i class="bi bi-bookmark-fill txt-black"></i> {# آیکون پر برای ذخیره شده #}
+                {% else %}
+                    <i class="bi bi-bookmark txt-black"></i> {# آیکون خالی برای ذخیره نشده #}
+                {% endif %}
+            </a>
         </div>
-        <div class="col-lg-4 col-md-6">
-            {% if product.image_path %}
-            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}"
-                class="img-fluid img-clickable"
-                data-bs-toggle="modal"
-                data-bs-target="#imageModal"
-                data-img-src="{{ url_for('static', filename='uploads/' + product.image_path) }}"
-                alt="{{ product.name }}"
-                style="cursor: pointer;">
+    </div>
+    
+    <div class="container detail-container pb-5">
+        <div class="product-gallery">
+            {% if product.images %}
+                <div id="productDetailCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-indicators">
+                        {% for image in product.images %}
+                            <button type="button" data-bs-target="#productDetailCarousel" data-bs-slide-to="{{ loop.index0 }}" class="{{ 'active' if loop.first }}"></button>
+                        {% endfor %}
+                    </div>
+                    <div class="carousel-inner">
+                        {% for image in product.images %}
+                            <div class="carousel-item {{ 'active' if loop.first }}">
+                                <img src="{{ url_for('static', filename='uploads/' + image.image_path) }}"
+                                     class="d-block w-100 img-clickable"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal"
+                                     data-img-src="{{ url_for('static', filename='uploads/' + image.image_path) }}"
+                                     alt="{{ product.name }} - عکس {{ loop.index }}" style="cursor: pointer;">
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if product.images|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productDetailCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon"></span></button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productDetailCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon"></span></button>
+                    {% endif %}
+                </div>
+            {% elif product.image_path %}
+                <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}"
+                     class="w-100 single-image img-clickable"
+                     data-bs-toggle="modal" data-bs-target="#imageModal"
+                     data-img-src="{{ url_for('static', filename='uploads/' + product.image_path) }}"
+                     alt="{{ product.name }}" style="cursor: pointer;">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/placeholder.png') }}"
+                     class="w-100 single-image" alt="No Image Available">
             {% endif %}
+        </div>
+
+        <div class="info-block">
+            <p class="meta-info mb-2 txt-black">منتشر شده در {{ product.updated_at }}</p>
+            <h1 class="product-title mb-3 txt-black">{{ product.name }}</h1>
+            <p class="product-price">
+                {% if product.price == 0 %}
+                    توافقی
+                {% else %}
+                    {{ "{:,.0f}".format(product.price) }} تومان
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="cta-block">
+            {% if current_user.id != product.owner.id %}
+            <a href="{{ url_for('main.start_conversation', user_id=product.owner.id) }}" class="btn cta-button btn-chat btn-danger txt-black">
+                <i class="bi bi-chat-dots-fill"></i>
+                چت با فروشنده
+            </a>
+            {% endif %}
+            <button id="open-contact-sheet-btn" class="btn cta-button btn-contact btn-outline-danger">
+                <i class="bi bi-telephone-fill txt-black"></i>
+                <span class="contact-text txt-black">اطلاعات تماس</span>
+            </button>
+        </div>
+
+        <div class="info-block">
+            <h4 class="mb-3 txt-black">مشخصات</h4>
+            <hr class="txt-black">
+            <ul class="specs-list">
+                <li>
+                    <span class="spec-key txt-black">دسته‌بندی</span>
+                    <span class="spec-value txt-black">{{ product.category.name if product.category else "نامشخص" }}</span>
+                </li>
+                <hr class="txt-black">
+                <li>
+                    <span class="spec-key txt-black">وضعیت کالا</span>
+                    <span class="spec-value txt-black">{{ product.product_type.value if product.product_type else "نامشخص" }}</span>
+                </li>
+                <hr class="txt-black">
+                <li>
+                    <span class="spec-key txt-black">برند</span>
+                    <span class="spec-value txt-black">{{ product.brand or "نامشخص" }}</span>
+                </li>
+                <hr class="txt-black">
+                 <li>
+                    <span class="spec-key txt-black">مکان</span>
+                    <span class="spec-value txt-black">{{ product.address or "نامشخص" }}</span>
+                </li>
+            </ul>
         </div>
         
-        <div class="col-md-6 mb-5 mt-4">
-            <h2 class="txt-black">{{ product.name }}</h2>
-            {% if product.price == product.price|int %}
-                <h3 class="mb-4 txt-black">قیمت: {{ "{:,}".format(product.price | int) }} تومان</h3>
-            {% else %}
-                <h3 class="mb-4 txt-black">قیمت: {{ "{:,.2f}".format(product.price) }} تومان</h3>
-            {% endif %}
-            <p class="text-muted txt-black">فروشنده: {{ product.owner.username }}</p>
-            
-            {% if product.address %}
-                <p class="txt-black"><strong>آدرس:</strong> {{ product.address }}</p>
-            {% else %}
-                <p>آدرس وارد نشده است</p>
-            {% endif %}
-            {% if user.phone %}
-                <div class="d-flex flex-nowrap justify-content-start align-items-center my-3 txt-black"><strong class="m-0">شماره تلفن:</strong><p onclick="copyText(this)" class="header-tabs py-2 px-3 w-75 m-0">{{ user.phone }}</p></div>
-            {% else %}
-                <p>شماره تلفن وارد نشده است</p>
-            {% endif %}
-            <div class="mb-3">
-                <p class="txt-black"><strong class="ps-2">برند:</strong> {{ product.brand or "نامشخص" }}</p>
+        <div class="info-block">
+             <h4 class="mb-3 txt-black">توضیحات</h4>
+             <p class="description-text txt-black">{{ product.description }}</p>
+        </div>
+
+        <div class="info-block">
+            <h4 class="mb-3 txt-black">فروشنده</h4>
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <span class="txt-black">{{ product.owner.username }}</span>
+                <a href="#" class="seller-link txt-black">همه آگهی‌های این فروشنده <i class="bi bi-arrow-left-short"></i></a>
             </div>
-            {% if product.product_type %}
-                <p class="txt-black"><strong>نوع محصول:</strong> {{ product.product_type.value }}</p>
-            {% else %}
-                <p>نوع محصول وارد نشده است</p>
-            {% endif %}
+        </div>
 
-            <!-- {% if current_user.id != product.owner.id %}
-                <a href="{{ url_for('main.start_conversation', user_id=product.owner.id) }}" class="btn btn-primary mt-3">
-                    چت با فروشنده
-                </a>
-            {% endif %} -->
-            <hr class="w-100 txt-black">
-            <p>توضیحات و ویژگی ها:</p>
-            <p class="lead txt-black preserve-format" style="white-space: pre-wrap!important;">{{ product.description }}</p>
-            <hr class="w-100 txt-black">
-            <p class="txt-black">تاریخ انتشار: {{ product.updated_at }}</p>
-
-            <div class="mt-4">
-                <button class="btn btn-danger" onclick="document.getElementById('reportForm').classList.toggle('d-none')">
+        <div class="info-block">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="txt-black">این آگهی مشکلی دارد؟</span>
+                <button class="btn btn-outline-danger btn-sm" onclick="document.getElementById('reportForm').classList.toggle('d-none')">
                     گزارش تخلف
                 </button>
-                <form id="reportForm" class="mt-3 d-none" method="POST" action="{{ url_for('main.report_violation', product_id=product.id) }}">
-                    <textarea name="report_text" class="form-control mb-2" rows="4" placeholder="شرح تخلف را وارد کنید..." required></textarea>
-                    <button type="submit" class="btn btn-warning">ارسال گزارش</button>
-                </form>
             </div>
+            <form id="reportForm" class="mt-3 d-none" method="POST" action="{{ url_for('main.report_violation', product_id=product.id) }}">
+                <textarea name="report_text" class="form-control mb-2" rows="3" placeholder="شرح تخلف را وارد کنید..." required></textarea>
+                <button type="submit" class="btn btn-warning">ارسال گزارش</button>
+            </form>
         </div>
-        
     </div>
 </div>
-<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">  <!-- modal-lg برای بزرگتر شدن -->
-      <div class="modal-content" style="background: var(--black-color);">
-        <div class="modal-header">
-          <h5 class="modal-title txt-black" id="imageModalLabel"></h5>
-          <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="بستن"></button>
-        </div>
-        <div class="modal-body d-flex justify-content-center">
-          <img id="modalImage" src="" alt="تصویر بزرگ" style="max-width: 100%; height: auto;">
+
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-transparent border-0">
+        <div class="modal-body p-0">
+          <img id="modalImage" src="" alt="تصویر بزرگ" class="img-fluid rounded">
         </div>
       </div>
     </div>
-  </div>
+</div>
+
+<div id="pull-spinner" style="position: fixed; top: -60px; left: 50%; transform: translateX(-50%); z-index: 9999; transition: top 0.3s;">
+    <div class="spinner"></div>
+</div>
 <script>
     function copyText(element) {
             const text = element.innerText || element.textContent;
@@ -202,13 +467,7 @@
 <script>
     document.querySelectorAll('.img-clickable').forEach(img => {
         img.addEventListener('click', function () {
-            const modalImage = document.getElementById('modalImage');
-            const modalCaption = document.getElementById('modalCaption');
-
-            modalImage.src = this.getAttribute('data-img-src');
-
-            // چون این تصویر توضیح نداره، caption رو خالی می‌کنیم
-            modalCaption.textContent = this.getAttribute('data-caption') || '';
+            document.getElementById('modalImage').src = this.getAttribute('data-img-src');
         });
     });
 </script>
@@ -259,4 +518,177 @@
         spinner.dataset.loading = ""; // ریست کردن وضعیت لودینگ
     });
     </script>
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const openBtn = document.getElementById('open-contact-sheet-btn');
+    const closeBtn = document.getElementById('close-sheet-btn');
+    const overlay = document.getElementById('contact-sheet-overlay');
+    const sheet = document.getElementById('contact-sheet');
+    const sheetBody = sheet.querySelector('.sheet-body');
+
+    function openSheet() {
+        overlay.classList.add('active');
+        sheet.classList.add('active');
+    }
+
+    function closeSheet() {
+        overlay.classList.remove('active');
+        sheet.classList.remove('active');
+    }
+
+    if (openBtn) {
+        openBtn.addEventListener('click', openSheet);
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeSheet);
+    }
+    if (overlay) {
+        overlay.addEventListener('click', closeSheet);
+    }
+
+    // جلوگیری از بسته شدن پنل با کلیک روی محتوای داخلی آن
+    sheetBody.addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+    
+    // کپی کردن شماره و نمایش پیام موقت
+    const copyButton = sheet.querySelector('.btn-primary');
+    copyButton.addEventListener('click', function() {
+        const contactNumber = "{{ user.phone }}";
+        navigator.clipboard.writeText(contactNumber).then(() => {
+            const copyTextSpan = this.querySelector('.copy-text');
+            if(copyTextSpan) {
+                copyTextSpan.innerText = 'کپی شد!';
+                setTimeout(() => {
+                    copyTextSpan.innerText = 'کپی کردن شماره';
+                }, 2000);
+            }
+        });
+    });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const shareButton = document.getElementById('share-btn');
+
+    if (shareButton) {
+        // اطلاعات محصول را از Jinja2 به جاوا اسکریپت منتقل می‌کنیم
+        const productTitle = "{{ product.name | e }}";
+        const productUrl = "{{ url_for('main.product_detail', product_id=product.id, _external=True) }}";
+        const shareText = "این محصول رو در استوک دیوار ببین!";
+
+        shareButton.addEventListener('click', async function(event) {
+            event.preventDefault(); // جلوگیری از رفتار پیش‌فرض لینک
+
+            const shareData = {
+                title: productTitle,
+                text: shareText,
+                url: productUrl
+            };
+
+            // ---- بررسی پشتیبانی مرورگر از Web Share API ----
+            if (navigator.share) {
+                try {
+                    // باز کردن منوی اشتراک‌گذاری نیتیو سیستم‌عامل
+                    await navigator.share(shareData);
+                    console.log('محصول با موفقیت به اشتراک گذاشته شد.');
+                } catch (err) {
+                    console.error('خطا در اشتراک‌گذاری:', err);
+                }
+            } else {
+                // ---- راه حل جایگزین برای دسکتاپ (کپی کردن لینک) ----
+                try {
+                    await navigator.clipboard.writeText(productUrl);
+                    
+                    // نمایش بازخورد به کاربر
+                    const icon = shareButton.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('bi-share');
+                        icon.classList.add('bi-check-lg'); // تغییر آیکون به تیک
+                        
+                        setTimeout(() => {
+                            icon.classList.remove('bi-check-lg');
+                            icon.classList.add('bi-share'); // بازگرداندن آیکون به حالت اولیه
+                        }, 2000); // بعد از ۲ ثانیه
+                    }
+                    
+                } catch (err) {
+                    console.error('خطا در کپی کردن لینک:', err);
+                    alert('مرورگر شما از اشتراک‌گذاری یا کپی خودکار پشتیبانی نمی‌کند. لینک محصول: ' + productUrl);
+                }
+            }
+        });
+    }
+});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', function(event) {
+        // تنها در صورتی اجرا شو که روی دکمه بوکمارک کلیک شده باشد
+        if (event.target.closest('.bookmark-toggle')) {
+            event.preventDefault();
+
+            const button = event.target.closest('.bookmark-toggle');
+            const productId = button.dataset.productId;
+            const icon = button.querySelector('i');
+
+            fetch(`/toggle_bookmark/${productId}`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.action === 'added') {
+                        // تغییر آیکون به حالت "ذخیره شده"
+                        icon.classList.remove('bi-bookmark');
+                        icon.classList.add('bi-bookmark-fill');
+                    } else {
+                        // تغییر آیکون به حالت "ذخیره نشده"
+                        icon.classList.remove('bi-bookmark-fill');
+                        icon.classList.add('bi-bookmark');
+
+                        // اگر در صفحه داشبورد بودیم، کارت محصول را حذف کن
+                        const cardToRemove = document.querySelector(`.product-card-saved-${productId}`);
+                        if (cardToRemove) {
+                            cardToRemove.remove();
+                        }
+                    }
+                } else {
+                    // در صورت بروز خطا (مثلا کاربر لاگین نکرده)
+                    // می‌توانید کاربر را به صفحه لاگین هدایت کنید
+                    window.location.href = '/login';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    });
+});
+</script>
+
+    <div id="contact-sheet-overlay" class="sheet-overlay"></div>
+    <div id="contact-sheet" class="contact-sheet-container">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <h5 class="mb-0">اطلاعات تماس</h5>
+            <button id="close-sheet-btn" class="btn-close"></button>
+        </div>
+        <div class="sheet-body">
+            <div class="seller-info">
+                <span class="info-label">فروشنده:</span>
+                <span class="info-value">{{ product.owner.username }}</span>
+            </div>
+            <div class="seller-info">
+                <span class="info-label">شماره تماس:</span>
+                <span class="info-value" dir="ltr">{{ user.phone }}</span>
+            </div>
+            <button class="btn btn-primary w-100 mt-4" onclick="copyText(this, '{{ user.phone }}')">
+                <i class="bi bi-copy me-2"></i>
+                <span class="copy-text">کپی کردن شماره</span>
+            </button>
+        </div>
+    </div>
 {% endblock %}

@@ -15,11 +15,14 @@
 
     <!-- Scripts -->
     <script src="/static/js/theme.js" defer></script>
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
 
     <!-- Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
     <script>
         var citiesByProvince = {
@@ -515,6 +518,115 @@
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        .bottom-nav {
+            background-color: var(--black-color);
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -0.5rem 2rem var(--light-green);
+            padding: 0 0 0 1rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+        }
+
+        .bottom-nav .nav-item {
+            flex-grow: 1;
+        }
+        .custom-icon {
+            width: 48px; /* اندازه را برای نمایش بهتر جزئیات، بزرگتر انتخاب کنید */
+            height: 48px;
+            color: var(--text-color); /* رنگ اصلی آیکون با تم شما هماهنگ می‌شود */
+        }
+        
+        /* این بخش برای ایجاد افکت دو-رنگ است */
+        .custom-icon .primary-part {
+            fill: currentColor;
+            opacity: 1; /* بخش اصلی با رنگ کامل */
+        }
+        
+        .custom-icon .secondary-part {
+            fill: currentColor;
+            opacity: 0.6; /* بخش دوم با شفافیت، برای ایجاد عمق */
+        }
+
+        .bottom-nav .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+        }
+        
+        .bottom-nav .nav-link i {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .fab-container {
+            position: relative;
+            width: 70px; /* Container to hold the button */
+            display: flex;
+            justify-content: center;
+        }
+        
+        .fab {
+            background-color: var(--light-green);
+            color: var(--white-color);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: absolute;
+            bottom: 15px; /* Lifts the button up */
+            transition: all 0.3s ease;
+        }
+        .fab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            color: var(--white-color);
+        }
+        .category-icon {
+            width: 32px;  /* اندازه دلخواه */
+            height: 32px; /* اندازه دلخواه */
+            color: var(--text-color); /* رنگ آیکون با تم شما هماهنگ می‌شود */
+            stroke-width: 1.5; /* ضخامت خطوط در آیکون‌های outline */
+        }
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            background-color: var(--dark-green);
+            border: 1px solid var(--dark-green);
+            border-radius: 0.375rem;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 36px;
+            padding-left: 12px;
+            background-color: var(--dark-green);
+        }
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+            background-color: var(--dark-green);
+        }
+        .select2-results__option {
+            padding: 6px;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: var(--dark-green);
+        }
+        .select2-results__option .logo-image {
+            height: 35px; /* اندازه لوگو در لیست */
+            margin-left: 15px; /* فاصله لوگو از متن */
+            vertical-align: middle;
+
+        }
+        .select2-selection__rendered .logo-image {
+            height: 24px; /* اندازه لوگو در حالت انتخاب شده */
+            margin-left: 5px;
+            vertical-align: middle;
+        }
         </style>
 </head>
 <body class="{{ 'chat-page' if 'chat.html' in request.path else '' }}">
@@ -536,41 +648,17 @@
     <div id="pull-spinner" style="position: fixed; top: -60px; left: 50%; transform: translateX(-50%); z-index: 9999; transition: top 0.3s;">
         <div class="spinner"></div>
       </div>
-    <nav class="navbar navbar-dark bg-dark d-lg-none d-md-none d-sm-flex">
-      <div class="container-fluid">
-        <a class="navbar-brand txt-black" href="{{ url_for('main.index') }}">استوک</a>
-        <button class="navbar-toggler txt-black" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenu"
-        aria-controls="mobileMenu" aria-expanded="false" aria-label="منو" style="border: none!important; outline: none!important;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-list txt-black" style="outline: none; border: none;" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M2.5 12.5h11v-1h-11v1zm0-4h11v-1h-11v1zm0-4h11v-1h-11v1z"/>
-          </svg>
-        </button>
-        <div class="collapse navbar-collapse flex-column text-end p-3" style="background: var(--black-color);" id="mobileMenu">
-          
-            <!-- <a class="nav-link text-success mb-2" href="{{ url_for('main.conversations') }}">
-                <i class="bi bi-chat-left-text me-2 ms-2"></i> گفت‌وگوها
-            </a> -->
-
-            <a class="nav-link text-info mb-2" href="{{ url_for('main.chatbot_page_render') }}"> {# فرض بر این است که route شما chatbot_page_render نام دارد #}
-                <i class="bi bi-robot me-2 ms-2"></i> چت هوشمند
-            </a>
-        
-          {% if current_user.is_admin %}
-            <a class="nav-link text-danger mb-2" href="{{ url_for('main.admin_dashboard') }}">
-              <i class="bi bi-kanban me-2 ms-2"></i> مدیریت
-            </a>
-          {% endif %}
-        
-          {% if current_user.is_authenticated %}
-            <a class="nav-link text-danger mb-2" href="{{ url_for('main.logout') }}">
-              <i class="bi bi-box-arrow-left me-2 ms-2"></i> خروج
-            </a>
-          {% else %}
-            <a class="nav-link text-success mb-2" href="{{ url_for('main.login') }}">
-                <i class="bi bi-box-arrow-in-left me-2 ms-2"></i> ورود/ثبت‌نام
-            </a>
-          {% endif %}
+    <nav class="navbar navbar-dark bg-dark d-lg-none d-md-none d-sm-flex sticky-top">
+      <div class="container-fluid d-flex flex-nowrap">
+        <div class="d-flex flex-nowrap w-75 align-items-center">
+                <div class="input-group flex-grow-1 me-2">
+                    <input id="search-input-mobile" class="inputs searcher txt-black" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
+                </div>
         </div>
+        <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg me-2 rounded-2 shadow w-25" id="floatingChatButton" title="چت با هوش مصنوعی">
+            <i class="bi bi-robot"></i>
+            <p class="chat-label mt-1 text-nowrap">چت هوشمند</p>
+        </a>
       </div>
     </nav>
 
@@ -619,15 +707,10 @@
                             <input type="hidden" name="city_search" id="cityInput" value="{{ request.args.get('city_search', '') }}">
                         </div>
                     
-                        {# <<<<<<< شروع تغییرات برای جستجوی تصویری در دسکتاپ >>>>>>> #}
-                        <div class="input-group w-75 me-2"> {# استفاده از input-group برای چسباندن آیکون #}
-                            <input class="form-control inputs txt-black" type="search" placeholder="جستجو..." name="search"
+                        <div class="input-group w-75 me-2">
+                            <input id="search-input-desktop" class="form-control inputs txt-black" type="search" placeholder="جستجو..." name="search"
                                 value="{{ request.args.get('search', '') }}">
-                            
                         </div>
-                        {# <<<<<<< پایان تغییرات برای جستجوی تصویری در دسکتاپ >>>>>>> #}
-                    
-                        <button class="btn w-25 header-tabs txt-black" type="submit">جستجو</button>
                     </div>
                 </form>
                 <input type="file" id="imageSearchInput" accept="image/*" style="display: none;"> {# فیلد مخفی برای آپلود عکس #}
@@ -646,12 +729,19 @@
                             <span>محصولات</span>
                         </a>
                     </li>
+
+                    <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
+                        <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.conversations') }}">
+                            <i class="bi bi-chat-left-text txt-lighter fs-3 m-0 p-0 me-1"></i> 
+                            <span class="text-nowrap">گفت گو</span>
+                        </a>
+                    </li>
                     
                     {% if current_user.is_authenticated %}
                         <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
                             <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.dashboard') }}">
                                 <i class="bi bi-person txt-lighter fs-3 m-0 p-0 me-1"></i> 
-                                <span>داشبورد</span>
+                                <span class="text-nowrap">استوک من</span>
                             </a>
                         </li>
                         <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
@@ -687,7 +777,7 @@
                         </li>
                     {% else %}
                         <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative">
-                            <a class="nav-link text-success m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.login') }}">
+                            <a class="nav-link text-success m-0 p-0 w-100 h-100 d-block" href="{{ url_for('main.login_with_phone') }}">
                                 <i class="bi bi-box-arrow-in-left text-success fs-3 m-0 p-0 me-1"></i><br>
                                 <span>ورود/ثبت نام</span>
                             </a>
@@ -702,7 +792,7 @@
     </nav>
 
     
-   <!-- فرم موبایل -->
+   <!-- فرم موبایل
     {# در فایل base.html، داخل فرم جستجوی موبایل #}
     <form class="d-lg-none d-md-flex d-sm-flex w-100 {{ 'd-none' if 'chat.html' in request.path else '' }}" action="{{ url_for('main.index') }}" method="GET">
         <div class="d-flex w-100 m-auto flex-wrap">
@@ -745,7 +835,7 @@
             </div>
         </div>
     </form>
-    {# فیلد مخفی آپلود عکس و اسپینر که در بالا تعریف شد، برای هر دو فرم استفاده می‌شود و نیازی به تکرار نیست #}
+    {# فیلد مخفی آپلود عکس و اسپینر که در بالا تعریف شد، برای هر دو فرم استفاده می‌شود و نیازی به تکرار نیست #} -->
 
     <!-- <button id="toggleButton">تغییر تم</button> -->
 
@@ -765,77 +855,61 @@
         {% block content %}{% endblock %}
     </div>
 
-    <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg rounded-circle shadow mb-5" id="floatingChatButton" title="چت با هوش مصنوعی">
-        <i class="bi bi-robot"></i>
-        <p class="chat-label mt-1 text-nowrap">چت هوشمند</p>
-    </a>
-
     
-    <div class="bottom-div sticky-bottom d-lg-none d-md-none d-sm-flex flex-nowrap" style="background-color: var(--dark-green);">
-        <ul class="navbar-nav pe-0 ms-auto w-100 me-0 d-flex flex-row">
-            <li class="nav-item header-tabs pt-3 pb-4 pe-4 ps-4 text-center font-300 position-relative flex-fill">
-                <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.index') }}">
-                    <i class="bi bi-cart3 txt-lighter fs-3 m-0 p-0 me-1"></i> 
-                    <span>محصولات</span>
+    <div id="custom-popup" class="custom-popup-class">
+        <a id="copy-whatsapp-number" target="_blank" class="popover-link nav-link">
+            <i class="bi bi-whatsapp" style="color: #25D366;"></i>
+            <span class="txt-black">شماره واتساپ بازخورد</span>
+        </a><br>
+        <a href="https://stockheydari.ir/abut-us/" target="_blank" class="popover-link nav-link">
+            <i class="bi bi-telephone" style="color: #007bff;"></i>
+            <span class="txt-black">درباره ما</span>
+        </a>
+    </div>
+
+
+        
+    <div class="bottom-nav d-md-none">
+        <ul class="navbar-nav flex-row align-items-center w-100">
+            <li class="nav-item">
+                <a style="font-size: .7rem;" class="nav-link active txt-black" href="{{ url_for('main.index') }}">
+                    <i class="bi bi-house-door"></i>
+                    <span>خانه</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" id="custom-popup-trigger" style="font-size: .7rem;" class="nav-link txt-black">
+                    <i class="bi bi-headset"></i>
+                    <span>پشتیبانی</span>
+                </a>
+            </li>
+
+            <li class="fab-container">
+                <a href="{{ url_for('main.new_product') }}" class="fab pt-1 pb-0" title="ثبت محصول جدید">
+                    <i class="bi bi-plus-lg"></i>
                 </a>
             </li>
             
-            {% if current_user.is_authenticated %}
-                <li class="nav-item header-tabs pt-1 pb-2 pe-4 ps-4 text-center font-300 position-relative rounded-5" style="background-color: var(--black-color); bottom: 1.5rem; box-shadow: 0 0 2rem var(--light-green);">
-                    <a href="{{ url_for('main.new_product') }}" class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black">
-                        <i class="bi bi-plus-square txt-lighter fs-3 m-0 p-0 me-1"></i><br>
-                        <span style="white-space: wrap;">محصول جدید</span>
-                    </a>
-                </li>
-                <li class="nav-item header-tabs pt-3 pb-4 pe-4 ps-4 text-center font-300 position-relative flex-fill" style="backdrop-filter: none;">
-                    <a class="nav-link text-light m-0 p-0 w-100 h-100 d-block txt-black" href="{{ url_for('main.dashboard') }}">
-                        <i class="bi bi-person txt-lighter fs-3 m-0 p-0 me-1"></i> 
-                        <span>داشبورد</span>
-                    </a>
-                </li>
-            {% endif %}
+            <li class="nav-item">
+                <a style="font-size: .7rem;" class="nav-link txt-black" href="{{ url_for('main.conversations') }}">
+                    <i class="bi bi-chat-left-text"></i>
+                    <span>گفت‌وگو</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a style="font-size: .7rem;" class="nav-link txt-black" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login_with_phone') }}">
+                    <i class="bi bi-person"></i>
+                    <span>استوک من</span>
+                </a>
+            </li>
         </ul>
-        
-        
     </div>
 
     
     <footer class="w-100 text-start pt-4 px-3 {{ 'd-none' if 'chat.html' in request.path else '' }}" style="background-color: #1f1f1f; color: #f1f1f1; z-index: 2;">
         <div class="w-100 d-flex flex-column flex-md-row align-items-start justify-content-between gap-4 {{ 'd-none' if 'chat.html' in request.path else '' }}">
             <!-- Carousel بخش عکس -->
-            <div class="w-100 w-md-50 rounded overflow-hidden shadow-sm d-flex flex-wrap {{ 'd-none' if 'chat.html' in request.path else '' }}">
-                <div id="carouselExample" class="carousel slide" data-bs-ride="carousel" style="position: relative;">
-                    <div class="carousel-inner rounded">
-                        <!-- آیتم اول -->
-                        <div class="carousel-item active">
-                            <img src="/static/images/DSC07464.png" class="d-block w-100 img-clickable" alt="تصویر 1" data-bs-toggle="modal" data-bs-target="#imageModal" data-img-src="/static/images/DSC07464.png" data-caption="عکس با اتاق اصناف - شرکت هیلتی حیدری کارآفرین برتر سال 1403">
-                            <div class="carousel-caption d-none d-md-block">
-                                <p class="text-light">عکس با اتاق اصناف - شرکت هیلتی حیدری کارآفرین برتر سال 1403</p>
-                            </div>
-                        </div>
-                    
-                        <!-- آیتم دوم -->
-                        <div class="carousel-item">
-                            <img src="/static/images/DSC07426.png" class="d-block w-100 img-clickable" alt="تصویر 2" data-bs-toggle="modal" data-bs-target="#imageModal" data-img-src="/static/images/DSC07426.png" data-caption="مراسم تجلیل از شرکت هیلتی حیدری">
-                            <div class="carousel-caption d-none d-md-block">
-                                <p class="text-light">مراسم تجلیل از شرکت هیلتی حیدری</p>
-                            </div>
-                        </div>
-                    </div>
-                
-                    <!-- کنترل‌ها (دکمه‌های قبلی و بعدی) -->
-                    <button class="carousel-control-prev header-tabs txt-black h-25" type="button" data-bs-target="#carouselExample" data-bs-slide="prev" style="position: absolute; background: #11111100!important; left: 0px; top: 50%; transform: translateY(-50%);">
-                        <span class="carousel-control-prev-icon"></span>
-                    </button>
-                    <button class="carousel-control-next header-tabs txt-black h-25" type="button" data-bs-target="#carouselExample" data-bs-slide="next" style="position: absolute; background: #11111100!important; right: 0px; top: 50%; transform: translateY(-50%);">
-                        <span class="carousel-control-next-icon"></span>
-                    </button>
-                </div>
             
-                <!-- عنوان زیر مجموعه -->
-                <div class="w-100 mt-3 text-end">
-                </div>
-            </div>
 
 
             <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
@@ -851,13 +925,11 @@
     
             <!-- اطلاعات تماس -->
             <ul class="w-100 w-md-25 list-unstyled text-end">
-                <h4 class="mb-3 fw-bold">هیلتی حیدری</h4>
                 <li class="mb-2">سایت ما: <a href="https://stockheydari.ir" class="text-decoration-none" style="color: #00bcd4;">stockheydari.ir</a></li>
                 <li class="mb-2">تلفن ثابت: <span dir="ltr">021 91691502</span></li>
                 <li class="mb-2">تماس با پشتیبانی: <span dir="ltr">021 56699640</span></li>
-                <li class="mb-2">توسعه دهنده: سید عرفان حسینی 09228192173</li>
-                <li class="mb-2">ارسال بازخورد(واتساپ): <span dir="ltr">09910948335</span></li>
                 <li class="mb-2">آدرس شرکت: تهران، اسلامشهر، سرنوری، ک لادن، پ 12</li>
+                <li class="mb-2">قدرت گرفته از مجموعه هیلتی حیدری</li>
                 <li class="mb-2"><a href="https://stockheydari.ir/abut-us/" class="text-decoration-none" style="color: #00bcd4;">درباره ما</a></li>
             </ul>
 
@@ -877,7 +949,60 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const copyButton = document.getElementById('copy-whatsapp-number');
+    if (copyButton) {
+        copyButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            const phoneNumber = '09910689541';
+            
+            navigator.clipboard.writeText(phoneNumber).then(function() {
+                // موفقیت در کپی کردن
+                const originalText = copyButton.querySelector('span');
+                if (originalText) {
+                    originalText.textContent = 'شماره واتساپ کپی شد!';
+                    copyButton.style.opacity = '0.7';
+                    
+                    setTimeout(function() {
+                        originalText.textContent = 'پشتیبانی واتساپ';
+                        copyButton.style.opacity = '1';
+                    }, 2000); // بازگشت به حالت اولیه بعد از ۲ ثانیه
+                }
+            }, function(err) {
+                // خطا در کپی کردن
+                console.error('امکان کپی کردن وجود ندارد: ', err);
+                alert('شماره پشتیبانی: ' + phoneNumber); // به عنوان جایگزین، شماره را در یک alert نمایش می‌دهیم
+            });
+        });
+    }
+});
+</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const trigger = document.getElementById('custom-popup-trigger');
+            const popup = document.getElementById('custom-popup');
+        
+            if (trigger && popup) {
+                trigger.addEventListener('click', function (event) {
+                    event.preventDefault(); // جلوگیری از رفتار پیش‌فرض لینک
+                    event.stopPropagation(); // جلوگیری از بسته شدن فوری
+                    popup.classList.toggle('show');
+                });
+            }
+        
+            // بستن پاپ‌آپ با کلیک روی هر جای دیگر صفحه
+            window.addEventListener('click', function (event) {
+                if (popup && popup.classList.contains('show')) {
+                    if (!popup.contains(event.target) && !trigger.contains(event.target)) {
+                        popup.classList.remove('show');
+                    }
+                }
+            });
+        });
+    </script>
     <script>
         let startY = 0;
         let isPulling = false;
@@ -1130,7 +1255,90 @@ function keepDropdownOpen(event) {
     console.log(window.citiesByProvince);
 
     </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // انتخاب تمام فیلدهای ورودی که در جستجو نقش دارند
+    const searchInputDesktop = document.getElementById('search-input-desktop');
+    const searchInputMobile = document.getElementById('search-input-mobile');
+    const provinceInputDesktop = document.getElementById('provinceInput');
+    const cityInputDesktop = document.getElementById('cityInput');
+    const provinceInputMobile = document.getElementById('provinceInputMobile');
+    const cityInputMobile = document.getElementById('cityInputMobile');
+    const resultsContainer = document.getElementById('product-results-container');
+    
+    let debounceTimeout;
 
+    // تابع اصلی برای انجام جستجوی زنده
+    function performLiveSearch() {
+        if (!resultsContainer) return;
+
+        resultsContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">در حال جستجو...</span></div></div>';
+
+        const searchTerm = (document.getElementById('search-input-mobile').value || document.getElementById('search-input-desktop').value);
+        const province = (document.getElementById('provinceInputMobile').value || document.getElementById('provinceInput').value);
+        const city = (document.getElementById('cityInputMobile').value || document.getElementById('cityInput').value);
+
+        const queryParams = new URLSearchParams({
+            search: searchTerm,
+            province_search: province,
+            city_search: city
+        });
+
+        fetch(`/live_search?${queryParams.toString()}`)
+            .then(response => response.text())
+            .then(html => {
+                resultsContainer.innerHTML = html;
+
+                // *** مهم‌ترین بخش: فراخوانی مجدد تابع انیمیشن ***
+                // بعد از اینکه محصولات جدید در صفحه قرار گرفتند، به جاوا اسکریپت می‌گوییم
+                // که انیمیشن‌ها را برای آن‌ها نیز فعال کند.
+                if (typeof initializeAnimations === 'function') {
+                    initializeAnimations();
+                }
+
+            })
+            .catch(error => {
+                console.error('خطا در جستجوی زنده:', error);
+                resultsContainer.innerHTML = '<p class="text-center text-danger">خطایی در هنگام جستجو رخ داد.</p>';
+            });
+    }
+
+    // تابع Debounce برای جلوگیری از درخواست‌های مکرر هنگام تایپ
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    const debouncedSearch = debounce(performLiveSearch, 400); // تاخیر 400 میلی‌ثانیه
+
+    // اتصال رویدادها به فیلدهای ورودی
+    if (searchInputDesktop) {
+        searchInputDesktop.addEventListener('input', debouncedSearch);
+    }
+    if (searchInputMobile) {
+        searchInputMobile.addEventListener('input', debouncedSearch);
+    }
+
+    // ------ مهم: یکپارچه‌سازی با کدهای فعلی شما ------
+    // ما توابع selectProvince و selectCity شما را ویرایش می‌کنیم تا جستجوی زنده را فراخوانی کنند.
+
+    const originalSelectProvince = window.selectProvince;
+    window.selectProvince = function(formType, province) {
+        originalSelectProvince(formType, province); // تابع اصلی شما را اجرا می‌کند
+        performLiveSearch(); // و سپس جستجوی زنده را فراخوانی می‌کند
+    };
+
+    const originalSelectCity = window.selectCity;
+    window.selectCity = function(formType, city) {
+        originalSelectCity(formType, city); // تابع اصلی شما را اجرا می‌کند
+        performLiveSearch(); // و سپس جستجوی زنده را فراخوانی می‌کند
+    };
+
+});
+</script>
 </body>
 
 </body>

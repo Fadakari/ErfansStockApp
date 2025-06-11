@@ -1,0 +1,48 @@
+{% for product in products %}
+<div class="col">
+    <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="divar-card-horizontal-link header-tabs">
+        
+        {% set image_url = 'images/placeholder.png' %} {# تصویر پیش‌فرض #}
+
+        {% if product.images %}
+            {# اگر از سیستم جدید چند عکسه استفاده می‌کند، اولین عکس را بردار #}
+            {% set image_url = 'uploads/' + product.images[0].image_path %}
+        {% elif product.image_path %}
+            {# در غیر این صورت، اگر عکس قدیمی دارد، آن را بردار #}
+            {% set image_url = 'uploads/' + product.image_path %}
+        {% endif %}
+            
+        <img src="{{ url_for('static', filename=image_url) }}" 
+             class="divar-card-img" 
+             alt="{{ product.name }}">
+
+
+        <div class="divar-card-body py-0 pt-2 px-2">
+            <h3 class="divar-card-title txt-black">{{ product.name }}</h3>
+            
+            <p class="divar-card-meta txt-black">
+                {% if product.promoted_until and product.promoted_until > datetime.utcnow() %}
+                    <span style="color: #00A478; font-weight: 500;">
+                        <i class="bi bi-check-circle-fill"></i> نردبان شده
+                    </span>
+                {% else %}
+                    در {% if product.address %}{{ product.address }}{% else %}استوک{% endif %}
+                {% endif %}
+            </p>
+
+            <p class="divar-card-price txt-black">
+                {% if product.price %}
+                    {{ "{:,.0f}".format(product.price) }} تومان
+                {% else %}
+                    توافقی
+                {% endif %}
+            </p>
+        </div>
+    </a>
+    <hr class="txt-black">
+</div>
+{% else %}
+    <div class="col-12">
+        <p class="text-center txt-black py-5">محصولی با این مشخصات یافت نشد.</p>
+    </div>
+{% endfor %}

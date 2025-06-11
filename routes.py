@@ -5,7 +5,7 @@ import secrets
 import traceback
 from urllib.parse import urlparse
 from aplication import db
-from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction
+from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks
 from utils import save_image
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -21,6 +21,7 @@ import urllib.parse
 import base64
 from flask_limiter.errors import RateLimitExceeded
 from flask_limiter.util import get_remote_address
+from sqlalchemy import case, func, or_
 # from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
 # from tensorflow.keras.preprocessing import image
 # import numpy as np
@@ -154,7 +155,53 @@ def index():
 
 
 
+@bp.route('/live_search')
+def live_search():
+    # دریافت تمام پارامترهای جستجو از درخواست AJAX
+    search = request.args.get('search', '').strip()
+    province_search = request.args.get('province_search', '').strip()
+    city_search = request.args.get('city_search', '').strip()
+    address_search = request.args.get('address_search', '').strip()
+    category_id = request.args.get('category', '').strip()
 
+    query = Product.query.filter(Product.status == 'published')
+
+    # اعمال تمام فیلترها دقیقا مانند تابع index
+    if search:
+        search_keywords = search.lower().split()
+        brand_filters = []
+        for keyword in search_keywords:
+            brand_filters.append(Product.brand.ilike(f'%{keyword}%'))
+
+        search_filter = db.or_(
+            Product.name.ilike(f'%{search}%'),
+            Product.description.ilike(f'%{search}%'),
+            *brand_filters
+        )
+        query = query.filter(search_filter)
+
+    if province_search:
+        query = query.filter(Product.address.ilike(f'%{province_search}%'))
+
+    if city_search:
+        query = query.filter(Product.address.ilike(f'%{city_search}%'))
+
+    if address_search:
+        query = query.filter(Product.address.ilike(f'%{address_search}%'))
+
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+
+    products = query.order_by(
+        db.case(
+            (Product.promoted_until > datetime.utcnow(), 1),
+            else_=0
+        ).desc(),
+        Product.created_at.desc()
+    ).all()
+
+    # به جای رندر کامل صفحه، فقط بخش لیست محصولات را برمی‌گردانیم
+    return render_template('_product_list.html', products=products, datetime=datetime)
 
 
 
@@ -319,6 +366,46 @@ def login():
 
 
 
+@limiter.limit("5 per minute")
+@bp.route('/login-with-phone', methods=['GET', 'POST'])
+def login_with_phone():
+    """
+    Handles the new login flow with a phone number.
+    - If the user exists, sends an OTP and redirects to verification.
+    - If the user does not exist, redirects to the signup page.
+    """
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        phone = request.form.get('phone', '').strip()
+
+        # Basic validation for the phone number format
+        if not re.match(r'^09\d{9}$', phone):
+            flash('شماره تماس نامعتبر است. باید با 09 شروع شده و 11 رقم باشد.', 'danger')
+            return redirect(url_for('main.login_with_phone'))
+
+        user = User.query.filter_by(phone=phone).first()
+
+        if user:
+            # User exists, send OTP and redirect to the existing verification page
+            otp = random.randint(1000, 9999)
+            session['otp_code'] = otp
+            session['user_id'] = user.id
+            send_verification_code(user.phone, otp)
+            
+            flash('کد تایید برای شما ارسال شد.', 'info')
+            # We reuse the existing verify_login route and template
+            return redirect(url_for('main.verify_login'))
+        else:
+            # User does not exist, redirect to the standard signup page
+            flash('این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت نام کنید.', 'warning')
+            return redirect(url_for('main.signup'))
+
+    # For GET requests, show the phone number entry form
+    return render_template('login_phone.html')
+
+
 
 
 @limiter.limit("5 per minute")
@@ -379,6 +466,7 @@ def dashboard():
     logging.debug("🏁 Dashboard function started")
     # دریافت محصولات کاربر
     products = Product.query.filter_by(user_id=current_user.id).all()
+    saved_products = current_user.saved_products.order_by(bookmarks.c.product_id.desc()).all()
     
     # --- بررسی تاریخ انقضای محصولات (حذف محصولات منقضی‌شده) و نمایش هشدار تمدید برای محصولات نزدیک به انقضا ---
     now = datetime.utcnow()
@@ -476,8 +564,30 @@ def dashboard():
         free_publish_granted=free_publish_granted,
         unpaid_product_ids=unpaid_product_ids,
         can_promote=can_promote,
-        now=datetime.utcnow()
+        now=datetime.utcnow(),
+        saved_products=saved_products
     )
+
+
+
+@bp.route('/toggle_bookmark/<int:product_id>', methods=['POST'])
+@login_required
+def toggle_bookmark(product_id):
+    product = Product.query.get_or_404(product_id)
+
+    # بررسی اینکه آیا محصول قبلا ذخیره شده یا نه
+    if product in current_user.saved_products:
+        # اگر بود، حذف کن
+        current_user.saved_products.remove(product)
+        db.session.commit()
+        return jsonify({'status': 'success', 'action': 'removed'})
+    else:
+        # اگر نبود، اضافه کن
+        current_user.saved_products.append(product)
+        db.session.commit()
+        return jsonify({'status': 'success', 'action': 'added'})
+    
+
 
 @bp.route('/verify-phone-change', methods=['GET', 'POST'])
 @login_required
@@ -551,6 +661,101 @@ def user_dashboard(user_id):
     return redirect(url_for('main.dashboard'))  # به صفحه اصلی هدایت می‌شود
 
 
+
+import requests
+import os
+
+def moderate_product_content(product_name, product_description, image_url):
+    """
+    محتوای محصول (متن و تصویر) را با استفاده از API های AvalAI بررسی می‌کند.
+    """
+    api_key = os.getenv("AVALAI_API_KEY")
+    if not api_key:
+        return False, "کلید API تعریف نشده است."
+
+    # --- مرحله اول: بررسی متن (نام و توضیحات) با API نظارت ---
+    try:
+        text_to_check = [product_name, product_description]
+        moderation_response = requests.post(
+            "https://api.avalai.ir/v1/moderations",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={"input": text_to_check, "model": "omni-moderation-latest"}, # از مدل omni استفاده می‌کنیم که قوی‌تر است
+            timeout=20
+        )
+        
+        if moderation_response.status_code == 200:
+            results = moderation_response.json().get('results', [])
+            for res in results:
+                if res.get('flagged'):
+                    flagged_categories = [cat for cat, flagged in res.get('categories', {}).items() if flagged]
+                    reason = f"محتوای متنی به دلیل زیر نامناسب تشخیص داده شد: {', '.join(flagged_categories)}"
+                    print(f"محصول رد شد: {reason}")
+                    return False, reason
+        else:
+            print(f"خطا در API نظارت متن: {moderation_response.text}")
+            # در صورت بروز خطا در این مرحله، بررسی را متوقف می‌کنیم
+            return False, "سرویس نظارت بر متن پاسخگو نبود."
+
+    except Exception as e:
+        print(f"خطا در فرآیند نظارت بر متن: {e}")
+        return False, "خطای داخلی در زمان بررسی متن."
+
+    # اگر متن مشکلی نداشت، به مرحله بعد می‌رویم
+    print("مرحله 1: بررسی متن با موفقیت انجام شد.")
+
+    # --- مرحله دوم: بررسی تصویر با مدل بینایی ---
+    if not image_url or image_url == "No Image Provided":
+        # اگر عکسی وجود نداشت، و متن تایید شده بود، محصول را تایید می‌کنیم
+        return True, "تایید شد (بدون عکس)."
+
+    try:
+        # نام مدل بینایی را اینجا قرار دهید
+        vision_model = "gpt-image-1" # یا هر نام دیگری که از مستندات پیدا کردید
+        
+        prompt_text = (
+            "شما یک ناظر محتوای هوشمند هستید. آیا این تصویر شامل محتوای غیرقانونی، خشونت‌آمیز، مستهجن، "
+            "کلاهبرداری یا موارد نامناسب دیگر برای یک فروشگاه آنلاین است؟ فقط با 'YES' یا 'NO' پاسخ بده."
+        )
+
+        vision_payload = {
+            "model": vision_model,
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt_text},
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                ]
+            }],
+            "max_tokens": 5
+        }
+        
+        vision_response = requests.post(
+            "https://api.avalai.ir/v1/chat/completions", # Endpoint مدل‌های چت/بینایی
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=vision_payload,
+            timeout=45
+        )
+
+        if vision_response.status_code == 200:
+            answer = vision_response.json()["choices"][0]["message"]["content"].strip().upper()
+            if "YES" in answer:
+                reason = "تصویر محصول نامناسب تشخیص داده شد."
+                print(f"محصول رد شد: {reason}")
+                return False, reason
+            else:
+                print("مرحله 2: بررسی تصویر با موفقیت انجام شد.")
+                return True, "محصول پس از بررسی کامل تایید شد."
+        else:
+            print(f"خطا در API بینایی: {vision_response.text}")
+            return False, "سرویس نظارت بر تصویر پاسخگو نبود."
+            
+    except Exception as e:
+        print(f"خطا در فرآیند نظارت بر تصویر: {e}")
+        return False, "خطای داخلی در زمان بررسی تصویر."
+
+
+
+
 @limiter.limit("5 per minute")
 @bp.route('/product/new', methods=['GET', 'POST'])
 @login_required
@@ -560,7 +765,8 @@ def new_product():
             # گرفتن داده‌ها از فرم
             name = request.form.get('name')
             description = request.form.get('description')
-            price = request.form.get('price')
+            price_from_form = request.form.get('price', '0')
+            price = price_from_form.replace(',', '')
             category_id = request.form.get('category_id')
             product_type = request.form.get('product_type')
             province = request.form.get("province")
@@ -568,6 +774,9 @@ def new_product():
             address = f"{province}-{city}"
             postal_code = request.form.get("postal_code")
             brand = request.form.get('brand')
+            uploaded_image_paths_str = request.form.get('uploaded_image_paths')
+            image_paths = uploaded_image_paths_str.split(',') if uploaded_image_paths_str else []
+            main_image_path = image_paths[0] if image_paths else None
 
             # بررسی و ذخیره تصویر
             image_path = request.form.get('uploaded_image_path')
@@ -576,8 +785,8 @@ def new_product():
             product = Product(
                 name=name,
                 description=description,
-                price=price,
-                image_path=image_path if image_path else None,
+                price=float(price),
+                image_path=main_image_path,
                 user_id=current_user.id,
                 category_id=category_id,
                 address=address,
@@ -588,7 +797,28 @@ def new_product():
             )
 
             db.session.add(product)
+            db.session.flush()
+
+            for path in image_paths:
+                if path: # اطمینان از اینکه مسیر خالی نیست
+                    product_image = ProductImage(image_path=path.strip(), product_id=product.id)
+                    db.session.add(product_image)
+            
+            # کامیت نهایی
             db.session.commit()
+
+            image_full_url = url_for('main.uploaded_file', filename=product.image_path, _external=True) if product.image_path else "No Image Provided"
+            
+            # <<<< فراخوانی تابع جدید و جامع >>>>
+            is_approved, reason = moderate_product_content(product.name, product.description, image_full_url)
+            
+            if is_approved:
+                product.status = 'published'
+                db.session.commit()
+                flash('محصول شما پس از بررسی خودکار، با موفقیت منتشر شد!', 'success')
+            else:
+                flash(f'محصول شما برای بررسی بیشتر توسط ادمین ثبت شد.', 'warning')
+                print(f"محصول '{product.name}' توسط AI رد شد: {reason}")
 
             # تشخیص WebView
             user_agent = request.headers.get('User-Agent', '').lower()
@@ -694,7 +924,8 @@ def edit_product(id):
             product.name = request.form.get('name')
             product.description = request.form.get('description')
             product.category_id = request.form.get('category_id')
-            product.price = float(request.form.get('price'))
+            price_from_form = request.form.get('price', '0')
+            product.price = float(price_from_form.replace(',', ''))
 
             province = request.form.get("province")
             city = request.form.get("city")
@@ -711,18 +942,18 @@ def edit_product(id):
             else:
                 product.product_type = None
 
-            # بررسی آپلود تصویر جدید
-            image = request.files.get('image')
-            if image and image.filename:
-                safe_filename = secure_filename(image.filename)
-                new_image_path = save_image(image, safe_filename)
-                if new_image_path:
-                    # حذف تصویر قبلی
-                    if product.image_path:
-                        old_image_path = os.path.join('static/uploads', product.image_path)
-                        if os.path.exists(old_image_path):
-                            os.remove(old_image_path)
-                    product.image_path = safe_filename  # اینجا تغییر
+            uploaded_image_paths_str = request.form.get('uploaded_image_paths')
+            image_paths = uploaded_image_paths_str.split(',') if uploaded_image_paths_str else []
+
+            ProductImage.query.filter_by(product_id=product.id).delete()
+
+            for path in image_paths:
+                if path:
+                    product_image = ProductImage(image_path=path.strip(), product_id=product.id)
+                    db.session.add(product_image)
+
+            product.image_path = image_paths[0] if image_paths else None
+
 
             db.session.commit()
             flash('محصول با موفقیت به‌روزرسانی شد')
@@ -782,18 +1013,32 @@ def delete_product(id):
         return redirect(url_for('main.dashboard'))
 
     try:
-        if product.image_path:
-            image_path = os.path.join('static/uploads', product.image_path)
-            if os.path.exists(image_path):
-                os.remove(image_path)
+        # --- تغییر برای حذف تمام فایل‌های عکس مرتبط ---
+        # 1. جمع‌آوری مسیر تمام عکس‌ها
+        image_files_to_delete = []
+        if product.image_path: # عکس قدیمی
+            image_files_to_delete.append(product.image_path)
+        for img in product.images: # عکس‌های جدید
+            image_files_to_delete.append(img.image_path)
+        
+        # 2. حذف فایل‌ها از سرور
+        for filename in set(image_files_to_delete): # استفاده از set برای جلوگیری از حذف تکراری
+            if filename:
+                try:
+                    image_path_full = os.path.join(current_app.root_path, 'static/uploads', filename)
+                    if os.path.exists(image_path_full):
+                        os.remove(image_path_full)
+                except Exception as e:
+                    logging.error(f"Error deleting image file {filename}: {str(e)}")
 
+        # 3. حذف محصول از دیتابیس (عکس‌های مرتبط در ProductImage به خاطر cascade خودکار حذف می‌شوند)
         db.session.delete(product)
         db.session.commit()
         flash('محصول با موفقیت حذف شد')
 
     except Exception as e:
         db.session.rollback()
-        logging.error(f"Error deleting product: {str(e)}")
+        logging.error(f"Error deleting product object: {str(e)}")
         flash('خطا در حذف محصول')
 
     return redirect(url_for('main.dashboard'))
@@ -834,6 +1079,7 @@ def init_categories():
         {'name': 'سیستم میخکوب ها', 'icon': 'bi-hammer', 'subcategories': []},
         {'name': 'ابزار برقی', 'icon': 'bi-lightning-charge', 'subcategories': []},
         {'name': 'ابزار شارژی', 'icon': 'bi-battery-full', 'subcategories': []},
+        {'name': 'ابزار دستی', 'icon': 'bi-battery-full', 'subcategories': []},
     ]
     
     for cat in categories:
@@ -977,7 +1223,7 @@ def verify():
             session.pop('verification_code', None)
             session.pop('signup_data', None)
 
-            flash('ثبت‌نام با موفقیت انجام شد و وارد شدید.', 'success')
+            flash('.ثبت‌نام با موفقیت انجام شد و وارد شدید. قابلیت محصول گذاری رایگان برای شماره تماس شما فعال شد', 'success')
             return redirect(url_for('main.index'))  # یا هر صفحه دلخواه
 
         else:
@@ -1216,6 +1462,8 @@ def admin_dashboard():
     role_filter = request.args.get('role_filter', '')  # دریافت فیلتر نقش (ادمین یا کاربر عادی)
     pending_products = Product.query.filter_by(status='pending').all()
     users_dict = {u.id: u.username for u in User.query.all()}
+    count = Product.query.count()
+    total_users = User.query.count()
 
     # دریافت تمام کاربران
     users = User.query
@@ -1241,7 +1489,7 @@ def admin_dashboard():
     categories = Category.query.all()
     reports = Report.query.order_by(Report.created_at.desc()).all()
 
-    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, pending_products=pending_products, users_dict=users_dict)
+    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users)
 
 
 
@@ -1258,6 +1506,27 @@ def approve_product(product_id):
 
     flash("محصول با موفقیت تأیید شد", "success")
     return redirect(url_for("main.admin_dashboard"))
+
+
+
+active_sessions = {}
+
+@bp.before_request
+def track_user():
+    session.permanent = True
+    session.modified = True
+    session_id = session.get('id')
+    if not session_id:
+        session['id'] = str(datetime.utcnow().timestamp())
+    active_sessions[session['id']] = datetime.utcnow()
+
+@bp.route('/online-users')
+def online_users():
+    now = datetime.utcnow()
+    timeout = timedelta(minutes=5)
+    # حذف sessionهای قدیمی‌تر از ۵ دقیقه
+    active = {k: v for k, v in active_sessions.items() if now - v < timeout}
+    return jsonify({'count': len(active)})
 
 
 
@@ -1613,6 +1882,109 @@ def chatbot_page_render(): # نام تابع را می‌توان تغییر د�
     return render_template('ai_chat.html', bot_response=None)
 
 
+def intelligent_product_search(
+    keywords: list = None,
+    brand: str = None,
+    product_type: str = None,
+    min_price: float = None,
+    max_price: float = None,
+    price_target: float = None,
+    price_tolerance: float = 0.2,  # 20% تلورانس برای قیمت "حدود"
+    sort_by: str = 'relevance', # 'relevance', 'price_asc', 'price_desc', 'newest'
+    limit: int = 5
+):
+    """
+    یک تابع جستجوی پیشرفته که پارامترهای استخراج شده توسط هوش مصنوعی را دریافت
+    و محصولات مرتبط را بر اساس ترکیبی از کلمات کلیدی، فیلترها و امتیاز ارتباط، جستجو می‌کند.
+    """
+    if not any([keywords, brand, product_type, min_price, max_price, price_target]):
+        return [] # اگر هیچ پارامتری برای جستجو وجود نداشت، لیست خالی برگردان
+
+    # همیشه با محصولات منتشر شده شروع می‌کنیم
+    query = Product.query.filter(Product.status == 'published')
+
+    # --- بخش فیلترهای دقیق (AND Conditions) ---
+    if brand:
+        query = query.filter(Product.brand.ilike(f'%{brand}%'))
+    
+    if product_type:
+        try:
+            # تبدیل رشته به مقدار Enum برای مقایسه دقیق
+            enum_product_type = ProductType[product_type]
+            query = query.filter(Product.product_type == enum_product_type)
+        except KeyError:
+            # اگر مقدار ارسال شده در Enum موجود نبود، آن را نادیده بگیر
+            pass
+            
+    # منطق جستجوی قیمت
+    if price_target:
+        # اگر کاربر گفت "حدود ۱۰ میلیون", در یک بازه مشخص جستجو کن
+        lower_bound = price_target * (1 - price_tolerance)
+        upper_bound = price_target * (1 + price_tolerance)
+        query = query.filter(Product.price.between(lower_bound, upper_bound))
+    else:
+        # اگر بازه دقیق مشخص بود
+        if min_price is not None:
+            query = query.filter(Product.price >= min_price)
+        if max_price is not None:
+            query = query.filter(Product.price <= max_price)
+
+    # --- بخش جستجوی متنی و امتیازدهی به ارتباط (Relevance Scoring) ---
+    relevance_score = None
+    if keywords:
+        search_conditions = []
+        relevance_cases = []
+        
+        for kw in keywords:
+            # کلمات کلیدی باید در یکی از این ستون‌ها وجود داشته باشند (OR)
+            search_conditions.extend([
+                Product.name.ilike(f'%{kw}%'),
+                Product.description.ilike(f'%{kw}%'),
+                Product.brand.ilike(f'%{kw}%'),
+                Product.address.ilike(f'%{kw}%'),
+            ])
+
+            # امتیازدهی برای مرتب‌سازی بر اساس "ارتباط"
+            # به ترتیب: نام > برند > توضیحات
+            relevance_cases.append(case((Product.name.ilike(f'%{kw}%'), 5), else_=0))
+            relevance_cases.append(case((Product.brand.ilike(f'%{kw}%'), 3), else_=0))
+            relevance_cases.append(case((Product.description.ilike(f'%{kw}%'), 1), else_=0))
+
+        if search_conditions:
+            query = query.filter(or_(*search_conditions))
+        
+        # جمع کردن امتیازها برای ساختن یک ستون مجازی برای مرتب‌سازی
+        relevance_score = sum(relevance_cases).label("relevance_score")
+        query = query.add_columns(relevance_score)
+
+
+    # --- بخش مرتب‌سازی (Ordering) ---
+    if sort_by == 'relevance' and relevance_score is not None:
+        # اول بر اساس امتیاز ارتباط، بعد بر اساس بازدید (برای محصولات با امتیاز یکسان)
+        query = query.order_by(relevance_score.desc(), Product.views.desc())
+    elif sort_by == 'price_asc':
+        query = query.order_by(Product.price.asc())
+    elif sort_by == 'price_desc':
+        query = query.order_by(Product.price.desc())
+    elif sort_by == 'newest':
+        query = query.order_by(Product.created_at.desc())
+    else:
+        # حالت پیش‌فرض اگر 'relevance' انتخاب شد ولی کلمه‌ای نبود
+        query = query.order_by(Product.views.desc())
+
+
+    # --- اجرای نهایی ---
+    products = query.limit(limit).all()
+
+    # چون query.add_columns استفاده شده، نتیجه یک tuple است (Product, relevance_score)
+    # ما فقط خود آبجکت محصول را برمی‌گردانیم
+    if relevance_score is not None:
+        return [product for product, score in products]
+    else:
+        return products
+
+
+
 def find_related_products(query_text, limit=3):
     if not query_text:
         return []
@@ -1669,19 +2041,25 @@ def chatbot_ajax():
     # <<<<<<< شروع: تعریف پیام سیستمی >>>>>>>
     # این پیام را مطابق با نیازهای دقیق‌تر خودتان ویرایش کنید
     system_prompt_content = (
-        "شما یک دستیار هوشمند برای پلتفرم 'استوک دیوار' (stockdivar.ir) هستید. "
-        "وظیفه شما پاسخ به سوالات کاربران در مورد محصولات دست دوم و نو و همچنین برندهای مختلف است. "
-        "پاسخ‌های شما باید مودبانه، مفید و دقیق باشد. "
-        "اگر کاربر نام یک برند خاص را ذکر کرد (مثلاً 'بوش'، 'ماکیتا'، 'هیلتی' و غیره)، علاوه بر پاسخ به سوال او، "
-        "علاوه بر پاسخ به سوال او، در انتهای پاسخ خود یک لینک قابل کلیک با فرمت HTML به این شکل ارائه دهید: "
-        "<a href='https://stockdivar.ir/?search=[عبارت جستجو یا نام لاتین برند]' target='_blank'>محصولات برند [نام لاتین برند] در استوک دیوار</a> "
-        "حتماً به جای `[نام لاتین برند جایگزین شود]`، نام لاتین دقیق برندی که کاربر ذکر کرده یا شما تشخیص داده‌اید را قرار دهید. "
-        "یا اگر مستقیماً به محصولی اشاره می‌کنید که لینکش را دارید (مثلاً از طریق تابع find_related_products)، بگویید: "
-        "'می‌توانید <a href='https://stockdivar.ir/product/[ID محصول مرتبط در دیتابیس]' target='_blank'>[نام محصولی که کاربر خواسته پیدا کند]</a> را اینجا ببینید.' "
-        "اطمینان حاصل کنید که تگ `<a>` به درستی بسته شده و دارای `target='_blank'` برای باز شدن در تب جدید است. "
-        "سعی کنید کلمات کلیدی مناسب برای جستجوی محصول را نیز در پاسخ خود بگنجانید. "
-        "همیشه از وبسایت و دیتابیس سایت خودمان (stockdivar.ir) برای یافتن محصولات استفاده کن و به هیچ عنوان از سایت‌های دیگر جستجو نکن. "
-        "از دادن وعده‌هایی که نمی‌توانید انجام دهید یا اطلاعاتی که از آن مطمئن نیستید، خودداری کنید."
+        "شما یک دستیار هوشمند متخصص برای پلتفرم 'استوک دیوار' (stockdivar.ir) هستید و هویت شما کاملاً به این پلتفرم گره خورده است. وظیفه اصلی شما پاسخ به سوالات کاربران در مورد خرید و فروش ابزارآلات نو و دست دوم است."
+        " هر سوالی خارج از این حوزه را با احترام رد کرده و بگویید که فقط در زمینه ابزارآلات در استوک دیوار می‌توانید کمک کنید."
+        " به هیچ عنوان از منابع یا وب‌سایت‌های دیگر اطلاعات ندهید و محصولی را معرفی نکنید."
+        "\n\n"
+        "**قوانین پاسخ‌دهی:**"
+        "\n\n"
+        "1. **درخواست اپلیکیشن:** اگر کاربر کلماتی مانند «دانلود»، «اپلیکیشن»، یا «برنامه» را پرسید، فقط و فقط این دو لینک را به صورت HTML ارسال کن:"
+        " <a href='https://cafebazaar.ir/app/com.example.stockdivarapp' target='_blank'>دانلود از کافه بازار</a> و <a href='https://stockdivar.ir/ionicApp-server/app-release-final.apk' target='_blank'>دانلود مستقیم</a>."
+        "\n\n"
+        "2. **راهنمایی کلی:** اگر کاربر برای خرید راهنمایی کلی خواست (مثال: «چه دریلی برای خونه خوبه؟»)، به جای ارسال لینک، او را راهنمایی کن و ویژگی‌های مهم ابزارها را توضیح بده. هدف مشاوره است، نه ارجاع به لینک جستجو."
+        "\n\n"
+        "3. **جستجوی برند یا محصول:**"
+        " - **اگر محصول دقیق پیدا شد:** اگر از طریق ابزارهای داخلی شناسه محصول را داشتی، لینک مستقیم محصول را به این شکل بده: 'می‌توانید <a href=\"https://stockdivar.ir/product/[ID محصول]\" target=\"_blank\">[نام محصول]</a> را اینجا ببینید.'"
+        " - **اگر برند یا عبارت کلی جستجو شد:** اگر کاربر نام یک برند (مثلا 'بوش') یا یک دسته (مثلا 'فرز انگشتی') را گفت، در انتهای پاسخت لینک جستجوی آن را به این شکل قرار بده: '<a href=\"https://stockdivar.ir/?search=[نام لاتین برند یا عبارت]\" target=\"_blank\">محصولات [نام فارسی برند یا عبارت] در استوک دیوار</a>'."
+        "\n\n"
+        "همیشه مودب باش و اطمینان حاصل کن که تمام تگ‌های <a> دارای `target='_blank'` هستند. از دادن وعده‌هایی که از آن مطمئن نیستی، خودداری کن."
+        "\n\n"
+        "4. **استخراج کلمات کلیدی برای جستجو:** اگر سوال کاربر به دنبال محصول است، کلمات کلیدی مهم برای جستجو در پایگاه داده را شناسایی کن. سپس این کلمات را در انتهای پاسخ خود، داخل یک تگ خاص به این شکل قرار بده: `[SEARCH_KEYWORDS: کلمه۱ کلمه۲ کلمه۳]`."
+        " مثال: اگر کاربر پرسید «دریل شارژی ماکیتا برای کارهای خانگی»، در انتهای پاسخت بنویس: `[SEARCH_KEYWORDS: دریل شارژی ماکیتا خانگی]`."
     )
     # <<<<<<< پایان: تعریف پیام سیستمی >>>>>>>
 
@@ -1718,6 +2096,22 @@ def chatbot_ajax():
             else:
                 bot_response_content = "متاسفانه ساختار پاسخ دریافتی از سرویس چت نامعتبر بود."
                 current_app.logger.error(f"ساختار نامعتبر پاسخ از AvalAI: {api_data}")
+
+            search_query = user_query  # به طور پیش‌فرض از سوال کاربر استفاده کن
+    
+    # با استفاده از Regular Expression به دنبال تگ بگرد
+            match = re.search(r'\[SEARCH_KEYWORDS: (.*?)\]', bot_response_content)
+            if match:
+                extracted_keywords = match.group(1).strip()
+                if extracted_keywords:
+                    search_query = extracted_keywords # اگر کلمات کلیدی پیدا شد، آن‌ها را جایگزین کن
+                    current_app.logger.info(f"کلمات کلیدی استخراج شده توسط AI: {search_query}")
+
+                # تگ را از پاسخ نهایی که به کاربر نمایش داده می‌شود، حذف کن
+                bot_response_content = re.sub(r'\[SEARCH_KEYWORDS: .*?\]', '', bot_response_content).strip()
+
+            # حالا با کوئری هوشمند شده جستجو کن
+            related_products_models = find_related_products(search_query, limit=3)
         else:
             bot_response_content = f"خطا در ارتباط با سرویس چت AvalAI. کد وضعیت: {response.status_code}."
             try:
@@ -2615,3 +3009,11 @@ def api_dashboard():
 def my_store():
     user_products = Product.query.filter_by(user_id=current_user.id).all()
     return render_template('my_store.html', products=user_products)
+
+
+@bp.route('/test-height')
+def test_height_page():
+    """
+    A simple route to render the height test page.
+    """
+    return render_template('test_height.html')

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row d-flex justify-content-center m-auto my-5 px-1 w-100">
+    <div class="col-lg-3 col-md-6 col-sm-8 p-0 m-auto mx-3">
+        <div class="card bg-very-black signuper">
+            <div class="card-header">
+                <h4 class="mb-0 txt-black">ورود یا ثبت نام</h4>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <p class="txt-black">برای ورود یا ثبت نام، شماره تماس خود را وارد کنید.</p>
+                <form id="phone-login-form" method="POST" action="{{ url_for('main.login_with_phone') }}">
+                    <div class="mb-3">
+                        <label for="phone" class="form-label txt-black">شماره تماس</label>
+                        <input type="tel" class="inputs txt-black" id="phone" placeholder="مثال: 09123456789" name="phone" required pattern="^09\d{9}$" title="شماره تماس باید با 09 شروع شود و 11 رقم باشد.">
+                    </div>
+
+                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black w-100" style="background-color: #9B1B30;">ادامه</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // پیدا کردن فرم با id مشخص شده
+    const loginForm = document.getElementById('phone-login-form');
+
+    // اضافه کردن یک event listener برای رویداد 'submit' فرم
+    loginForm.addEventListener('submit', function() {
+        // پیدا کردن دکمه submit در داخل همین فرم
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        
+        if (submitButton) {
+            // حالا دکمه را غیرفعال کرده و اسپینر را نمایش می‌دهیم
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
+        }
+    });
+</script>
+{% endblock %}

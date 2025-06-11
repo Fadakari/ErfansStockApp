@@ -2,7 +2,7 @@
 
 {% block content %}
     <div class="container my-5">
-        <h2 class="text-center mb-4">مکالمات</h2>
+        <h2 class="text-center mb-4 txt-black">مکالمات</h2>
         <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
             <i class="bi bi-arrow-left fs-3 txt-black"></i>
         </button><br>
@@ -11,9 +11,9 @@
             <div class="col-md-6 mb-4">
                 <div class="card shadow-sm rounded">
                     <a href="{{ request.host_url.rstrip('/') + url_for('main.conversation', conversation_id=convo.id) }}" 
-                       class="text-decoration-none text-dark" target="_blank" rel="noopener noreferrer">
+                       class="text-decoration-none text-dark" rel="noopener noreferrer">
                         <div class="card-body">
-                            <h5 class="card-title txt-black">
+                            <h5 class="card-title text-light">
                                 گفتگو با {{ convo.user2.username if convo.user1_id == current_user.id else convo.user1.username }}
                             </h5>
                             <p class="card-text text-muted">

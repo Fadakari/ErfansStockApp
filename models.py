@@ -7,9 +7,17 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, TextAreaField, SelectField, SubmitField
 from wtforms.validators import Email, DataRequired, Length
 
+
+bookmarks = db.Table('bookmarks',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('product_id', db.Integer, db.ForeignKey('product.id'), primary_key=True)
+)
+
+
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -18,7 +26,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(11), unique=True, nullable=True)
     national_id = db.Column(db.String(10), unique=True, nullable=True)
     password_hash = db.Column(db.String(256))
-
+    saved_products = db.relationship('Product', secondary=bookmarks, lazy='dynamic',backref=db.backref('saved_by_users', lazy=True))
     bazaar_account_id = db.Column(db.String(128), unique=True, nullable=True)
     bazaar_access_token = db.Column(db.Text)
     bazaar_refresh_token = db.Column(db.Text, nullable=True)
@@ -71,6 +79,7 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
     image_path = db.Column(db.String(255))
+    images = db.relationship('ProductImage', backref='product', lazy=True, cascade="all, delete-orphan")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     promoted_until = db.Column(db.DateTime, nullable=True)
@@ -117,6 +126,12 @@ class Product(db.Model):
 
 
 
+class ProductImage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    image_path = db.Column(db.String(255), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+
+
 
 class ProductForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired()])
@@ -152,7 +167,8 @@ class ProductForm(FlaskForm):
         ('kress', 'Kress'),
         ('skil', 'Skil'),
         ('AEG', 'AEG'),
-        ('wurth', 'wurth')
+        ('wurth', 'wurth'),
+        ('wiha', 'wiha')
     ], validators=[DataRequired()])
     submit = SubmitField('Add Product')
 

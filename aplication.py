@@ -98,7 +98,7 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    login_manager.login_view = "main.login"
+    login_manager.login_view = "main.login_with_phone"
 
     if os.environ.get("FLASK_RUN_FROM_CLI") == "true":
         scheduler.init_app(app)
@@ -112,7 +112,7 @@ def create_app():
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html'), 404
-    
+
 
 
     @app.route('/sitemap.xml')

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تست ارتفاع</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: monospace;
+            font-size: 16px;
+            padding: 20px;
+            line-height: 1.8;
+            background-color: #f0f0f0;
+            color: #111;
+        }
+        div {
+            border: 2px solid #007bff;
+            padding: 15px;
+            background-color: #e7f3ff;
+        }
+        strong {
+            display: inline-block;
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>نتایج تست ارتفاع WebView</h1>
+    <p>مقادیر زیر مستقیماً از محیط WebView خوانده شده‌اند:</p>
+
+    <div id="debug-output">
+        در حال محاسبه...
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const output = document.getElementById('debug-output');
+            let results = '';
+
+            try {
+                results += `<strong>window.innerHeight:</strong> ${window.innerHeight}px<br>`;
+                results += `<strong>window.outerHeight:</strong> ${window.outerHeight}px<br>`;
+                results += `<strong>document.documentElement.clientHeight:</strong> ${document.documentElement.clientHeight}px<br>`;
+                results += `<strong>document.body.clientHeight:</strong> ${document.body.clientHeight}px<br>`;
+                results += `<strong>screen.height:</strong> ${screen.height}px<br>`;
+                results += `<strong>screen.availHeight:</strong> ${screen.availHeight}px<br>`;
+                
+                if (window.visualViewport) {
+                    results += `<strong>window.visualViewport.height:</strong> ${window.visualViewport.height}px<br>`;
+                } else {
+                    results += '<strong>window.visualViewport:</strong> در دسترس نیست<br>';
+                }
+
+            } catch (e) {
+                results = `خطا در اجرای اسکریپت: ${e.message}`;
+            }
+            
+            output.innerHTML = results;
+        });
+    </script>
+
+</body>
+</html>

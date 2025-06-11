@@ -1,258 +1,613 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد | استوک</title>
 
-{% block content %}
-<button class="btn header-tabs py-2 px-3 float-start">
-    <a href="{{ url_for('main.index') }}">
-        <i class="bi bi-arrow-left fs-3 txt-black"></i>
-    </a>
-</button><br>
-<div class="container-fluid">
-    <!-- Tabs at Top -->
-    <ul class="nav nav-tabs justify-content-start shadow-sm mt-5 d-flex flex-nowrap p-0" id="tabMenu" role="tablist" style="top: 60px; z-index: 1030;" dir="rtl">
-        <li class="nav-item header-tabs">
-            <button class="naver-items nav-link active txt-black" style="outline: none; border: none; background-color: rgba(240, 248, 255, 0);" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab">خانه</button>
-        </li>
-        <li class="naver-items nav-item header-tabs">
-            <button class="nav-link txt-black" style="outline: none; border: none; background-color: rgba(240, 248, 255, 0);" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">اطلاعات شما</button>
-        </li>
-        <li class="naver-items nav-item header-tabs">
-            <button class="nav-link txt-black" style="outline: none; border: none; background-color: rgba(240, 248, 255, 0);" id="products-tab" data-bs-toggle="tab" data-bs-target="#products" type="button" role="tab">محصولات من</button>
-        </li>
-    </ul>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Home Tab -->
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+
+    <style>
+        @font-face {
+            font-family: 'yekan';
+            src: url('../font/Yekan.woff2') format('woff2'),
+                 url('../font/Yekan.woff') format('woff'),
+                 url('../font/Yekan.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        * {
+            font-family: 'yekan', sans-serif;
+        }
+        :root {
+            --dashboard-bg: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --text-muted-color: #6c757d;
+            --border-color: #dee2e6;
+            --primary-accent: #9B1B30;
+            --primary-accent-hover: #801627;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --black-color: #F8F8F8;
+            --dark-green: #E0E0E0;
+            --light-green: #9B1B30;
+            --light-white: #F1F1F1;
+            --txt-color: #1C1C1E;
+            --txt-light: #F1F1F1;
+        }
+        .txt-black{color: var(--txt-color) !important;}
 
 
-    <!-- Tab Contents -->
-    <div class="tab-content pt-4 px-3" id="tabContent" style="padding-top: 80px;">
-        <div class="tab-pane fade show active" id="home" role="tabpanel">
-            <div class="mb-4 mt-3">
-                <h3 class="txt-black">سلام {{ current_user.username }} عزیز 🌟</h3>
-                <p class="txt-black">به پنل کاربری‌ات خوش اومدی!   اینجا به کالای خود ارزش دهید</p>
-            </div>
-            <div class="mt-4 mb-4">
-                <p class="txt-black">تغییر تم:</p>
-                <button id="toggleButton" class="header-tabs rounded-2">
-                    <i id="themeIcon" class="bi bi-moon icon txt-black"></i>
-                </button>
-            </div>
+        html[data-theme="dark"] {
+            --dashboard-bg: #121212;
+            --sidebar-bg: #1e1e1e;
+            --card-bg: #1e1e1e;
+            --text-color: #e9ecef;
+            --text-muted-color: #adb5bd;
+            --border-color: #343a40;
+        }
+        
+        body {
+            background-color: var(--dashboard-bg);
+            color: var(--text-color)!important;
+            font-family: 'Vazirmatn', sans-serif; /* فرض بر اینکه فونت وزیر در custom.css تعریف شده */
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            border-left: 1px solid var(--border-color);
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .sidebar .profile-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        }
+
+        .sidebar .profile-section .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--primary-accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1rem;
+        }
+
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            color: var(--text-muted-color);
+            margin-bottom: 0.5rem;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar .nav-link:hover {
+            background-color: rgba(155, 27, 48, 0.1);
+            color: var(--primary-accent);
+        }
+        .sidebar .nav-link.active {
+            background-color: var(--primary-accent);
+            color: white;
+            font-weight: 500;
+        }
+        .sidebar .nav-link i {
+            margin-left: 1rem; /* برای آیکون‌های فارسی در سمت راست */
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        .sidebar .footer-links {
+            margin-top: auto;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 2rem;
+        }
+        
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        html[data-theme="dark"] .card {
+             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .form-control.inputs {
+            background-color: var(--dashboard-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        .form-control.inputs:focus {
+            background-color: var(--card-bg);
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 0.25rem rgba(155, 27, 48, 0.25);
+        }
+        .btn-primary {
+            background-color: var(--primary-accent);
+            border-color: var(--primary-accent);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-accent-hover);
+            border-color: var(--primary-accent-hover);
+        }
+        .hamburger-btn{
+                display: none;
+            }
+
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-layout {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                border-left: none;
+                border-bottom: 1px solid var(--border-color);
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem 1rem;
+            }
+            .hamburger-btn {
+                display: block;
+            }
             
-            <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
-                <div class="col">
-                    <div class="card header-tabs shadow-sm w-100" 
-                         style="background-color: var(--dark-green); cursor: pointer;" 
-                         id="goToProductsTab">
-                        <div class="card-body text-center">
-                            <i class="bi bi-box-seam fs-2 mb-2 txt-black"></i>
-                            <h5 class="card-title txt-black">محصولات ثبت‌شده</h5>
-                            <p class="card-text txt-black fs-5 fw-bold">{{ products|length }}</p>
+            .sidebar .profile-section, .sidebar .footer-links {
+                display: none; /* Hide for simplicity on mobile nav */
+            }
+            .sidebar .nav {
+                flex-direction: row !important;
+                width: 100%;
+                justify-content: space-around;
+            }
+             .sidebar .nav-link {
+                flex-direction: column;
+                padding: 0.5rem;
+             }
+             .sidebar .nav-link span {
+                font-size: 0.75rem;
+             }
+             .sidebar .nav-link i {
+                margin-left: 0;
+                margin-bottom: 0.25rem;
+             }
+            .main-content {
+                padding: 1rem;
+            }
+        }
+        .offcanvas {
+            background-color: var(--sidebar-bg);
+            width: 50%;
+        }
+        .offcanvas-body  .profile-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+        } .offcanvas-body .profile-section .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--primary-accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1rem;
+        }
+        .offcanvas-body .nav-link:hover {
+            background-color: rgba(155, 27, 48, 0.1);
+            color: var(--primary-accent);
+        }
+        .offcanvas-body .nav-link.active {
+            background-color: var(--primary-accent);
+            color: white;
+            font-weight: 500;
+        }
+        .offcanvas-body .nav-link i {
+            margin-left: 1rem;
+            font-size: 1.2rem;
+            width: 20px;
+        }
+        .offcanvas-body .footer-links {
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="profile-section">
+                <div class="avatar">
+                    {{ current_user.username[0] | upper }}
+                </div>
+                <h5 class="mb-0">{{ current_user.username }}</h5>
+                <small class="" style="color: var(--text-color);">به پنل خود خوش آمدید</small>
+            </div>
+
+            <ul class="nav flex-column p-0">
+                <button class="btn hamburger-btn p-0 fs-2" style="color: var(--text-color);" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu">
+                    <i class="bi bi-list"></i>
+                </button>
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-tab-target="#home-content">
+                        <i class="bi bi-house-door-fill"></i>
+                        <span>داشبورد اصلی</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#profile-content">
+                        <i class="bi bi-person-fill"></i>
+                        <span>اطلاعات کاربری</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#products-content">
+                        <i class="bi bi-box-seam-fill"></i>
+                        <span>محصولات من</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#saved-content">
+                        <i class="bi bi-bookmark-fill"></i>
+                        <span>ذخیره شده‌ها</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="footer-links">
+                
+                <a class="nav-link" href="{{ url_for('main.index') }}">
+                    <i class="bi bi-box-arrow-left"></i>
+                    <span>بازگشت به سایت</span>
+                </a>
+                 <a class="nav-link" href="#" id="theme-toggle">
+                    <i class="bi bi-moon-fill"></i>
+                    <span>تغییر تم</span>
+                </a>
+                <a class="nav-link text-danger" href="{{ url_for('main.logout') }}">
+                    <i class="bi bi-power"></i>
+                    <span>خروج از حساب</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+             <button class="btn header-tabs py-2 px-3 float-start">
+                    <a href="{{ url_for('main.index') }}">
+                        <i class="bi bi-arrow-left fs-3" style="color: var(--text-color);"></i>
+                    </a>
+            </button>
+            <div id="home-content" class="tab-pane active">
+                <h2 class="mb-4">داشبورد</h2>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card p-3 h-100">
+                            <div class="d-flex align-items-center">
+                                <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 me-3">
+                                    <i class="bi bi-box-seam-fill fs-2"></i>
+                                </div>
+                                <div class="me-3">
+                                    <h6 class="mb-1" style="color: var(--text-color);">تعداد محصولات</h6>
+                                    <h4 class="mb-0" style="color: var(--text-color);">{{ products|length }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card p-3 h-100">
+                             <a href="{{ url_for('main.new_product') }}" class="text-decoration-none stretched-link">
+                                <div class="d-flex align-items-center">
+                                    <div class="p-3 bg-success bg-opacity-10 text-success rounded-3 me-3">
+                                        <i class="bi bi-plus-circle-fill fs-2"></i>
+                                    </div>
+                                    <div class="me-3">
+                                        <h6 class="mb-1" style="color: var(--text-color);">افزودن محصول</h6>
+                                        <h4 class="mb-0" style="color: var(--text-color);">ثبت محصول جدید</h4>
+                                    </div>
+                                </div>
+                             </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                         <div class="card p-3 h-100">
+                            <a href="#" class="text-decoration-none stretched-link" data-tab-target="#profile-content" onclick="document.querySelector('.nav-link[data-tab-target=\'#profile-content\']').click(); return false;">
+                                <div class="d-flex align-items-center">
+                                    <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3 me-3">
+                                        <i class="bi bi-person-circle fs-2"></i>
+                                    </div>
+                                    <div class="me-3">
+                                        <h6 class="mb-1" style="color: var(--text-color);">پروفایل</h6>
+                                        <h4 class="mb-0" style="color: var(--text-color);">ویرایش اطلاعات</h4>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>
-                <div class="col">
-                    <a href="{{ url_for('main.new_product') }}" class="text-decoration-none">
-                        <div class="card header-tabs shadow-sm" style="background-color: var(--dark-green);">
-                            <div class="card-body text-center">
-                                <i class="bi bi-plus-circle fs-2 mb-2 txt-black"></i>
-                                <h5 class="card-title txt-black">ثبت محصول جدید</h5>
+            </div>
+
+            <div id="profile-content" class="tab-pane">
+                 <h2 class="mb-4">اطلاعات کاربری</h2>
+                 <div class="card">
+                     <div class="card-header" style="color: var(--text-color);">ویرایش پروفایل</div>
+                     <div class="card-body">
+                        <form method="POST">
+                            {{ form.hidden_tag() }}
+                            <div class="mb-3">
+                                <label for="username" class="form-label" style="color: var(--text-color);">نام کاربری</label>
+                                {{ form.username(class="form-control inputs", id="username") }}
                             </div>
-                        </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label" style="color: var(--text-color);">ایمیل</label>
+                                {{ form.email(class="form-control inputs", id="email") }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label" style="color: var(--text-color);">شماره تماس جدید</label>
+                                {{ form.phone(class="form-control inputs", id="phone", placeholder="برای تغییر شماره وارد کنید") }}
+                            </div>
+                            <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+                        </form>
+                     </div>
+                 </div>
+            </div>
+
+            <div id="products-content" class="tab-pane">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>محصولات من</h2>
+                    <a href="{{ url_for('main.new_product') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i>محصول جدید
                     </a>
                 </div>
-                <div class="col">
-                    <div id="goToProfileTab" class="card header-tabs shadow-sm" style="background-color: var(--dark-green); cursor: pointer;">
-                        <div class="card-body text-center">
-                            <i class="bi bi-person fs-2 mb-2 txt-black"></i>
-                            <h5 class="card-title txt-black">ویرایش اطلاعات</h5>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            
-            
-        </div>
-
-        <!-- User Info Tab -->
-        <div class="tab-pane fade" id="profile" role="tabpanel">
-            <form method="POST" class="mb-5">
-                {{ form.hidden_tag() }}
-
-                <div class="form-group mb-1">
-                    <label for="username" class="txt-black">نام کاربری</label>
-                    {{ form.username(class="inputs txt-black", id="username") }}
-                </div>
-
-                <div class="form-group mt-3 mb-1">
-                    <label for="email" class="txt-black">ایمیل</label>
-                    {{ form.email(class="inputs txt-black", id="email") }}
-                </div>
-
-                <div class="form-group mt-3 mb-1">
-                    <label for="phone" class="txt-black">شماره تماس جدید</label>
-                    {{ form.phone(class="inputs txt-black", id="phone") }}
-                </div>
-
-                <button type="submit" class="btn btn-primary header-tabs mt-3"> {{ form.submit.label }} </button>
-            </form>
-        </div>
-
-        <!-- Products Tab -->
-        <div class="tab-pane fade" id="products" role="tabpanel">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="txt-black fs-5 ms-3" style="white-space: nowrap;">محصولات من</h2>
-                <a href="{{ url_for('main.new_product') }}" class="btn btn-primary d-flex align-items-center"><p class="displayer mt-2"></p><i class="bi bi-plus fw-bolder fs-4"></i></a>
-            </div>
-
-            <div class="row row-cols-1 row-cols-md-3 g-4" style="margin-bottom: 6rem;">
-                {% for product in products %}
-                <div class="col">
-                    <div class="card productes h-100 header-tabs">
-                        {% if product.image_path %}
-                        <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
-                        {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title txt-black">{{ product.name }}</h5>
-                            <p class="card-text description px-3 txt-black">{{ product.description }}</p>
-                            {% if product.price == product.price|int %}
-                            <p class="card-text txt-black"><strong>{{ "{:,}".format(product.price | int) }} تومان</strong></p>
-                            {% else %}
-                            <p class="card-text txt-black"><strong>{{ "{:,.2f}".format(product.price) }} تومان</strong></p>
+                <div class="row g-4">
+                    {% for product in products %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 d-flex flex-column">
+                            {% if product.image_path %}
+                            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}" style="aspect-ratio: 16/10; object-fit: cover;">
                             {% endif %}
-
-                            <!-- {% if product.promoted_until %}
-                                {% if product.remaining_seconds is not none %}
-                                    {% if product.remaining_seconds <= 0 %}
-                                        <p class="text-danger">این محصول منقضی شده است!</p>
-                                    {% elif product.remaining_seconds <= 3 %}
-                                        <p class="text-warning">تنها {{ product.remaining_seconds }} روز تا انقضا باقی مانده. <a href="{{ url_for('payment.pay_for_renew', product_id=product.id) }}">برای تمدید کلیک کنید</a></p>
-                                    {% endif %}
-                                {% endif %}
-                            {% endif %} -->
-
-                            {% if product.status == 'pending' %}
-                              <span class="text-warning">در انتظار تایید</span>
-                              <p>محصول شما پس از بررسی کارشناسان ما نهایت پس از یک روز کاری منتشر خواهد شد</p>
-                            {% elif product.status == 'awaiting_payment' %}
-                            <form method="POST" action="{{ url_for('main.pay_to_publish', product_id=product.id) }}">
-                                <p class="text-success">محصول شما تایید شد</p>
-                                <button type="submit" class="btn btn-primary">منتشر کردن</button>
-                            </form>
-                            {% elif product.status == 'published' %}
-                              <span class="text-success">منتشر شده</span>
-                            {% endif %}
-
-                            <div class="d-flex flex-wrap justify-content-between">
-                                <div class="p-1" style="width: 50%;">
-                                    <a href="{{ url_for('main.edit_product', id=product.id) }}" class="btn btn-secondary header-tabs w-100 text-nowrap" style="font-size: 13px;">ویرایش</a>
-                                </div>
-                                <div class="p-1" style="width: 50%;">
-                                    <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST">
-                                        <button type="submit" class="btn btn-danger header-tabs w-100" style="font-size: 0.75rem;" onclick="return confirm('آیا از حذف محصول اطمینان دارید؟')">حذف محصول</button>
-                                    </form>
-                                </div>
-                            
-                                {% set is_promoted = product.promoted_until and product.promoted_until > now %}
-
-                                {% if product.user_id == current_user.id %}
-
-                                    {% if is_promoted %}
-                                        <form action="{{ url_for('main.remove_promotion', product_id=product.id) }}" method="POST">
-                                            <button type="submit" class="btn btn-danger header-tabs w-100">
-                                                حذف نردبان
-                                            </button>
-                                        </form>
-                                    {% endif %}
-                                    
-                                    {% if is_promoted %}
-                                        <button type="button" class="btn btn-secondary w-100" disabled>نردبان کردن</button>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title" style="color: var(--text-color);">{{ product.name }}</h5>
+                                <p class="card-text small flex-grow-1" style="color: var(--text-color);">{{ product.description | truncate(80) }}</p>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <strong class="fs-5" style="color: var(--text-color);">{{ "{:,.0f}".format(product.price) }} <span class="small">تومان</span></strong>
+                                    {% if product.status == 'published' %}
+                                        <span class="badge rounded-pill text-bg-success">منتشر شده</span>
+                                    {% elif product.status == 'pending' %}
+                                        <span class="badge rounded-pill text-bg-warning">در انتظار تایید</span>
+                                    {% elif product.status == 'awaiting_payment' %}
+                                         <span class="badge rounded-pill text-bg-info">آماده انتشار</span>
                                     {% else %}
-                                        {% if can_promote %}
-                                            <form method="POST" action="{{ url_for('main.promote_product', product_id=product.id) }}">
-                                                <button type="submit" class="btn btn-primary w-100">نردبان کردن</button>
-                                            </form>
-                                        {% else %}
-                                            <button type="button" class="btn btn-secondary w-100"
-                                                onclick="alert('در صورتی تعداد محصولات شما به ۵ عدد برسد امکان نردبان کردن به صورت رایگان را خواهید داشت')">
-                                                نردبان کردن
-                                            </button>
-                                        {% endif %}
+                                        <span class="badge rounded-pill text-bg-secondary">{{ product.status }}</span>
                                     {% endif %}
-                                        
+                                </div>
+
+                                {% set is_promoted = product.promoted_until and product.promoted_until > now %}
+                                {% if is_promoted %}
+                                    <div class="alert alert-info small p-2 text-center">
+                                        <i class="bi bi-rocket-takeoff-fill"></i> نردبان فعال است
+                                    </div>
                                 {% endif %}
-                                        
-                                        
                             </div>
+                            <div class="card-footer bg-transparent d-flex gap-2">
+                                <a href="{{ url_for('main.edit_product', id=product.id) }}" class="btn btn-sm btn-outline-secondary flex-grow-1">ویرایش</a>
+                                
+                                {% if not is_promoted %}
+                                     {% if can_promote %}
+                                        <form method="POST" action="{{ url_for('main.promote_product', product_id=product.id) }}" class="flex-grow-1">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary w-100">نردبان</button>
+                                        </form>
+                                    {% else %}
+                                         <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" disabled title="با ثبت ۵ محصول، نردبان رایگان فعال می‌شود">نردبان</button>
+                                    {% endif %}
+                                {% endif %}
 
-
-                            <!-- {% for product in products %}
-                              {% if product.status == 'pending' and not product.promoted_until %}
-                                <form method="post" action="{{ url_for('main.renew_product', product_id=product.id) }}">
-                                  <button class="btn btn-warning">تمدید انتشار (۳۰ روز)</button>
+                                <form action="{{ url_for('main.delete_product', id=product.id) }}" method="POST" class="flex-grow-1">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('آیا از حذف این محصول اطمینان دارید؟')">حذف</button>
                                 </form>
-                              {% endif %}
-                            {% endfor %} -->
+                            </div>
                         </div>
                     </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="card text-center p-5">
+                            <p class="mb-0">هنوز محصولی ثبت نکرده‌اید.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
+            </div>
+
+            <div id="saved-content" class="tab-pane">
+                <h2 class="mb-4">محصولات ذخیره شده</h2>
+                <div class="row g-4" id="saved-products-container">
+                    {% for product in saved_products %}
+                    <div class="col-md-6 col-lg-4 product-card-saved-{{ product.id }}">
+                        <div class="card h-100 d-flex flex-column">
+                            {% set image_url = 'images/placeholder.png' %}
+                            {% if product.images %}
+                                {% set image_url = 'uploads/' + product.images[0].image_path %}
+                            {% elif product.image_path %}
+                                {% set image_url = 'uploads/' + product.image_path %}
+                            {% endif %}
+                            <a href="{{ url_for('main.product_detail', product_id=product.id) }}">
+                                <img src="{{ url_for('static', filename=image_url) }}" class="card-img-top" alt="{{ product.name }}" style="aspect-ratio: 16/10; object-fit: cover;">
+                            </a>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title" style="color: var(--text-color);">
+                                    <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="text-decoration-none" style="color: var(--text-color);">{{ product.name }}</a>
+                                </h5>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <strong class="fs-5" style="color: var(--text-color);">{{ "{:,.0f}".format(product.price) }} <span class="small">تومان</span></strong>
+                                    <a href="#" class="bookmark-toggle text-danger fs-4" data-product-id="{{ product.id }}" title="حذف از ذخیره شده‌ها">
+                                        <i class="bi bi-bookmark-x-fill"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="card text-center p-5">
+                            <p class="mb-0" style="color: var(--text-color);">هنوز محصولی را ذخیره نکرده‌اید.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel">
+        <div class="offcanvas-header border-bottom d-flex justify-content-between">
+            <h5 class="offcanvas-title" id="mobileMenuLabel" style="color: var(--text-color);">منو</h5>
+            <button type="button" class="btn-close m-0" data-bs-dismiss="offcanvas" aria-label="Close" style="color: var(--text-color);"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="profile-section">
+                <div class="avatar">
+                    {{ current_user.username[0] | upper }}
+                </div>
+                <h5 class="mb-0" style="color: var(--text-color);">{{ current_user.username }}</h5>
+                <small class="" style="color: var(--text-color);">به پنل خود خوش آمدید</small>
+            </div>
+             <div class="footer-links">
+                <a class="nav-link py-3 px-2 rounded-3" href="{{ url_for('main.index') }}">
+                    <i class="bi bi-box-arrow-left" style="color: var(--text-color);"></i>
+                    <span style="color: var(--text-color);">بازگشت به سایت</span>
+                </a>
+                 <a class="nav-link py-3 px-2 rounded-3" href="#" id="theme-toggle1">
+                    <i class="bi bi-moon-fill" style="color: var(--text-color);"></i>
+                    <span style="color: var(--text-color);">تغییر تم</span>
+                </a>
+                <a class="nav-link text-danger py-3 px-2 rounded-3" href="{{ url_for('main.logout') }}">
+                    <i class="bi bi-power"></i>
+                    <span>خروج از حساب</span>
+                </a>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Theme Script -->
-<script>
-    const button = document.getElementById("toggleButton");
-    const themeIcon = document.getElementById("themeIcon");
-    const root = document.documentElement;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Tab Switching Logic ---
+        const tabLinks = document.querySelectorAll('.sidebar .nav-link[data-tab-target]');
+        const contentPanes = document.querySelectorAll('.main-content .tab-pane');
 
-    const headerTabs = document.querySelectorAll(".header-tabs");
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                const targetId = this.dataset.tabTarget;
+                const targetPane = document.querySelector(targetId);
 
-    const savedTheme = localStorage.getItem("theme");
+                // Update active state on links
+                tabLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
 
-    if (savedTheme) {
-        savedTheme === "dark" ? setDarkMode() : setLightMode();
-    } else {
-        setLightMode();
-    }
+                // Update active state on content panes
+                contentPanes.forEach(p => p.classList.remove('active'));
+                if (targetPane) {
+                    targetPane.classList.add('active');
+                }
+            });
+        });
 
-    function setDarkMode() {
-        root.style.setProperty("--black-color", "#1C1C1E");
-        root.style.setProperty("--dark-green", "#3A3A3C");
-        root.style.setProperty("--light-green", "#9B1B30");
-        root.style.setProperty("--light-white", "#f1f1f1");
-        root.style.setProperty("--txt-color", "#F8F8F8");
-        root.style.setProperty("--txt-light", "#1C1C1E");
-        themeIcon.classList.replace("bi-moon", "bi-brightness-high");
-        localStorage.setItem("theme", "dark");
+        // --- Theme Toggle Logic ---
+        const themeToggleButton = document.getElementById('theme-toggle');
+        const themeIcon = themeToggleButton.querySelector('i');
+        const root = document.documentElement;
 
-        // حذف ripple روشن در حالت دارک
-        headerTabs.forEach(el => el.classList.remove("light-mode"));
-    }
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+                themeIcon.classList.replace('bi-brightness-high-fill', 'bi-moon-fill');
+            } else {
+                root.setAttribute('data-theme', 'light');
+                themeIcon.classList.replace('bi-moon-fill', 'bi-brightness-high-fill');
+            }
+        }
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
 
-    function setLightMode() {
-        root.style.setProperty("--black-color", "#F8F8F8");
-        root.style.setProperty("--dark-green", "#E0E0E0");
-        root.style.setProperty("--light-green", "#9B1B30");
-        root.style.setProperty("--light-white", "#F1F1F1");
-        root.style.setProperty("--txt-color", "#1C1C1E");
-        root.style.setProperty("--txt-light", "#F8F8F8");
-        themeIcon.classList.replace("bi-brightness-high", "bi-moon");
-        localStorage.setItem("theme", "light");
-
-        // اضافه کردن ripple تیره در لایت‌مود
-        headerTabs.forEach(el => el.classList.add("light-mode"));
-    }
-
-    button.addEventListener("click", () => {
-        const currentTheme = localStorage.getItem("theme");
-        currentTheme === "light" ? setDarkMode() : setLightMode();
+        // Toggle on click
+        themeToggleButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
     });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-    document.getElementById("goToProductsTab").addEventListener("click", function () {
-        var tab = new bootstrap.Tab(document.querySelector('#products-tab'));
-        tab.show();
-    });
-</script>
-{% endblock %}
+            const themeToggleButton = document.getElementById('theme-toggle1');
+            const themeIcon = themeToggleButton.querySelector('i');
+            const root = document.documentElement;
+
+            function applyTheme(theme) {
+                if (theme === 'dark') {
+                    root.setAttribute('data-theme', 'dark');
+                    themeIcon.classList.replace('bi-brightness-high-fill', 'bi-moon-fill');
+                } else {
+                    root.setAttribute('data-theme', 'light');
+                    themeIcon.classList.replace('bi-moon-fill', 'bi-brightness-high-fill');
+                }
+            }
+
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+
+            // Toggle on click
+            themeToggleButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+        });
+
+    </script>
+</body>
+</html>

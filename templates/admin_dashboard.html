@@ -8,10 +8,87 @@
 </button>
 <h2 class="txt-black">پنل مدیریت</h2>
 <hr class="w-100">
+<h3>تعداد محصولات پلتفرم: {{ count*2 }}</h3>
+<h3>تعداد کاربران آنلاین: <span id="userCount">...</span></h3>
+<h3>تعداد کل کاربران: {{ total_users*2 }}</h3>
+<hr class="w-100">
+ <script>
+        function fetchOnlineUsers() {
+            fetch('/online-users')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('userCount').innerText = data.count;
+                });
+        }
 
-<div class="text-center my-4">
-    <button class="btn btn-danger" onclick="cleanupUnusedImages()">🧹 حذف تصاویر بلااستفاده</button>
+        fetchOnlineUsers();              // اولین بار
+        setInterval(fetchOnlineUsers, 1000);  // هر ۱ ثانیه
+    </script>
+
+
+
+<h3 class="txt-black mt-5 mb-5">محصولات در انتظار تأیید</h3>
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 row-cols-xl-3 g-4 prod mb-5">
+    {% for product in pending_products %}
+    <div class="col">
+        <div class="card productes h-100 header-tabs text-light">
+            {% if product.image_path %}
+            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title txt-black">{{ product.name }}</h5>
+                <p class="card-text description px-2">{{ product.description }}</p>
+                {% if product.address %}
+                    <p class="txt-black">{{ product.address }}</p>
+                {% endif %}
+                <p class="card-text txt-black"><strong>{{ "{:,}".format(product.price | int) }} تومان</strong></p>
+                <p class="txt-black">کاربر: {{ users_dict[product.user_id] }}</p>
+                <p class="txt-black">ایجاد شده: {{ product.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+
+                <form method="POST" action="{{ url_for('main.approve_product', product_id=product.id) }}">
+                    <button type="submit" class="btn btn-success w-100 mt-2">✔️ تأیید محصول</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+<hr class="w-100">
+
+
+
+
+<h3 class="txt-black">گزارش‌های تخلف</h3>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead>
+            <tr>
+                <th class="text-end">کاربر گزارش‌دهنده</th>
+                <th class="text-end">محصول</th>
+                <th class="text-end">شرح گزارش</th>
+                <th class="text-end">تاریخ</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.reporter.username }}</td>
+                <td><a href="{{ url_for('main.product_detail', product_id=report.product.id) }}" target="_blank">{{ report.product.name }}</a></td>
+                <td>{{ report.text }}</td>
+                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <form action="{{ url_for('main.delete_report', report_id=report.id) }}" method="post" onsubmit="return confirm('آیا از حذف این گزارش مطمئن هستید؟');">
+                      <button type="submit" class="btn btn-danger btn-sm">🗑 حذف</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
 
 <h3 class="txt-black">مدیریت کاربران</h3>
 <form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex flex-wrap gap-2 mb-3">
@@ -68,63 +145,12 @@
     </table>
 </div>
 
-<h3 class="txt-black">گزارش‌های تخلف</h3>
-<div class="table-responsive">
-    <table class="table bg-black rounded-3 mb-5">
-        <thead>
-            <tr>
-                <th class="text-end">کاربر گزارش‌دهنده</th>
-                <th class="text-end">محصول</th>
-                <th class="text-end">شرح گزارش</th>
-                <th class="text-end">تاریخ</th>
-            </tr>
-        </thead>
-        <tbody class="bg-very-black">
-            {% for report in reports %}
-            <tr>
-                <td>{{ report.reporter.username }}</td>
-                <td><a href="{{ url_for('main.product_detail', product_id=report.product.id) }}" target="_blank">{{ report.product.name }}</a></td>
-                <td>{{ report.text }}</td>
-                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>
-                    <form action="{{ url_for('main.delete_report', report_id=report.id) }}" method="post" onsubmit="return confirm('آیا از حذف این گزارش مطمئن هستید؟');">
-                      <button type="submit" class="btn btn-danger btn-sm">🗑 حذف</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+
+<div class="text-center my-4">
+    <button class="btn btn-danger" onclick="cleanupUnusedImages()">🧹 حذف تصاویر بلااستفاده</button>
 </div>
 
-
-
-<h3 class="txt-black">محصولات در انتظار تأیید</h3>
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 row-cols-xl-3 g-4 prod mb-5">
-    {% for product in pending_products %}
-    <div class="col">
-        <div class="card productes h-100 header-tabs text-light">
-            {% if product.image_path %}
-            <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title txt-black">{{ product.name }}</h5>
-                <p class="card-text description px-2">{{ product.description }}</p>
-                {% if product.address %}
-                    <p class="txt-black">{{ product.address }}</p>
-                {% endif %}
-                <p class="card-text txt-black"><strong>{{ "{:,}".format(product.price | int) }} تومان</strong></p>
-                <p class="txt-black">کاربر: {{ users_dict[product.user_id] }}</p>
-                <p class="txt-black">ایجاد شده: {{ product.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-
-                <form method="POST" action="{{ url_for('main.approve_product', product_id=product.id) }}">
-                    <button type="submit" class="btn btn-success w-100 mt-2">✔️ تأیید محصول</button>
-                </form>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
 
 
 <script>
