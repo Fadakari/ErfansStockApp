@@ -162,11 +162,13 @@
 <body class="container-fluid">
 
     <div class="chat-container mt-2">
-        <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
-            <i class="bi bi-arrow-left fs-3 txt-black"></i>
+        <button class="btn header-tabs py-2 px-3 float-start">
+            <a href="{{ url_for('main.index') }}">
+                <i class="bi bi-arrow-left fs-3 txt-black"></i>
+            </a>
         </button><br>
       <div class="chat-header text-center mb-3">
-        <h3>چت هوشمند AI</h3>
+        <h5 class="text-nowrap">چت هوشمند AI (آزمایشی)</h5>
       </div>
     
       <div class="chat-messages" id="chatMessages">

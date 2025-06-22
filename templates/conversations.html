@@ -1,37 +1,141 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="container my-5">
-        <h2 class="text-center mb-4 txt-black">مکالمات</h2>
-        <button class="btn header-tabs py-2 px-3 float-start" onclick="history.back()">
-            <i class="bi bi-arrow-left fs-3 txt-black"></i>
-        </button><br>
-    <div class="row">
+
+<style>
+    .chat-list-container {
+        max-width: 800px;
+        margin: auto;
+        background-color: var(--black-color);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    html[data-theme="dark"] .chat-list-container {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .chat-list-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        border-radius: 2rem;
+        padding: 1rem;
+        background-color: #9c0b2356;
+        text-decoration: none;
+        color: var(--text-color);
+        transition: background-color 0.2s ease;
+    }
+
+    .chat-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .chat-list-item:hover {
+        background-color: #9c0b2396; /* یک هایلایت ملایم */
+    }
+
+    .unread-dot {
+        width: 12px;
+        height: 12px;
+        background-color: #9B1B30;
+        border-radius: 50%;
+        border: 2px solid var(--black-color); /* برای ایجاد فاصله و زیبایی */
+        position: absolute;
+        top: 1rem;
+        right: calc(1rem + 55px + 5px); /* موقعیت دهی کنار آواتار */
+    }
+
+    .chat-avatar {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        background-color: var(--light-green);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 500;
+        margin-left: 1rem; /* فاصله از متن در حالت RTL */
+        flex-shrink: 0; /* جلوگیری از کوچک شدن آواتار */
+    }
+
+    .chat-content {
+        flex-grow: 1;
+        min-width: 0; /* برای درست کار کردن text-truncate */
+    }
+
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.25rem;
+    }
+
+    .chat-username {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .chat-timestamp {
+        font-size: 0.75rem;
+        color: var(--text-muted-color);
+    }
+
+    .chat-message-preview {
+        font-size: 0.9rem;
+        color: var(--text-muted-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* نمایش ... برای پیام‌های طولانی */
+    }
+</style>
+
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="m-0 txt-black">گفتگوها</h2>
+        <button class="btn header-tabs py-2 px-3 float-end">
+            <a href="{{ url_for('main.index') }}">
+                <i class="bi bi-arrow-left fs-3 txt-black"></i>
+            </a>
+        </button>
+    </div>
+    
+    <div class="chat-list-container">
         {% for convo in conversations %}
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm rounded">
-                    <a href="{{ request.host_url.rstrip('/') + url_for('main.conversation', conversation_id=convo.id) }}" 
-                       class="text-decoration-none text-dark" rel="noopener noreferrer">
-                        <div class="card-body">
-                            <h5 class="card-title text-light">
-                                گفتگو با {{ convo.user2.username if convo.user1_id == current_user.id else convo.user1.username }}
-                            </h5>
-                            <p class="card-text text-muted">
-                                {% if convo.messages %}
-                                    {{ convo.messages[-1].content[:50] }}...
-                                {% else %}
-                                    هیچ پیامی ارسال نشده.
-                                {% endif %}
-                            </p>
-                            <small class="text-muted">
-                                {{ convo.messages[-1].timestamp.strftime('%Y-%m-%d %H:%M') if convo.messages else 'هیچ تاریخ مشخصی' }}
-                            </small>
-                        </div>
-                    </a>
+            {% set other_user = convo.user2 if convo.user1_id == current_user.id else convo.user1 %}
+            <a href="{{ url_for('main.conversation', conversation_id=convo.id) }}" class="chat-list-item mb-2">
+
+                {% if unread_counts.get(convo.id, 0) > 0 %}
+                    <span class="unread-dot"></span>
+                {% endif %}
+                
+                <div class="chat-avatar">
+                    {{ other_user.username[0] | upper }}
                 </div>
+                
+                <div class="chat-content">
+                    <div class="chat-header">
+                        <span class="chat-username txt-black">{{ other_user.username }}</span>
+                        {% if convo.messages %}
+                            <span class="chat-timestamp">{{ convo.messages[-1].timestamp.strftime('%H:%M') }}</span>
+                        {% endif %}
+                    </div>
+                    <p class="chat-message-preview mb-0 txt-black">
+                        {% if convo.messages %}
+                            {{ convo.messages[-1].content }}
+                        {% else %}
+                            هیچ پیامی ارسال نشده.
+                        {% endif %}
+                    </p>
+                </div>
+            </a>
+        {% else %}
+            <div class="p-5 text-center txt-black">
+                <p>هنوز هیچ گفتگویی ندارید.</p>
             </div>
         {% endfor %}
     </div>
-    
-    </div>
+</div>
 {% endblock %}

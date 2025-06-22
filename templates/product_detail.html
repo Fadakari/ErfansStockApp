@@ -39,11 +39,11 @@
 
     /* --- Information Blocks --- */
     .info-block {
-        background-color: var(--card-bg);
+        background-color: var(--black-color);
         border-radius: 1rem;
         padding: 1.5rem;
         margin-top: 1.5rem;
-        border: 1px solid var(--border-color);
+        box-shadow: 0 0 1rem var(--light-green);
     }
 
     .product-title {
@@ -229,11 +229,12 @@
 <div id="page-content">
 
     <div class="detail-header">
-        <button class="btn" onclick="history.back()">
-            <i class="bi bi-arrow-right fs-3 txt-black"></i>
+        <button class="btn header-tabs py-2 px-3 float-end">
+            <a href="{{ url_for('main.index') }}">
+                <i class="bi bi-arrow-right fs-3 txt-black"></i>
+            </a>
         </button>
         <div class="actions">
-            <a href="#" id="share-btn"><i class="bi bi-share txt-black"></i></a>
             <a href="#" class="bookmark-toggle" data-product-id="{{ product.id }}">
                 {% if current_user.is_authenticated and product in current_user.saved_products %}
                     <i class="bi bi-bookmark-fill txt-black"></i> {# آیکون پر برای ذخیره شده #}
@@ -343,11 +344,11 @@
             <h4 class="mb-3 txt-black">فروشنده</h4>
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <span class="txt-black">{{ product.owner.username }}</span>
-                <a href="#" class="seller-link txt-black">همه آگهی‌های این فروشنده <i class="bi bi-arrow-left-short"></i></a>
+                <a href="{{ url_for('main.store', user_id=product.owner.id) }}" class="seller-link txt-black">همه آگهی‌های این فروشنده <i class="bi bi-arrow-left-short"></i></a>
             </div>
         </div>
 
-        <div class="info-block">
+        <div class="info-block mb-5">
             <div class="d-flex justify-content-between align-items-center">
                 <span class="txt-black">این آگهی مشکلی دارد؟</span>
                 <button class="btn btn-outline-danger btn-sm" onclick="document.getElementById('reportForm').classList.toggle('d-none')">
@@ -403,67 +404,8 @@
             });
         }
 </script>
-<script>
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let currentY = 0;
-    const threshold = 80; // حداقل فاصله افقی برای تغییر صفحه
-    const minHorizontalMove = 30; // حداقل اختلاف افقی برای فعال شدن سوایپ
-    const maxVerticalMove = 50;   // حداکثر اختلاف عمودی که اجازه سوایپ رو میده
-    let page = document.getElementById("page-content");
 
-    window.addEventListener("touchstart", (e) => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        page.style.transition = "none"; // لغو انیمیشن برای حرکت زنده
-    });
-
-    window.addEventListener("touchmove", (e) => {
-        currentX = e.touches[0].clientX;
-        currentY = e.touches[0].clientY;
-        let diffX = currentX - startX;
-        let diffY = currentY - startY;
-
-        // فقط اگر حرکت افقی بیشتر از حداقل بود و حرکت عمودی کمتر از حداکثر، اجازه حرکت بده
-        if (Math.abs(diffX) > minHorizontalMove && Math.abs(diffY) < maxVerticalMove) {
-            page.style.transform = `translateX(${diffX}px)`;
-        }
-    });
-
-    window.addEventListener("touchend", () => {
-        let diffX = currentX - startX;
-        let diffY = currentY - startY;
-
-        page.style.transition = "transform 0.3s ease"; // بازگرداندن انیمیشن
-
-        // فقط اگر حرکت افقی بزرگتر از آستانه و حرکت عمودی کمتر از حد بود، صفحه رو جابجا کن
-        if (Math.abs(diffX) > threshold && Math.abs(diffY) < maxVerticalMove) {
-            if (diffX > 0) {
-                // سوایپ به راست ← رفتن به صفحه قبلی
-                page.style.transform = "translateX(100%)";
-                setTimeout(() => {
-                    window.location.href = "https://stockdivar.ir"; // مسیر مد نظر شما
-                }, 300);
-            } else {
-                // سوایپ به چپ → رفتن به صفحه بعدی
-                page.style.transform = "translateX(-100%)";
-                setTimeout(() => {
-                    window.location.href = "https://stockdivar.ir"; // مسیر مد نظر شما
-                }, 300);
-            }
-        } else {
-            // برگرداندن صفحه به جای قبلی
-            page.style.transform = "translateX(0)";
-        }
-
-        startX = 0;
-        currentX = 0;
-        startY = 0;
-        currentY = 0;
-    });
-
-</script>
+   
 <script>
     document.querySelectorAll('.img-clickable').forEach(img => {
         img.addEventListener('click', function () {
@@ -471,53 +413,7 @@
         });
     });
 </script>
-<script>
-    let startedY = 0;
-    let isPulling = false;
-    let spinner = document.getElementById("pull-spinner");
-    
-    window.addEventListener("touchstart", function (e) {
-        if (window.scrollY === 0) {
-            startedY = e.touches[0].clientY;
-            isPulling = true;
-        }
-    });
-    
-    window.addEventListener("touchmove", function (e) {
-        if (!isPulling) return;
-    
-        let currentY = e.touches[0].clientY;
-        let diffY = currentY - startedY;
-    
-        if (diffY > 30 && diffY < 130) {
-            spinner.style.top = `${diffY - 60}px`; // اسپینر پایین‌تر نمایش داده می‌شود
-        }
-    
-        if (diffY >= 130) {
-            spinner.style.top = `150px`; // اسپینر در پایین نمایان می‌ماند
-            if (!spinner.dataset.loading) {  // جلوگیری از چندبار اجرا شدن رفرش
-                spinner.dataset.loading = "true";
-                location.reload(); // رفرش صفحه
-            }
-            isPulling = false;
-        }
-    });
-    
-    window.addEventListener("touchend", function () {
-        // اگر رفرش کامل نشده بود اسپینر رو پنهان کن
-        if (!spinner.dataset.loading) {
-            spinner.style.top = `-60px`; 
-        }
-        isPulling = false;
-    });
-    
-    // رویداد بارگذاری کامل صفحه
-    window.addEventListener("load", function () {
-        // وقتی صفحه کاملا لود شد، اسپینر رو پنهان کن بالا
-        spinner.style.top = `-60px`; 
-        spinner.dataset.loading = ""; // ریست کردن وضعیت لودینگ
-    });
-    </script>
+
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     const openBtn = document.getElementById('open-contact-sheet-btn');
@@ -673,17 +569,17 @@ document.addEventListener('DOMContentLoaded', function() {
     <div id="contact-sheet" class="contact-sheet-container">
         <div class="sheet-handle"></div>
         <div class="sheet-header">
-            <h5 class="mb-0">اطلاعات تماس</h5>
+            <h5 class="mb-0 txt-black">اطلاعات تماس</h5>
             <button id="close-sheet-btn" class="btn-close"></button>
         </div>
         <div class="sheet-body">
             <div class="seller-info">
                 <span class="info-label">فروشنده:</span>
-                <span class="info-value">{{ product.owner.username }}</span>
+                <span class="info-value txt-black">{{ product.owner.username if product.owner else 'کاربر حذف شده' }}</span>
             </div>
             <div class="seller-info">
                 <span class="info-label">شماره تماس:</span>
-                <span class="info-value" dir="ltr">{{ user.phone }}</span>
+                <span class="info-value txt-black" dir="ltr">{{ product.owner.phone if product.owner else 'نامشخص' }}</span>
             </div>
             <button class="btn btn-primary w-100 mt-4" onclick="copyText(this, '{{ user.phone }}')">
                 <i class="bi bi-copy me-2"></i>

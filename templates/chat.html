@@ -137,9 +137,11 @@ form.myform {
     <!-- <div id="pull-spinner" style="position: fixed; top: -60px; left: 50%; transform: translateX(-50%); z-index: 9999; transition: top 0.3s;">
         <div class="spinner"></div>
       </div> -->
-    <button class="btn header-tabs m-auto py-1 px-3 float-start w-25" onclick="history.back()">
-        <i class="bi bi-arrow-left fs-3 txt-black"></i>
-    </button><br>
+        <header class="chat-header d-flex justify-content-between">
+            {% set other_user = conversation.user2 if conversation.user1_id == current_user.id else conversation.user1 %}
+            <span class="me-3 contact-name">{{ other_user.username }}</span>
+            <a href="{{ url_for('main.conversations') }}" class="btn txt-black"><i class="bi bi-arrow-left"></i></a>
+        </header>
         <div class="chat-box">
             <div class="chat">
                 {% for msg in messages %}
@@ -240,77 +242,157 @@ form.myform {
     <div class="ccp"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
 <script>
+    // --- بخش اول: متغیرهای سراسری و اولیه ---
     const shownMessageIds = new Set();
-</script>
-<script>
-const fileInput = document.getElementById("file-upload");
-const previewContainer = document.getElementById("simple-preview");
-const previewImage = document.getElementById("simple-preview-img");
-const removePreviewBtn = document.getElementById("remove-preview");
+    const fileInput = document.getElementById("file-upload");
+    const previewContainer = document.getElementById("simple-preview");
+    const previewImage = document.getElementById("simple-preview-img");
+    const removePreviewBtn = document.getElementById("remove-preview");
+    let lastMessageId = {{ messages[-1].id if messages else 0 }};
 
-fileInput.addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (!file || !file.type.startsWith("image/")) {
-        previewContainer.classList.add("d-none");
-        previewImage.src = "";
-        return;
+    // --- بخش دوم: توابع کاربردی اصلی ---
+
+    function enableEdit(msgId, encodedContent) {
+        // برای جلوگیری از خطا، اطمینان حاصل می‌کنیم که msgId یک عدد است
+        const id = parseInt(msgId, 10);
+        const content = decodeURIComponent(encodedContent);
+        document.querySelector(`#edit-form-${id} textarea`).value = content;
+        document.getElementById(`msg-text-${id}`).classList.add("d-none");
+        document.getElementById(`edit-form-${id}`).classList.remove("d-none");
     }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        previewImage.src = e.target.result;
-        previewContainer.classList.remove("d-none");
-    };
-    reader.readAsDataURL(file);
-});
+    function cancelEdit(msgId) {
+        const id = parseInt(msgId, 10);
+        document.getElementById(`edit-form-${id}`).classList.add("d-none");
+        document.getElementById(`msg-text-${id}`).classList.remove("d-none");
+    }
 
-removePreviewBtn.addEventListener("click", function () {
-    fileInput.value = "";              // پاک کردن فایل انتخاب شده
-    previewImage.src = "";             // حذف عکس پیش‌نمایش
-    previewContainer.classList.add("d-none");  // مخفی کردن باکس پیش‌نمایش
-});
+    function scrollToBottom() {
+        const chat = document.querySelector(".chat");
+        chat.scrollTop = chat.scrollHeight;
+    }
 
-</script>
+    function showImage(imageUrl) {
+        const modalImage = document.getElementById("modalImage");
+        modalImage.src = imageUrl;
+    }
 
+    // --- بخش سوم: ساخت و مدیریت حباب‌های پیام در DOM ---
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-        function enableEdit(msgId, encodedContent) {
-            const content = decodeURIComponent(encodedContent);
-            // حالا این content رو تو textarea بگذاری
-            document.querySelector(`#edit-form-${msgId} textarea`).value = content;
-            document.getElementById("msg-text-" + msgId).classList.add("d-none");
-            document.getElementById("edit-form-" + msgId).classList.remove("d-none");
+    function createMessageBubble(msg) {
+        const chat = document.querySelector(".chat");
+        const isSent = msg.sender_id === {{ current_user.id }};
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${isSent ? "sent" : "received"} txt-black position-relative`;
+
+        const messageId = msg.isTemp ? msg.id : msg.id;
+        const domId = msg.isTemp ? messageId : `message-${messageId}`;
+        msgDiv.id = domId;
+
+        let fileHtml = "";
+        if (msg.local_image_url) {
+            fileHtml = `<br><img src="${msg.local_image_url}" style="max-width: 100%; max-height: 200px;" class="img-thumbnail">`;
+        } else if (msg.file_path) {
+            const fileUrl = `/static/uploads/${msg.file_path}`;
+            fileHtml = fileUrl.endsWith(".pdf")
+                ? `<br><a href="${fileUrl}" target="_blank">📎 مشاهده فایل PDF</a>`
+                : `<br><img src="${fileUrl}" style="max-width: 100%; max-height: 200px; cursor: pointer;" class="img-thumbnail" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImage('${fileUrl}')">`;
         }
 
-        function cancelEdit(msgId) {
-            document.getElementById("edit-form-" + msgId).classList.add("d-none");
-            document.getElementById("msg-text-" + msgId).classList.remove("d-none");
-        }
-        function scrollToBottom() {
-            const chat = document.querySelector(".chat");
-            chat.scrollTop = chat.scrollHeight;
+        let uploadProgressHtml = '';
+        if (msg.isTemp && (msg.local_image_url || msg.file_path)) {
+            uploadProgressHtml = `<div class="upload-progress small text-muted mt-1" style="font-size: 0.7rem;">در حال آماده‌سازی برای آپلود...</div>`;
         }
 
-        window.onload = scrollToBottom;
-
-        function showImage(imageUrl) {
-            const modalImage = document.getElementById("modalImage");
-            modalImage.src = imageUrl;  // تنظیم تصویر بزرگ برای نمایش
+        let statusIconHtml = '';
+        if (isSent) {
+            if (msg.status === 'pending') {
+                statusIconHtml = '<i class="bi bi-clock"></i>';
+            } else if (msg.status === 'failed') {
+                statusIconHtml = '<i class="bi bi-exclamation-triangle-fill text-danger"></i>';
+            } else {
+                statusIconHtml = '<i class="bi bi-check"></i>';
+            }
         }
 
-        
-    </script>
+        msgDiv.innerHTML = `
+            ${(isSent && !msg.isTemp) ? `
+            <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
+                <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
+                <ul class="dropdown-menu" style="background: var(--black-color);">
+                    <li><button type="button" class="dropdown-item text-primary" onclick="enableEdit('${messageId}', '${encodeURIComponent(msg.content)}')">ویرایش</button></li>
+                    <li><form method="POST" action="/delete_message/${messageId}" onsubmit="return confirm('حذف پیام؟')"><button type="submit" class="dropdown-item text-danger">حذف</button></form></li>
+                </ul>
+            </div>` : ''}
 
-<script>
-document.querySelector("form.myform").addEventListener("submit", async function (e) {
+            <div id="msg-text-${messageId}">
+                ${msg.content}
+                ${fileHtml}
+                ${uploadProgressHtml}
+                <div class="message-meta">
+                    <span>${msg.timestamp}</span>
+                    ${isSent ? `<span class="status-icon">${statusIconHtml}</span>` : ''}
+                </div>
+            </div>
+
+            ${(isSent && !msg.isTemp) ? `
+            <form id="edit-form-${messageId}" method="POST" action="/edit_message_inline/${messageId}" class="d-none">
+                <textarea name="content" class="form-control mb-2">${msg.content}</textarea>
+                <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit('${messageId}')">لغو</button>
+            </form>` : ''}
+        `;
+        return msgDiv;
+    }
+
+    function addMessageToDOM(msg) {
+        const domId = msg.isTemp ? msg.id : `message-${msg.id}`;
+        if (document.getElementById(domId) || (!msg.isTemp && shownMessageIds.has(msg.id))) {
+            return; // از افزودن پیام تکراری جلوگیری کن
+        }
+
+        const chat = document.querySelector(".chat");
+        const bubble = createMessageBubble(msg);
+        chat.appendChild(bubble);
+
+        if (!msg.isTemp) {
+            shownMessageIds.add(msg.id);
+        }
+    }
+
+
+    // --- بخش چهارم: Event Listeners و اجرای توابع ---
+
+    // Event listener برای پیش‌نمایش فایل
+    fileInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (!file || !file.type.startsWith("image/")) {
+            previewContainer.classList.add("d-none");
+            previewImage.src = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            previewImage.src = e.target.result;
+            previewContainer.classList.remove("d-none");
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Event listener برای حذف پیش‌نمایش
+    removePreviewBtn.addEventListener("click", function () {
+        fileInput.value = "";
+        previewImage.src = "";
+        previewContainer.classList.add("d-none");
+    });
+
+    // Event listener برای ارسال فرم (با قابلیت نمایش پیشرفت آپلود)
+    document.querySelector("form.myform").addEventListener("submit", function (e) {
         e.preventDefault();
-
         const form = e.target;
         const contentInput = form.querySelector('#content');
         const fileInput = form.querySelector('#file-upload');
         const messageContent = contentInput.value.trim();
-        const previewImage = document.getElementById("simple-preview-img");
 
         if (!messageContent && !fileInput.files.length) return;
 
@@ -329,248 +411,92 @@ document.querySelector("form.myform").addEventListener("submit", async function 
             status: 'pending',
             local_image_url: localImageUrl
         };
-        
+
         addMessageToDOM(tempMessage);
         scrollToBottom();
 
+        const tempBubble = document.getElementById(tempId);
+        const progressElement = tempBubble ? tempBubble.querySelector('.upload-progress') : null;
+
         const formData = new FormData(form);
         form.reset();
-        previewImage.src = "";
         document.getElementById("simple-preview").classList.add("d-none");
+        previewImage.src = "";
 
-        try {
-            const res = await fetch("{{ url_for('main.send_message') }}", {
-                method: "POST",
-                body: formData
-            });
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "{{ url_for('main.send_message') }}", true);
 
-            const tempBubble = document.getElementById(tempId);
+        xhr.upload.onprogress = function(event) {
+            if (event.lengthComputable && progressElement) {
+                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                progressElement.textContent = `در حال آپلود (${percentComplete}%)... لطفاً تا پایان آپلود از این صفحه خارج نشوید.`;
+            }
+        };
+
+        xhr.onload = function() {
             if (!tempBubble) return;
-
-            if (res.ok) {
-                const realMessage = await res.json();
-                
-                // >>>>>> راه حل نهایی: بازسازی کامل حباب پیام با ID واقعی <<<<<<
-                const finalMessageData = {
-                    ...realMessage, // شامل id, content, timestamp, file_path واقعی از سرور
-                    isTemp: false,
-                    status: 'sent'
-                };
-                const finalBubble = createMessageBubble(finalMessageData);
-                tempBubble.replaceWith(finalBubble); // جایگزینی حباب موقت با حباب نهایی
-                
-                // اضافه کردن ID جدید به لیست پیام‌های نمایش داده شده
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const realMessage = JSON.parse(xhr.responseText);
+                const finalBubble = createMessageBubble({ ...realMessage, isTemp: false, status: 'sent' });
+                tempBubble.replaceWith(finalBubble);
                 shownMessageIds.add(realMessage.id);
-
             } else {
                 const statusIcon = tempBubble.querySelector('.status-icon i');
-                if(statusIcon) statusIcon.className = 'bi bi-exclamation-triangle-fill text-danger';
+                if (statusIcon) statusIcon.className = 'bi bi-exclamation-triangle-fill text-danger';
+                if (progressElement) progressElement.textContent = 'آپلود ناموفق بود.';
                 tempBubble.title = 'ارسال ناموفق';
             }
+        };
 
-        } catch (error) {
-            const tempBubble = document.getElementById(tempId);
+        xhr.onerror = function() {
             if (tempBubble) {
                 const statusIcon = tempBubble.querySelector('.status-icon i');
                 if (statusIcon) statusIcon.className = 'bi bi-exclamation-triangle-fill text-danger';
+                if (progressElement) progressElement.textContent = 'خطای اتصال در هنگام آپلود.';
                 tempBubble.title = 'خطای اتصال';
             }
-            console.error("ارسال پیام با خطا مواجه شد:", error);
-        }
+        };
+
+        xhr.send(formData);
     });
 
-    // تابع بازنویسی شده برای ساختن پیام در DOM
-    // این تابع اکنون به عنوان یک تابع سازنده عمل می‌کند
-    function createMessageBubble(msg) {
-        const chat = document.querySelector(".chat");
-        const isSent = msg.sender_id === {{ current_user.id }};
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `message ${isSent ? "sent" : "received"} txt-black position-relative`;
-        
-        const messageId = msg.isTemp ? msg.id : msg.id;
-        msgDiv.id = msg.isTemp ? messageId : `message-${messageId}`;
+    // --- بخش پنجم: اجرای اولیه و دریافت پیام‌های جدید ---
 
-        let fileHtml = "";
-        if (msg.local_image_url) {
-            fileHtml = `<br><img src="${msg.local_image_url}" style="max-width: 100%; max-height: 200px;" class="img-thumbnail">`;
-        } else if (msg.file_path) {
-            const fileUrl = `/static/uploads/${msg.file_path}`;
-            fileHtml = fileUrl.endsWith(".pdf")
-                ? `<br><a href="${fileUrl}" target="_blank">📎 مشاهده فایل PDF</a>`
-                : `<br><img src="${fileUrl}" style="max-width: 100%; max-height: 200px; cursor: pointer;" class="img-thumbnail" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImage('${fileUrl}')">`;
-        }
-
-        let statusIconHtml = '';
-        if (isSent) {
-            if (msg.status === 'pending') {
-                statusIconHtml = '<i class="bi bi-clock"></i>';
-            } else if (msg.status === 'failed') {
-                statusIconHtml = '<i class="bi bi-exclamation-triangle-fill text-danger"></i>';
-            } else {
-                statusIconHtml = '<i class="bi bi-check"></i>';
+    // پر کردن Set با پیام‌هایی که از قبل در صفحه بوده‌اند
+    document.querySelectorAll(".message").forEach(div => {
+        if (div.id && div.id.startsWith("message-")) {
+            const id = parseInt(div.id.replace("message-", ""), 10);
+            if (!isNaN(id)) {
+                shownMessageIds.add(id);
             }
         }
-
-        const editButtonOnclick = `enableEdit(${messageId}, '${encodeURIComponent(msg.content)}')`;
-        const cancelButtonOnclick = `cancelEdit(${messageId})`;
-
-        msgDiv.innerHTML = `
-            ${(isSent && !msg.isTemp) ? `
-            <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
-                <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
-                <ul class="dropdown-menu" style="background: var(--black-color);">
-                    <li><button type="button" class="dropdown-item text-primary" onclick="${editButtonOnclick}">ویرایش</button></li>
-                    <li><form method="POST" action="/delete_message/${messageId}" onsubmit="return confirm('حذف پیام؟')"><button type="submit" class="dropdown-item text-danger">حذف</button></form></li>
-                </ul>
-            </div>` : ''}
-        
-            <div id="msg-text-${messageId}">
-                ${msg.content}
-                ${fileHtml}
-                <div class="message-meta">
-                    <span>${msg.timestamp}</span>
-                    ${isSent ? `<span class="status-icon">${statusIconHtml}</span>` : ''}
-                </div>
-            </div>
-        
-            ${isSent ? `
-            <form id="edit-form-${messageId}" method="POST" action="/edit_message_inline/${messageId}" class="d-none">
-                <textarea name="content" class="form-control mb-2">${msg.content}</textarea>
-                <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="${cancelButtonOnclick}">لغو</button>
-            </form>` : ''}
-        `;
-        return msgDiv;
-    }
-
-    // تابع قدیمی addMessageToDOM حالا فقط یک پوشش برای تابع جدید است
-    function addMessageToDOM(msg) {
-        if (!msg.isTemp && shownMessageIds.has(msg.id)) {
-            return;
-        }
-        const chat = document.querySelector(".chat");
-        const bubble = createMessageBubble(msg);
-        chat.appendChild(bubble);
-        if (!msg.isTemp) {
-            shownMessageIds.add(msg.id);
-        }
-    }
-
-    </script>
-
-<script>
-function addMessageToDOM(msg) {
-    // جلوگیری از اضافه کردن پیام تکراری
-    if (!msg.isTemp && document.getElementById(`message-${msg.id}`)) {
-        return; 
-    }
-
-    const chat = document.querySelector(".chat");
-    const isSent = msg.sender_id === {{ current_user.id }};
-    const msgDiv = document.createElement("div");
-    msgDiv.className = `message ${isSent ? "sent" : "received"} txt-black position-relative`;
-    
-    // ID پیام موقت یا واقعی را تنظیم می‌کند
-    const messageId = msg.isTemp ? msg.id : msg.id;
-    msgDiv.id = msg.isTemp ? msg.id : `message-${msg.id}`;
-
-    let fileHtml = "";
-    // <<<< شروع اصلاحیه 1: استفاده از عکس محلی برای نمایش فوری >>>>
-    if (msg.local_image_url) {
-        fileHtml = `<br><img src="${msg.local_image_url}" style="max-width: 100%; max-height: 200px;" class="img-thumbnail">`;
-    } else if (msg.file_path) {
-        const fileUrl = `/static/uploads/${msg.file_path}`;
-        if (msg.file_path.endsWith(".pdf")) {
-            fileHtml = `<br><a href="${fileUrl}" target="_blank">📎 مشاهده فایل PDF</a>`;
-        } else {
-            fileHtml = `<br><img src="${fileUrl}" style="max-width: 100%; max-height: 200px; cursor: pointer;" class="img-thumbnail" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="showImage('${fileUrl}')">`;
-        }
-    }
-    // <<<< پایان اصلاحیه 1 >>>>
-
-    let statusIconHtml = '';
-    if (isSent) {
-        if (msg.status === 'pending') {
-            statusIconHtml = '<i class="bi bi-clock"></i>';
-        } else {
-            statusIconHtml = '<i class="bi bi-check"></i>';
-        }
-    }
-
-    // در تابع addMessageToDOM
-
-    msgDiv.innerHTML = `
-        ${(isSent && !msg.isTemp) ? `
-        <div class="dropdown position-absolute top-0 start-0 me-1 mt-1">
-            <button class="btn btn-sm dropdown-toggle p-0 px-2" type="button" data-bs-toggle="dropdown"></button>
-            <ul class="dropdown-menu" style="background: var(--black-color);">
-                <li><button class="dropdown-item text-primary" onclick="enableEdit('${msg.id}', '${encodeURIComponent(msg.content)}')">ویرایش</button></li>
-                <li><form method="POST" action="/delete_message/${msg.id}" onsubmit="return confirm('حذف پیام؟')"><button type="submit" class="dropdown-item text-danger">حذف</button></form></li>
-            </ul>
-        </div>` : ''}
-    
-        <div id="msg-text-${msg.id}">
-            ${msg.content}
-            ${fileHtml}
-            <div class="message-meta">
-                <span>${msg.timestamp}</span>
-                ${isSent ? `<span class="status-icon">${statusIconHtml}</span>` : ''}
-            </div>
-        </div>
-    
-        ${isSent ? `
-        <form id="edit-form-${msg.id}" method="POST" action="/edit_message_inline/${msg.id}" class="d-none">
-            <textarea name="content" class="form-control mb-2">${msg.content}</textarea>
-            <button type="submit" class="btn btn-sm btn-success">ذخیره</button>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit('${msg.id}')">لغو</button>
-        </form>` : ''}
-    `;
-    // <<<< پایان اصلاحیه 2 >>>>
-    
-    chat.appendChild(msgDiv);
-    if (!msg.isTemp) {
-        shownMessageIds.add(msg.id);
-    }
-}
-    </script>
-
-<script>
-    document.querySelectorAll(".message").forEach(div => {
-        const id = parseInt(div.id.replace("message-", ""));
-        shownMessageIds.add(id);
     });
+
+    // اسکرول به پایین در زمان بارگذاری صفحه
+    window.onload = scrollToBottom;
+
+    // دریافت دوره‌ای پیام‌های جدید
+    setInterval(async () => {
+        try {
+            const res = await fetch(`/get_new_messages?conversation_id={{ conversation.id }}&after_id=${lastMessageId}`);
+            if (!res.ok) return;
+
+            const data = await res.json();
+            if (data.length > 0) {
+                data.forEach(msg => {
+                    if (msg.sender_id != {{ current_user.id }}) { // فقط پیام‌های دریافتی جدید را اضافه کن
+                        addMessageToDOM(msg);
+                    }
+                    lastMessageId = Math.max(lastMessageId, msg.id);
+                });
+                scrollToBottom();
+            }
+        } catch (error) {
+            console.error("خطا در دریافت پیام‌های جدید:", error);
+        }
+    }, 3000); // زمان را به ۳ ثانیه کاهش دادم برای پاسخگویی بهتر
+
 </script>
-<script>
-    let lastMessageId = {{ messages[-1].id if messages else 0 }};
-    
-    setInterval(async () => {
-        const res = await fetch(`/get_new_messages?conversation_id={{ conversation.id }}&after_id=${lastMessageId}`);
-        if (!res.ok) return;
-    
-        const data = await res.json();
-        data.forEach(msg => {
-            addMessageToDOM(msg);
-            lastMessageId = msg.id;
-        });
-        scrollToBottom();
-    }, 5000);
-    </script>
-    
-    <script>
-    let lastMessageId = {{ messages[-1].id if messages else 0 }};
-    
-    setInterval(async () => {
-        const res = await fetch(`/get_new_messages?conversation_id={{ conversation.id }}&after_id=${lastMessageId}`);
-        if (!res.ok) return;
-    
-        const data = await res.json();
-        data.forEach(msg => {
-            addMessageToDOM(msg);
-            lastMessageId = msg.id;
-        });
-        scrollToBottom();
-    }, 5000);
-    </script>
     <!-- <script>
     function setChatHeight() {
         const innerHeight = window.innerHeight;
@@ -650,5 +576,6 @@ if (window.visualViewport) {
             spinner.dataset.loading = ""; // ریست کردن وضعیت لودینگ
         });
         </script> -->
+        
 </body>
 </html>

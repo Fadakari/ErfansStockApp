@@ -17,7 +17,9 @@
                         <input type="text" maxlength="1" class="otp-input inputs text-center txt-black" required>
                     </div>
                     <input type="hidden" name="code" id="otp-hidden">
-                    <button type="submit" class="btn btn-primary header-tabs txt-black d-none">تایید</button>
+                    <button type="submit" id="submit-btn" class="btn btn-danger header-tabs txt-black w-100">
+                        تایید
+                    </button>
                 </form>
             </div>
         </div>
@@ -28,6 +30,7 @@
     const inputs = document.querySelectorAll(".otp-input");
     const hiddenInput = document.getElementById("otp-hidden");
     const form = document.getElementById("otp-form");
+    const submitButton = document.getElementById("submit-btn");
 
     inputs.forEach((input, index) => {
         input.addEventListener("input", () => {
@@ -40,6 +43,9 @@
             const code = Array.from(inputs).map(i => i.value).join('');
             if (code.length === 4) {
                 hiddenInput.value = code;
+                // نمایش اسپینر
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
                 form.submit();
             }
         });

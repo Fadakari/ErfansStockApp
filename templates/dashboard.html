@@ -1,14 +1,6 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>داشبورد | استوک</title>
+{% extends "base.html" %}
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+{% block content %}
 
     <style>
         @font-face {
@@ -22,37 +14,9 @@
         * {
             font-family: 'yekan', sans-serif;
         }
-        :root {
-            --dashboard-bg: #f8f9fa;
-            --sidebar-bg: #ffffff;
-            --card-bg: #ffffff;
-            --text-color: #212529;
-            --text-muted-color: #6c757d;
-            --border-color: #dee2e6;
-            --primary-accent: #9B1B30;
-            --primary-accent-hover: #801627;
-            --success-color: #198754;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
-            --black-color: #F8F8F8;
-            --dark-green: #E0E0E0;
-            --light-green: #9B1B30;
-            --light-white: #F1F1F1;
-            --txt-color: #1C1C1E;
-            --txt-light: #F1F1F1;
-        }
-        .txt-black{color: var(--txt-color) !important;}
-
-
-        html[data-theme="dark"] {
-            --dashboard-bg: #121212;
-            --sidebar-bg: #1e1e1e;
-            --card-bg: #1e1e1e;
-            --text-color: #e9ecef;
-            --text-muted-color: #adb5bd;
-            --border-color: #343a40;
-        }
         
+
+
         body {
             background-color: var(--dashboard-bg);
             color: var(--text-color)!important;
@@ -192,6 +156,8 @@
             .sidebar .nav {
                 flex-direction: row !important;
                 width: 100%;
+                flex-wrap: nowrap;
+                text-align: center;
                 justify-content: space-around;
             }
              .sidebar .nav-link {
@@ -247,9 +213,107 @@
         .offcanvas-body .footer-links {
             margin-top: auto;
         }
+        .bottom-nav {
+            background-color: var(--black-color);
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -0.5rem 2rem var(--light-green);
+            padding: 0 0 0 1rem;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+        }
+
+        .bottom-nav .nav-item {
+            flex-grow: 1;
+        }
+        .custom-icon {
+            width: 48px; /* اندازه را برای نمایش بهتر جزئیات، بزرگتر انتخاب کنید */
+            height: 48px;
+            color: var(--text-color); /* رنگ اصلی آیکون با تم شما هماهنگ می‌شود */
+        }
+        
+        /* این بخش برای ایجاد افکت دو-رنگ است */
+        .custom-icon .primary-part {
+            fill: currentColor;
+            opacity: 1; /* بخش اصلی با رنگ کامل */
+        }
+        
+        .custom-icon .secondary-part {
+            fill: currentColor;
+            opacity: 0.6; /* بخش دوم با شفافیت، برای ایجاد عمق */
+        }
+
+        .bottom-nav .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+        }
+        
+        .bottom-nav .nav-link i {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .fab-container {
+            position: relative;
+            width: 70px; /* Container to hold the button */
+            display: flex;
+            justify-content: center;
+        }
+        
+        .fab {
+            background-color: var(--light-green);
+            color: var(--white-color);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: absolute;
+            bottom: 15px; /* Lifts the button up */
+            transition: all 0.3s ease;
+        }
+        .fab:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            color: var(--white-color);
+        }
+        .category-icon {
+            width: 32px;  /* اندازه دلخواه */
+            height: 32px; /* اندازه دلخواه */
+            color: var(--text-color); /* رنگ آیکون با تم شما هماهنگ می‌شود */
+            stroke-width: 1.5; /* ضخامت خطوط در آیکون‌های outline */
+        }
+        .spinner {
+          width: 32px;
+          height: 32px;
+          border: 4px solid #ccc;
+          border-top: 4px solid var(--light-green);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          background: transparent;
+          position: fixed;
+          top: -60px;   /* اول پایین صفحه، پنهان */
+          left: 80%;
+          transform: translateX(-80%);
+          transition: top 0.3s ease;
+          z-index: 10000;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    
     <div class="dashboard-layout">
         <aside class="sidebar">
             <div class="profile-section">
@@ -259,7 +323,7 @@
                 <h5 class="mb-0">{{ current_user.username }}</h5>
                 <small class="" style="color: var(--text-color);">به پنل خود خوش آمدید</small>
             </div>
-
+        
             <ul class="nav flex-column p-0">
                 <button class="btn hamburger-btn p-0 fs-2" style="color: var(--text-color);" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileMenu" aria-controls="mobileMenu">
                     <i class="bi bi-list"></i>
@@ -282,16 +346,13 @@
                         <span>محصولات من</span>
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-tab-target="#saved-content">
-                        <i class="bi bi-bookmark-fill"></i>
-                        <span>ذخیره شده‌ها</span>
-                    </a>
-                </li>
             </ul>
-
+        
             <div class="footer-links">
-                
+                <a class="nav-link" href="#" data-tab-target="#saved-content">
+                    <i class="bi bi-bookmark-fill"></i>
+                    <span>ذخیره شده‌ها</span>
+                </a>
                 <a class="nav-link" href="{{ url_for('main.index') }}">
                     <i class="bi bi-box-arrow-left"></i>
                     <span>بازگشت به سایت</span>
@@ -308,11 +369,11 @@
         </aside>
 
         <main class="main-content">
-             <button class="btn header-tabs py-2 px-3 float-start">
+             <!-- <button class="btn header-tabs py-2 px-3 float-start">
                     <a href="{{ url_for('main.index') }}">
                         <i class="bi bi-arrow-left fs-3" style="color: var(--text-color);"></i>
                     </a>
-            </button>
+            </button> -->
             <div id="home-content" class="tab-pane active">
                 <h2 class="mb-4">داشبورد</h2>
                 <div class="row g-4">
@@ -387,7 +448,7 @@
                  </div>
             </div>
 
-            <div id="products-content" class="tab-pane">
+            <div id="products-content" class="tab-pane" style="margin-bottom: 5rem;">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>محصولات من</h2>
                     <a href="{{ url_for('main.new_product') }}" class="btn btn-primary">
@@ -459,23 +520,25 @@
                 <div class="row g-4" id="saved-products-container">
                     {% for product in saved_products %}
                     <div class="col-md-6 col-lg-4 product-card-saved-{{ product.id }}">
-                        <div class="card h-100 d-flex flex-column">
+                        <div class="card h-100 d-flex flex-column position-relative">
                             {% set image_url = 'images/placeholder.png' %}
                             {% if product.images %}
                                 {% set image_url = 'uploads/' + product.images[0].image_path %}
                             {% elif product.image_path %}
                                 {% set image_url = 'uploads/' + product.image_path %}
                             {% endif %}
-                            <a href="{{ url_for('main.product_detail', product_id=product.id) }}">
-                                <img src="{{ url_for('static', filename=image_url) }}" class="card-img-top" alt="{{ product.name }}" style="aspect-ratio: 16/10; object-fit: cover;">
-                            </a>
+
+                            <img src="{{ url_for('static', filename=image_url) }}" class="card-img-top" alt="{{ product.name }}" style="aspect-ratio: 16/10; object-fit: cover;">
+
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title" style="color: var(--text-color);">
-                                    <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="text-decoration-none" style="color: var(--text-color);">{{ product.name }}</a>
+                                    <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="text-decoration-none stretched-link" style="color: var(--text-color);">{{ product.name }}</a>
                                 </h5>
+
                                 <div class="d-flex justify-content-between align-items-center mt-auto">
                                     <strong class="fs-5" style="color: var(--text-color);">{{ "{:,.0f}".format(product.price) }} <span class="small">تومان</span></strong>
-                                    <a href="#" class="bookmark-toggle text-danger fs-4" data-product-id="{{ product.id }}" title="حذف از ذخیره شده‌ها">
+
+                                    <a href="#" class="bookmark-toggle text-danger fs-4" data-product-id="{{ product.id }}" title="حذف از ذخیره شده‌ها" style="position: relative; z-index: 2;">
                                         <i class="bi bi-bookmark-x-fill"></i>
                                     </a>
                                 </div>
@@ -483,7 +546,7 @@
                         </div>
                     </div>
                     {% else %}
-                    <div class="col-12">
+                    <div class="col-12" id="no-saved-items-message">
                         <div class="card text-center p-5">
                             <p class="mb-0" style="color: var(--text-color);">هنوز محصولی را ذخیره نکرده‌اید.</p>
                         </div>
@@ -495,119 +558,287 @@
     </div>
 
     <div class="offcanvas offcanvas-end" tabindex="-1" id="mobileMenu" aria-labelledby="mobileMenuLabel">
-        <div class="offcanvas-header border-bottom d-flex justify-content-between">
-            <h5 class="offcanvas-title" id="mobileMenuLabel" style="color: var(--text-color);">منو</h5>
-            <button type="button" class="btn-close m-0" data-bs-dismiss="offcanvas" aria-label="Close" style="color: var(--text-color);"></button>
+    <div class="offcanvas-header border-bottom d-flex justify-content-between">
+        <h5 class="offcanvas-title" id="mobileMenuLabel" style="color: var(--text-color);">منو</h5>
+        <button type="button" class="btn-close m-0" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body d-flex flex-column">
+        <div class="profile-section">
+            <div class="avatar">
+                {{ current_user.username[0] | upper }}
+            </div>
+            <h5 class="mb-0" style="color: var(--text-color);">{{ current_user.username }}</h5>
+            <small class="" style="color: var(--text-color);">به پنل خود خوش آمدید</small>
         </div>
-        <div class="offcanvas-body">
-            <div class="profile-section">
-                <div class="avatar">
-                    {{ current_user.username[0] | upper }}
-                </div>
-                <h5 class="mb-0" style="color: var(--text-color);">{{ current_user.username }}</h5>
-                <small class="" style="color: var(--text-color);">به پنل خود خوش آمدید</small>
-            </div>
-             <div class="footer-links">
-                <a class="nav-link py-3 px-2 rounded-3" href="{{ url_for('main.index') }}">
-                    <i class="bi bi-box-arrow-left" style="color: var(--text-color);"></i>
-                    <span style="color: var(--text-color);">بازگشت به سایت</span>
+
+        <ul class="nav flex-column p-0">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" data-tab-target="#home-content" data-bs-dismiss="offcanvas">
+                    <i class="bi bi-house-door-fill"></i>
+                    <span>داشبورد اصلی</span>
                 </a>
-                 <a class="nav-link py-3 px-2 rounded-3" href="#" id="theme-toggle1">
-                    <i class="bi bi-moon-fill" style="color: var(--text-color);"></i>
-                    <span style="color: var(--text-color);">تغییر تم</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab-target="#profile-content" data-bs-dismiss="offcanvas">
+                    <i class="bi bi-person-fill"></i>
+                    <span>اطلاعات کاربری</span>
                 </a>
-                <a class="nav-link text-danger py-3 px-2 rounded-3" href="{{ url_for('main.logout') }}">
-                    <i class="bi bi-power"></i>
-                    <span>خروج از حساب</span>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab-target="#products-content" data-bs-dismiss="offcanvas">
+                    <i class="bi bi-box-seam-fill"></i>
+                    <span>محصولات من</span>
                 </a>
-            </div>
+            </li>
+        </ul>
+
+         <div class="footer-links mt-auto">
+             <a class="nav-link py-3 px-2 rounded-3" href="#" data-tab-target="#saved-content" data-bs-dismiss="offcanvas">
+                <i class="bi bi-bookmark-fill" style="color: var(--text-color);"></i>
+                <span style="color: var(--text-color);">ذخیره شده‌ها</span>
+            </a>
+            <a class="nav-link py-3 px-2 rounded-3" href="{{ url_for('main.index') }}">
+                <i class="bi bi-box-arrow-left" style="color: var(--text-color);"></i>
+                <span style="color: var(--text-color);">بازگشت به سایت</span>
+            </a>
+             <a class="nav-link py-3 px-2 rounded-3" href="#" id="theme-toggle1">
+                <i class="bi bi-moon-fill" style="color: var(--text-color);"></i>
+                <span style="color: var(--text-color);">تغییر تم</span>
+            </a>
+            <a class="nav-link text-danger py-3 px-2 rounded-3" href="{{ url_for('main.logout') }}">
+                <i class="bi bi-power"></i>
+                <span>خروج از حساب</span>
+            </a>
         </div>
     </div>
+</div>
+
+<div id="custom-popup" class="custom-popup-class">
+        <a id="copy-whatsapp-number" target="_blank" class="popover-link nav-link">
+            <i class="bi bi-whatsapp" style="color: #25D366;"></i>
+            <span class="txt-black">شماره واتساپ بازخورد</span>
+        </a><br>
+        <a href="https://stockheydari.ir/abut-us/" target="_blank" class="popover-link nav-link">
+            <i class="bi bi-telephone" style="color: #007bff;"></i>
+            <span class="txt-black">درباره ما</span>
+        </a>
+    </div>
+
+
+ <!-- <div class="bottom-nav d-md-none">
+    <ul class="navbar-nav flex-row align-items-center w-100">
+        <li class="nav-item">
+            <a style="font-size: .7rem;" class="nav-link active ajax-link" href="{{ url_for('main.index') }}">
+                <i class="bi bi-house-door"></i>
+                <span>خانه</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" id="custom-popup-trigger" style="font-size: .7rem;" class="nav-link">
+                <i class="bi bi-headset"></i>
+                <span>پشتیبانی</span>
+            </a>
+        </li>
+
+        <li class="fab-container">
+            <a href="{{ url_for('main.new_product') }}" class="fab pt-1 pb-0" title="ثبت محصول جدید">
+                <i class="bi bi-plus-lg"></i>
+            </a>
+        </li>
+        
+        <li class="nav-item">
+            <a style="font-size: .7rem;" class="nav-link ajax-link" href="{{ url_for('main.conversations') }}">
+                <i class="bi bi-chat-left-text"></i>
+                <span>گفت‌وگو</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a style="font-size: .7rem;" class="nav-link ajax-link" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.login_with_phone') }}">
+                <i class="bi bi-person"></i>
+                <span>استوک من</span>
+            </a>
+        </li>
+    </ul>
+</div> -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- Tab Switching Logic ---
-        const tabLinks = document.querySelectorAll('.sidebar .nav-link[data-tab-target]');
-        const contentPanes = document.querySelectorAll('.main-content .tab-pane');
-
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function(event) {
-                event.preventDefault();
-                
-                const targetId = this.dataset.tabTarget;
+        document.addEventListener('DOMContentLoaded', function () {
+            const trigger = document.getElementById('custom-popup-trigger');
+            const popup = document.getElementById('custom-popup');
+        
+            if (trigger && popup) {
+                trigger.addEventListener('click', function (event) {
+                    event.preventDefault(); // جلوگیری از رفتار پیش‌فرض لینک
+                    event.stopPropagation(); // جلوگیری از بسته شدن فوری
+                    popup.classList.toggle('show');
+                });
+            }
+            // بستن پاپ‌آپ با کلیک روی هر جای دیگر صفحه
+            window.addEventListener('click', function (event) {
+                if (popup && popup.classList.contains('show')) {
+                    if (!popup.contains(event.target) && !trigger.contains(event.target)) {
+                        popup.classList.remove('show');
+                    }
+                }
+            });
+        });
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Tab Switching Logic ---
+            // تغییر کلیدی: حالا لینک‌های داخل سایدبار و آف‌کنوس هر دو انتخاب می‌شوند
+            const tabLinks = document.querySelectorAll('.sidebar .nav-link[data-tab-target], .offcanvas .nav-link[data-tab-target]');
+            const contentPanes = document.querySelectorAll('.main-content .tab-pane');
+        
+            function switchTab(targetId) {
+                // پیدا کردن لینک و پنل مربوطه
                 const targetPane = document.querySelector(targetId);
+                const targetLink = document.querySelector(`.nav-link[data-tab-target="${targetId}"]`);
 
-                // Update active state on links
+                // آپدیت لینک‌ها
                 tabLinks.forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-
-                // Update active state on content panes
+                // فعال کردن تمام لینک‌هایی که به این تب اشاره دارند (هم در دسکتاپ و هم موبایل)
+                document.querySelectorAll(`.nav-link[data-tab-target="${targetId}"]`).forEach(l => l.classList.add('active'));
+            
+                // آپدیت محتوا
                 contentPanes.forEach(p => p.classList.remove('active'));
                 if (targetPane) {
                     targetPane.classList.add('active');
                 }
-            });
-        });
-
-        // --- Theme Toggle Logic ---
-        const themeToggleButton = document.getElementById('theme-toggle');
-        const themeIcon = themeToggleButton.querySelector('i');
-        const root = document.documentElement;
-
-        function applyTheme(theme) {
-            if (theme === 'dark') {
-                root.setAttribute('data-theme', 'dark');
-                themeIcon.classList.replace('bi-brightness-high-fill', 'bi-moon-fill');
-            } else {
-                root.setAttribute('data-theme', 'light');
-                themeIcon.classList.replace('bi-moon-fill', 'bi-brightness-high-fill');
             }
-        }
         
-        // Load saved theme
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        applyTheme(savedTheme);
-
-        // Toggle on click
-        themeToggleButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', newTheme);
-            applyTheme(newTheme);
+            tabLinks.forEach(link => {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const targetId = this.dataset.tabTarget;
+                    switchTab(targetId);
+                });
+            });
+        
+            // --- لینک‌های کارت‌های داشبورد اصلی برای سوییچ کردن تب ---
+            document.querySelectorAll('a[data-tab-target][onclick]').forEach(cardLink => {
+                cardLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const targetId = this.dataset.tabTarget;
+                    switchTab(targetId);
+                });
+            });
+        
+        
+            
         });
-    });
+        </script>
+    <script>
+        function sendThemeColorToNativeApp() {
+              // ابتدا چک می‌کنیم که آیا در محیط اپلیکیشن اندروید هستیم یا نه
+              if (window.Android && typeof window.Android.updateThemeColor === 'function') {
+
+                // تم فعلی را از ویژگی data-bs-theme تگ <html> می‌خوانیم
+                const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+
+                // بر اساس تم فعلی، کد رنگ هگزادسیمال مربوطه را مشخص می‌کنیم
+                const hexColor = (currentTheme === 'dark') ? '#1C1C1E' : '#F8F8F8';
+
+                // تابع کاتلین را فراخوانی کرده و کد رنگ را به آن ارسال می‌کنیم
+                window.Android.updateThemeColor(hexColor);
+              }
+            }
+
+            // این رویداد زمانی اجرا می‌شود که تمام محتوای HTML صفحه بارگذاری شده باشد
+            document.addEventListener('DOMContentLoaded', function() {
+                // انتخاب هر دو دکمه تغییر تم با استفاده از querySelectorAll
+                const themeToggleButtons = document.querySelectorAll('#theme-toggle, #theme-toggle1');
+                const root = document.documentElement;
+            
+                // این تابع مسئول اعمال تغییرات ظاهری (و حالا ارسال رنگ) است
+                function applyTheme(theme) {
+                    const themeIcon = document.querySelector('#theme-toggle i');
+                    const themeIcon1 = document.querySelector('#theme-toggle1 i');
+                
+                    if (theme === 'dark') {
+                        root.setAttribute('data-bs-theme', 'dark');
+                        // تغییر آیکون‌ها به ماه
+                        if(themeIcon) themeIcon.classList.replace('bi-brightness-high-fill', 'bi-moon-fill');
+                        if(themeIcon1) themeIcon1.classList.replace('bi-brightness-high-fill', 'bi-moon-fill');
+                    } else {
+                        root.setAttribute('data-bs-theme', 'light');
+                        // تغییر آیکون‌ها به خورشید
+                        if(themeIcon) themeIcon.classList.replace('bi-moon-fill', 'bi-brightness-high-fill');
+                        if(themeIcon1) themeIcon1.classList.replace('bi-moon-fill', 'bi-brightness-high-fill');
+                    }
+                
+                    // *** نقطه کلیدی ادغام ***
+                    // بعد از اینکه تم به طور کامل اعمال شد، تابع ارسال رنگ به اپلیکیشن را فراخوانی می‌کنیم
+                    sendThemeColorToNativeApp();
+                }
+            
+                // خواندن تم ذخیره شده از حافظه محلی مرورگر
+                // اگر تمی ذخیره نشده بود، به صورت پیش‌فرض از تم روشن استفاده کن
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                applyTheme(savedTheme); // این فراخوانی اولیه، رنگ نوار وضعیت را در بدو ورود تنظیم می‌کند
+            
+                // افزودن رویداد کلیک به هر دکمه
+                themeToggleButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        // تغییر وضعیت تم
+                        const newTheme = root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+                        // ذخیره تم جدید در حافظه محلی
+                        localStorage.setItem('theme', newTheme);
+                        // اعمال تم جدید
+                        applyTheme(newTheme);
+                    });
+                });
+            });
     </script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', function(event) {
+        const bookmarkButton = event.target.closest('.bookmark-toggle');
+        if (bookmarkButton) {
+            event.preventDefault();
+            
+            const productId = bookmarkButton.dataset.productId;
+            const icon = bookmarkButton.querySelector('i');
 
-            const themeToggleButton = document.getElementById('theme-toggle1');
-            const themeIcon = themeToggleButton.querySelector('i');
-            const root = document.documentElement;
-
-            function applyTheme(theme) {
-                if (theme === 'dark') {
-                    root.setAttribute('data-theme', 'dark');
-                    themeIcon.classList.replace('bi-brightness-high-fill', 'bi-moon-fill');
+            fetch(`/toggle_bookmark/${productId}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.action === 'removed') {
+                        // حذف کارت از صفحه
+                        const cardToRemove = document.querySelector(`.product-card-saved-${productId}`);
+                        if (cardToRemove) {
+                            cardToRemove.style.transition = 'opacity 0.5s ease';
+                            cardToRemove.style.opacity = '0';
+                            setTimeout(() => { 
+                                cardToRemove.remove();
+                                // اگر هیچ محصول ذخیره شده دیگری نماند، پیام "محصولی ذخیره نشده" را نمایش بده
+                                const container = document.getElementById('saved-products-container');
+                                if (container && container.children.length === 1 && container.children[0].id === 'no-saved-items-message') {
+                                    // already showing
+                                } else if (container && !container.querySelector('[class*="product-card-saved-"]')) {
+                                     const noItemsMsg = document.getElementById('no-saved-items-message');
+                                     if(noItemsMsg) noItemsMsg.style.display = 'block';
+                                }
+                            }, 500);
+                        }
+                    }
+                    // برای افزودن نیازی به تغییر آیکون نیست چون از صفحه حذف می‌شود
                 } else {
-                    root.setAttribute('data-theme', 'light');
-                    themeIcon.classList.replace('bi-moon-fill', 'bi-brightness-high-fill');
+                    window.location.href = '/login';
                 }
-            }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    });
+});
+</script>
 
-            // Load saved theme
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            applyTheme(savedTheme);
-
-            // Toggle on click
-            themeToggleButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                const newTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
-                applyTheme(newTheme);
-            });
-        });
-
-    </script>
-</body>
-</html>
+{% endblock %}

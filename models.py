@@ -33,6 +33,7 @@ class User(UserMixin, db.Model):
     # back_populates برای هماهنگ کردن با مدل Product
     products = db.relationship('Product', back_populates='owner', lazy=True)
     is_admin = db.Column(db.Boolean, default=False)
+    fcm_token = db.Column(db.String(255), nullable=True, unique=True)
     # اضافه کردن overlaps
 
     def set_password(self, password):
@@ -205,7 +206,7 @@ class Message(db.Model):
     file_path = db.Column(db.String(255), nullable=True)
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
-    
+    is_read = db.Column(db.Boolean, default=False, nullable=False, index=True)
     # تغییر backref به back_populates
     conversation = db.relationship('Conversation', back_populates='messages')
     

@@ -16,13 +16,55 @@
 }
 
 :root{
-    --black-color: #F8F8F8;
-    --dark-green: #E0E0E0;
-    --light-green: #9B1B30;
-    --light-white: #F1F1F1;
-    --txt-color: #1C1C1E;
-    --txt-light: #F1F1F1;
-}
+           --black-color: #F8F8F8;
+           --dark-green: #E0E0E0;
+           --light-green: #9B1B30;
+           --light-white: #F1F1F1;
+           --txt-color: #1C1C1E;
+           --txt-light: #F1F1F1;
+       } 
+        :root {
+            --dashboard-bg: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --text-muted-color: #6c757d;
+            --border-color: #dee2e6;
+            --primary-accent: #9B1B30;
+            --primary-accent-hover: #801627;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            /* --black-color: #F8F8F8;
+            --dark-green: #E0E0E0;
+            --light-green: #9B1B30;
+            --light-white: #F1F1F1;
+            --txt-color: #1C1C1E;
+            --txt-light: #F1F1F1; */
+        }
+        .txt-black{color: var(--txt-color) !important;}
+
+        html[data-bs-theme="dark"] {
+            --dashboard-bg: #121212;
+            --sidebar-bg: #1e1e1e;
+            --card-bg: #1e1e1e;
+            --text-color: #e9ecef;
+            --text-muted-color: #adb5bd;
+            --border-color: #343a40;
+
+            /* متغیرهای سفارشی شما */
+            --black-color: #1C1C1E;         /* این رنگ پس‌زمینه bottom-nav در حالت تاریک است */
+            --dark-green: #3A3A3C;
+            --light-green: #9B1B30;
+            --light-white: #f1f1f1;
+            --txt-light: #F1F1F1;
+
+            /* === نکته کلیدی و اصلاح اصلی ===
+              در حالت تاریک، رنگ متن (txt-color) باید روشن باشد.
+              مقدار آن را به یک رنگ روشن مانند #e9ecef تغییر می‌دهیم.
+            */
+            --txt-color: #e9ecef;
+        }
 /* :root{
   --black-color: #1C1C1E;
   --dark-green: #3A3A3C;
@@ -32,7 +74,6 @@
 .bg-very-black{background: var(--black-color);}
 .bg-black{background: var(--dark-green);}
 .bg-red{background: var(--light-green)!important;}
-.txt-black{color: var(--txt-color) !important;}
 .txt-lighting{color: var(--txt-light) !important;}
 #toggleButton {
   padding: 10px 20px;
@@ -54,6 +95,11 @@
 
 body {
     background-color: var(--black-color);
+    padding-top: 0;
+    transition: padding-top 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+body.is-loading {
+    padding-top: 55px; /* معادل ارتفاع لودر */
 }
 .scale0:hover{
   scale: 1!important;
@@ -157,7 +203,6 @@ body {
     border: none;
     border-radius: 8px;
     font-size: 1rem;
-    color: var(--light-white);
     background-color: var(--dark-green);
     transition: all .3s ease;
     overflow: visible;
@@ -667,7 +712,7 @@ body.loaded #loader {
 }
 
 .searcher:focus{
-  box-shadow: -1rem 0 1rem var(--light-green);
+  box-shadow: 0 0 1rem var(--light-green);
 }
 
 :root {
@@ -731,22 +776,126 @@ input[type="file"] {
 .privacy-container {
       max-width: 800px;
       margin: 40px auto;
-      background: #fff;
+      background: var(--black-color);
       padding: 40px;
       border-radius: 12px;
       box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
     }
+#page-refresh-loader {
+    position: fixed;
+    top: -55px; /* در حالت عادی بیرون از صفحه است */
+    left: 0;
+    width: 100%;
+    height: 55px;
+    background-color: none;
+    color: var(--txt-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    z-index: 1100;
+    transition: top 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* وقتی صفحه در حال لود است، لودر نمایش داده می‌شود */
+body.is-loading #page-refresh-loader {
+    top: 0;
+}
+
+/* استایل اسپینر (بدون تغییر) */
+.refresh-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--light-green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.sheet-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.sheet-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.contact-sheet-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20rem; /* 40 درصد ارتفاع صفحه */
+    backdrop-filter: blur(15px);
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    z-index: 1050;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+    transform: translateY(100%);
+    transition: transform 0.3s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1.5rem 1.5rem;
+}
+.contact-sheet-container.active {
+    transform: translateY(-10%);
+}
+
+.sheet-handle {
+    width: 50px;
+    height: 5px;
+    background-color: var(--border-color);
+    border-radius: 2.5px;
+    margin: 0 auto 1rem;
+    flex-shrink: 0;
+}
+.sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+    flex-shrink: 0;
+}
+.sheet-body .seller-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.sheet-body .info-label {
+    color: var(--text-muted-color);
+}
+.sheet-body .info-value {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* انیمیشن چرخش که از قبل هم داشتید */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
 
     .privacy-title {
       font-size: 26px;
-      color: #222;
       margin-bottom: 25px;
       font-weight: bold;
     }
 
     .privacy-section-title {
       font-size: 20px;
-      color: #444;
       margin-top: 30px;
       margin-bottom: 15px;
       font-weight: bold;
@@ -847,7 +996,6 @@ input[type="file"] {
   align-items: center;
   justify-content: center;
   /* می‌توانید رنگ پس‌زمینه و رنگ آیکون را اینجا سفارشی کنید */
-  background-color: var(--light-green); /* استفاده از متغیر رنگی شما، یا یک رنگ ثابت مثل #9B1B30 */
   border: none; /* حذف حاشیه پیش‌فرض دکمه */
   transition: all 0.3s ease;
 }
@@ -859,23 +1007,25 @@ input[type="file"] {
 
 /* تغییر ظاهر دکمه هنگام هاور (اختیاری) */
 #floatingChatButton:hover {
-  background-color: #7a1526; /* کمی تیره‌تر کردن رنگ var(--light-green) شما به صورت دستی */
   opacity: 0.9;
-  width: 12rem;
+  scale: 1.2;
   border-radius: 2rem!important;
 }
-#floatingChatButton .chat-label {
+#floatingChatButton:active{
+  scale: 0.5;
+}
+/* #floatingChatButton .chat-label {
   max-width: 0;
   overflow: hidden;
   opacity: 0;
   transition: max-width 0.4s ease, opacity 1s ease;
-}
+} */
 
-#floatingChatButton:hover .chat-label {
+/* #floatingChatButton:hover .chat-label {
   max-width: 200px;
   opacity: 1;
   margin-right: 0.5rem;
-}
+} */
 
 #floatingChatButton:active {
   scale: 0.9;
@@ -934,6 +1084,12 @@ input[type="file"] {
     color: var(--txt-color);
     width: 80px; /* عرض ثابت برای هر آیتم */
     vertical-align: top;
+}
+.svgclasses{transition: all 0.2s ease;}
+.svgclasses:hover{
+  scale: 1.1;
+} .svgclasses:active{
+  scale: 0.9;
 }
 
 .category-item-divar .category-icon {

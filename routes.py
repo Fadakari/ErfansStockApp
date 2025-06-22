@@ -22,6 +22,7 @@ import base64
 from flask_limiter.errors import RateLimitExceeded
 from flask_limiter.util import get_remote_address
 from sqlalchemy import case, func, or_
+from firebase_admin import messaging
 # from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
 # from tensorflow.keras.preprocessing import image
 # import numpy as np
@@ -154,6 +155,13 @@ def index():
 
 
 
+def file_exists(image_path):
+    if not image_path:
+        return False
+    full_path = os.path.join(current_app.static_folder, 'uploads', image_path)
+    return os.path.exists(full_path)
+
+
 
 @bp.route('/live_search')
 def live_search():
@@ -199,6 +207,14 @@ def live_search():
         ).desc(),
         Product.created_at.desc()
     ).all()
+
+    for p in products:
+        if p.images and len(p.images) > 0:
+            p.first_image_path = p.images[0].image_path if file_exists(p.images[0].image_path) else None
+        elif p.image_path and file_exists(p.image_path):
+            p.first_image_path = p.image_path
+        else:
+            p.first_image_path = None
 
     # به جای رندر کامل صفحه، فقط بخش لیست محصولات را برمی‌گردانیم
     return render_template('_product_list.html', products=products, datetime=datetime)
@@ -616,6 +632,24 @@ def verify_phone_change():
             flash('کد وارد شده اشتباه است.', 'danger')
 
     return render_template('verify_phone_change.html')
+
+
+
+@bp.route('/store/<int:user_id>')
+def store(user_id):
+    """
+    نمایش صفحه فروشگاه یک کاربر خاص با تمام محصولات منتشر شده او.
+    """
+    # یافتن فروشنده بر اساس شناسه یا نمایش خطای 404 اگر وجود نداشت
+    seller = User.query.get_or_404(user_id)
+    
+    # واکشی تمام محصولاتی که توسط این کاربر ثبت شده و وضعیت آن‌ها 'published' است
+    # مرتب‌سازی بر اساس جدیدترین محصولات
+    products = Product.query.filter_by(user_id=seller.id, status='published').order_by(Product.created_at.desc()).all()
+    
+    # رندر کردن قالب جدید و ارسال اطلاعات فروشنده و لیست محصولات به آن
+    return render_template('store.html', seller=seller, products=products)
+
 
 
 @bp.route('/renew_product/<int:product_id>', methods=['POST'])
@@ -1699,13 +1733,102 @@ def serve_ionic_static(path):
 
 
 
+def send_fcm_notification(token, title, body, data=None):
+    """
+    یک نوتیفیکیشن به یک توکن خاص دستگاه ارسال می‌کند.
+    """
+    if not token:
+        logging.warning("تلاش برای ارسال نوتیفیکیشن بدون توکن.")
+        return False
+    try:
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            token=token,
+            data=data or {},  # می‌توانید داده‌های اضافی برای مدیریت در اپلیکیشن ارسال کنید
+            android=messaging.AndroidConfig(
+                priority='high',
+                notification=messaging.AndroidNotification(
+                    sound='default',
+                    click_action='FLUTTER_NOTIFICATION_CLICK' # برای باز شدن اپ هنگام کلیک
+                )
+            )
+        )
+        response = messaging.send(message)
+        logging.info(f"نوتیفیکیشن با موفقیت ارسال شد: {response}")
+        return True
+    except Exception as e:
+        # اگر توکن نامعتبر بود، می‌توانید آن را از دیتابیس پاک کنید
+        if isinstance(e, messaging.UnregisteredError):
+            User.query.filter_by(fcm_token=token).update({'fcm_token': None})
+            db.session.commit()
+            logging.warning(f"توکن نامعتبر {token} از دیتابیس حذف شد.")
+        else:
+            logging.error(f"خطا در ارسال نوتیفیکیشن FCM: {e}")
+        return False
+
+
+# روت جدید برای ذخیره یا آپدیت توکن FCM کاربر
+@bp.route('/api/update_fcm_token', methods=['POST'])
+@login_required
+def update_fcm_token():
+    data = request.get_json()
+    token = data.get('token')
+    if not token:
+        return jsonify({'error': 'توکن ارسال نشده است'}), 400
+
+    # اگر توکن قبلاً توسط کاربر دیگری استفاده شده، آن را null کنید
+    User.query.filter_by(fcm_token=token).update({'fcm_token': None})
+    
+    # توکن جدید را برای کاربر فعلی تنظیم کنید
+    current_user.fcm_token = token
+    db.session.commit()
+    
+    logging.info(f"توکن FCM برای کاربر {current_user.username} آپدیت شد.")
+    return jsonify({'success': 'توکن با موفقیت آپدیت شد'}), 200
+
+
+
+
+
+@bp.route('/api/unread_status')
+@login_required
+def unread_status():
+    """
+    تعداد کل پیام‌های خوانده‌نشده و تعداد تفکیکی برای هر گفتگو را برمی‌گرداند.
+    """
+    total_unread = Message.query.filter_by(
+        receiver_id=current_user.id, 
+        is_read=False
+    ).count()
+
+    return jsonify({
+        'total_unread_count': total_unread,
+    })
+
+
+
+
 @bp.route("/conversations")
 @login_required
 def conversations():
     convos = Conversation.query.filter(
-        (Conversation.user1_id == current_user.id) | (Conversation.user2_id == current_user.id)
+        or_(Conversation.user1_id == current_user.id, Conversation.user2_id == current_user.id)
     ).all()
-    return render_template("conversations.html", conversations=convos)
+
+    unread_counts = {
+        c.id: Message.query.filter_by(
+            conversation_id=c.id,
+            receiver_id=current_user.id,
+            is_read=False
+        ).count() for c in convos
+    }
+
+    return render_template("conversations.html", conversations=convos, unread_counts=unread_counts)
+
+
 
 @bp.route("/conversation/<int:conversation_id>", methods=["GET", "POST"])
 @login_required
@@ -1715,6 +1838,17 @@ def conversation(conversation_id):
     # بررسی دسترسی کاربر
     if current_user.id not in [convo.user1_id, convo.user2_id]:
         return "Unauthorized", 403
+
+    try:
+        Message.query.filter_by(
+            conversation_id=conversation_id,
+            receiver_id=current_user.id,
+            is_read=False
+        ).update({'is_read': True})
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"خطا در علامت زدن پیام‌ها به عنوان خوانده شده: {e}")
 
     if request.method == "POST":
         content = request.form.get("content", "").strip()
@@ -1823,6 +1957,29 @@ def send_message():
     )
     db.session.add(new_msg)
     db.session.commit()
+
+    try:
+        recipient = User.query.get(receiver_id)
+        if recipient and recipient.fcm_token:
+            title = f"پیام جدید از {current_user.username}"
+            body = content if content else "یک فایل برای شما ارسال شد"
+            
+            # ارسال داده‌های اضافی برای هدایت کاربر به صفحه چت مربوطه
+            notification_data = {
+                'type': 'new_message',
+                'conversation_id': str(conversation_id),
+                'sender_id': str(current_user.id),
+                'sender_name': current_user.username
+            }
+            
+            send_fcm_notification(
+                token=recipient.fcm_token,
+                title=title,
+                body=body,
+                data=notification_data
+            )
+    except Exception as e:
+        logging.error(f"خطا در صف ارسال نوتیفیکیشن برای پیام {new_msg.id}: {e}")
 
     return jsonify({
         "message_id": new_msg.id,

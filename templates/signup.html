@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row d-flex justify-content-center m-auto my-5 px-1 w-100">
+<div class="row d-flex justify-content-center m-auto mt-5 px-1 w-100">
     <div class="col-lg-4 col-md-6 col-sm-8 p-0 m-auto mx-3" style="background: #1c1c1e00;">
         <div class="card bg-very-black signuper">
             <div class="card-header">
@@ -31,10 +31,6 @@
                         <input type="text" id="national_id" name="national_id" placeholder="کد ملی خود را وارد کنید" required class="inputs txt-black">
                     </div>
 
-                    
-
-                    
-
                     <div class="mb-3">
                         <label for="password" class="form-label txt-black">رمز عبور</label>
                         <div class="password-wrapper d-flex flex-nowrap">
@@ -55,22 +51,35 @@
                         </div>
                         <div id="passwordMatchMessage" class="form-text mt-1"></div>
                     </div>
-                    <p class="text-center mt-3 txt-black">
-                      با <a href="{{ url_for('main.privacy') }}" class="btn-privacy-policy">سیاست حریم خصوصی</a> موافقم
-                    </p>
-                    <button type="submit" class="btn header-tabs py-3 px-4 txt-black" style="background-color: #9B1B30;">ثبت‌نام</button>
-                    <a href="{{ url_for('main.login') }}" class="btn btn-link">قبلاً ثبت‌نام کرده‌اید؟ وارد شوید</a>
+                    
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" id="privacyCheck">
+                      <label class="form-check-label txt-black" for="privacyCheck">
+                        با <a href="{{ url_for('main.privacy') }}" target="_blank" class="btn-privacy-policy">سیاست حریم خصوصی</a> موافقم.
+                      </label>
+                    </div>
+
+                    <button type="submit" id="signupButton" class="btn header-tabs py-3 px-4 txt-black w-100" style="background-color: #9B1B30;" disabled>ثبت‌نام</button>
+                    
+                    <div class="text-center mt-3" style="margin-bottom: 7rem;">
+                        <a href="{{ url_for('main.login_with_phone') }}" class="btn btn-link">قبلاً ثبت‌نام کرده‌اید؟ وارد شوید</a>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
 <script>
+    // کدهای قبلی شما برای نمایش رمز عبور و تطابق آنها
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirmPassword');
     const passwordMatchMessage = document.getElementById('passwordMatchMessage');
     const togglePasswordBtn = document.getElementById('togglePassword');
     const toggleConfirmPasswordBtn = document.getElementById('toggleConfirmPassword');
+
+    // کدهای جدید برای فعال‌سازی دکمه ثبت‌نام
+    const privacyCheck = document.getElementById('privacyCheck');
+    const signupButton = document.getElementById('signupButton');
 
     togglePasswordBtn.addEventListener('click', function () {
         const icon = this.querySelector('i');
@@ -104,5 +113,12 @@
 
     passwordInput.addEventListener('input', checkPasswordsMatch);
     confirmPasswordInput.addEventListener('input', checkPasswordsMatch);
+
+    // افزودن event listener به چک‌باکس
+    privacyCheck.addEventListener('change', function() {
+        // اگر چک‌باکس تیک خورده بود، دکمه را فعال کن
+        // در غیر این صورت، آن را غیرفعال نگه دار
+        signupButton.disabled = !this.checked;
+    });
 </script>
 {% endblock %}

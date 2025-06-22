@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row justify-content-center mt-5 mb-5" id="page-content" class="page-transition">
-    <div class="col-md-8">
+    <div class="col-md-8 mb-5">
         <div class="card signuper mb-4">
             <div class="card-header" style="background: var(--dark-green);">
                 <button class="btn header-tabs py-2 px-3 float-start">
@@ -121,7 +121,7 @@
 
                     <div class="mb-3">
                         <label for="image" class="form-label txt-black">تصویر محصول (حداکثر ۳ عدد)</label>
-                        <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد</p>
+                        <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد برای نمایش بهتر در پلتفرم</p>
 
                         <div class="custom-file">
                             <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*" multiple>
@@ -373,67 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 </script>
 
-<script>
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let currentY = 0;
-    const threshold = 80; // حداقل فاصله افقی برای تغییر صفحه
-    const minHorizontalMove = 30; // حداقل اختلاف افقی برای فعال شدن سوایپ
-    const maxVerticalMove = 50;   // حداکثر اختلاف عمودی که اجازه سوایپ رو میده
-    let page = document.getElementById("page-content");
 
-    window.addEventListener("touchstart", (e) => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-        page.style.transition = "none"; // لغو انیمیشن برای حرکت زنده
-    });
-
-    window.addEventListener("touchmove", (e) => {
-        currentX = e.touches[0].clientX;
-        currentY = e.touches[0].clientY;
-        let diffX = currentX - startX;
-        let diffY = currentY - startY;
-
-        // فقط اگر حرکت افقی بیشتر از حداقل بود و حرکت عمودی کمتر از حداکثر، اجازه حرکت بده
-        if (Math.abs(diffX) > minHorizontalMove && Math.abs(diffY) < maxVerticalMove) {
-            page.style.transform = `translateX(${diffX}px)`;
-        }
-    });
-
-    window.addEventListener("touchend", () => {
-        let diffX = currentX - startX;
-        let diffY = currentY - startY;
-
-        page.style.transition = "transform 0.3s ease"; // بازگرداندن انیمیشن
-
-        // فقط اگر حرکت افقی بزرگتر از آستانه و حرکت عمودی کمتر از حد بود، صفحه رو جابجا کن
-        if (Math.abs(diffX) > threshold && Math.abs(diffY) < maxVerticalMove) {
-            if (diffX > 0) {
-                // سوایپ به راست ← رفتن به صفحه قبلی
-                page.style.transform = "translateX(100%)";
-                setTimeout(() => {
-                    window.location.href = "https://stockdivar.ir"; // مسیر مد نظر شما
-                }, 300);
-            } else {
-                // سوایپ به چپ → رفتن به صفحه بعدی
-                page.style.transform = "translateX(-100%)";
-                setTimeout(() => {
-                    window.location.href = "https://stockdivar.ir"; // مسیر مد نظر شما
-                }, 300);
-            }
-        } else {
-            // برگرداندن صفحه به جای قبلی
-            page.style.transform = "translateX(0)";
-        }
-
-        startX = 0;
-        currentX = 0;
-        startY = 0;
-        currentY = 0;
-    });
-
-</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // بازسازی پیش‌نمایش‌ها برای عکس‌های موجود در حالت ویرایش
