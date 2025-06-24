@@ -12,6 +12,7 @@
     .rounder.stuck {
       border-radius: 0 0 2rem 2rem !important;
     }
+    .navbar{background: none!important;}
     #search-input-mobile:focus{
         scale: 1.03;
     }
@@ -19,7 +20,7 @@
 
 
 <nav class="navbar animationshow rounder d-lg-none d-md-none d-sm-flex sticky-top py-0" style="backdrop-filter: blur(15px);">
-    <div class="container-fluid d-flex flex-nowrap ps-0" style="backdrop-filter: blur(15px);">
+    <div class="container-fluid d-flex flex-nowrap ps-0">
       <div class="d-flex flex-nowrap w-75 align-items-center">
               <div class="input-group flex-grow-1">
                   <input id="search-input-mobile" class="inputs searcher txt-black rounder px-3 py-1" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">

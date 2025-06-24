@@ -14,14 +14,19 @@
 
     <script src="/static/js/theme.js" defer></script>
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootst/css/bootstrap-grid.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootst/css/bootstrap-reboot.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootst/css/bootstrap-utilities.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootst/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous"> -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}" xintegrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous"> -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"> -->
+    <!-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/select2.min.css') }}"> -->
     <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
-    
+
     <style>
         .spinner {
           width: 32px;
@@ -45,7 +50,7 @@
         }
         
         .bottom-nav {
-            background-color: var(--black-color);
+            backdrop-filter: blur(15px);
             width: 100%;
             box-shadow: 0 -0.5rem 2rem var(--light-green);
             padding: 0 0 0 1rem;
@@ -450,9 +455,14 @@
     });
     </script>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
+    <!-- <script src="{{ url_for('static', filename='bootstrap/bootstrap.bundle.min.js') }}"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> -->
+    <script src="{{ url_for('static', filename='bootstrap/select2.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootst/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootst/js/bootstrap.esm.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootst/js/bootstrap.min.js') }}"></script>
     <script>
         // تابع برای تشخیص اینکه آیا کاربر از اپلیکیشن اندروید آمده است یا نه
         function isAndroidApp() {
