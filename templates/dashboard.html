@@ -176,8 +176,9 @@
             }
         }
         .offcanvas {
-            background-color: var(--sidebar-bg);
-            width: 50%;
+            background: none!important;
+            backdrop-filter: blur(14px);
+            width: 70%!important;
         }
         .offcanvas-body  .profile-section {
             text-align: center;
@@ -574,20 +575,20 @@
         <ul class="nav flex-column p-0">
             <li class="nav-item">
                 <a class="nav-link active" href="#" data-tab-target="#home-content" data-bs-dismiss="offcanvas">
-                    <i class="bi bi-house-door-fill"></i>
-                    <span>داشبورد اصلی</span>
+                    <i class="bi bi-house-door-fill txt-black"></i>
+                    <span class="txt-black">داشبورد اصلی</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#" data-tab-target="#profile-content" data-bs-dismiss="offcanvas">
-                    <i class="bi bi-person-fill"></i>
-                    <span>اطلاعات کاربری</span>
+                    <i class="bi bi-person-fill txt-black"></i>
+                    <span class="txt-black">اطلاعات کاربری</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="#" data-tab-target="#products-content" data-bs-dismiss="offcanvas">
-                    <i class="bi bi-box-seam-fill"></i>
-                    <span>محصولات من</span>
+                    <i class="bi bi-box-seam-fill txt-black"></i>
+                    <span class="txt-black">محصولات من</span>
                 </a>
             </li>
         </ul>
@@ -790,6 +791,7 @@
                         localStorage.setItem('theme', newTheme);
                         // اعمال تم جدید
                         applyTheme(newTheme);
+                        location.reload();
                     });
                 });
             });

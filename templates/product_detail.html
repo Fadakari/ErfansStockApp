@@ -229,10 +229,8 @@
 <div id="page-content">
 
     <div class="detail-header">
-        <button class="btn header-tabs py-2 px-3 float-end">
-            <a href="{{ url_for('main.index') }}">
-                <i class="bi bi-arrow-right fs-3 txt-black"></i>
-            </a>
+        <button class="btn" onclick="history.back()">
+            <i class="bi bi-arrow-right fs-3 txt-black"></i>
         </button>
         <div class="actions">
             <a href="#" class="bookmark-toggle" data-product-id="{{ product.id }}">
@@ -285,7 +283,7 @@
         </div>
 
         <div class="info-block">
-            <p class="meta-info mb-2 txt-black">منتشر شده در {{ product.updated_at }}</p>
+            <p class="meta-info mb-2 txt-black">منتشر شده در {{ product.updated_at | jalali }}</p>
             <h1 class="product-title mb-3 txt-black">{{ product.name }}</h1>
             <p class="product-price">
                 {% if product.price == 0 %}

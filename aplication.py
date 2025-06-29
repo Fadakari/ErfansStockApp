@@ -12,8 +12,10 @@ from flask_limiter.util import get_remote_address
 from flask_apscheduler import APScheduler  # ✅ اضافه شده
 import redis
 from flask_cors import CORS
-from datetime import date
+import jdatetime
+from datetime import datetime
 from flask_jwt_extended import JWTManager
+
 
 
 
@@ -63,6 +65,7 @@ def create_app():
         "capacitor://localhost",
         "https://stockdivar.ir",
     ]}})
+    
        
     # بارگذاری کلید مخفی و اطلاعات دیتابیس از محیط
     app.secret_key = os.environ.get("SECRET_KEY", "کلید_پیش‌فرض_اما_غیر_امن")
@@ -161,6 +164,26 @@ def create_app():
             logging.info("Database tables created successfully")
         except Exception as e:
             logging.error(f"Error creating database tables: {str(e)}")
+
+    def to_jalali(value):
+        if not value:
+            return ''
+        if isinstance(value, datetime):
+            jd = jdatetime.datetime.fromgregorian(datetime=value)
+            return jd.strftime('%Y/%m/%d - %H:%M')
+        return value
+
+    app.jinja_env.filters['jalali'] = to_jalali
+
+    def to_jalali_time(value):
+        if not value:
+            return ''
+        if isinstance(value, datetime):
+            jd = jdatetime.datetime.fromgregorian(datetime=value)
+            return jd.strftime('%H:%M')
+        return value
+    
+    app.jinja_env.filters['jalali_time'] = to_jalali_time
 
     return app
 

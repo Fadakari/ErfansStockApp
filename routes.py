@@ -29,12 +29,14 @@ from firebase_admin import messaging
 
 
 
-
 logging.basicConfig(level=logging.DEBUG)
 bp = Blueprint('main', __name__)
 
 def custom_key():
     return f"{get_remote_address()}-{request.form.get('username', '')}"
+
+
+
 
 
 
@@ -167,8 +169,8 @@ def file_exists(image_path):
 def live_search():
     # دریافت تمام پارامترهای جستجو از درخواست AJAX
     search = request.args.get('search', '').strip()
-    province_search = request.args.get('province_search', '').strip()
-    city_search = request.args.get('city_search', '').strip()
+    # province_search = request.args.get('province_search', '').strip()
+    # city_search = request.args.get('city_search', '').strip()
     address_search = request.args.get('address_search', '').strip()
     category_id = request.args.get('category', '').strip()
 
@@ -177,22 +179,26 @@ def live_search():
     # اعمال تمام فیلترها دقیقا مانند تابع index
     if search:
         search_keywords = search.lower().split()
-        brand_filters = []
+        keyword_filters = []
+    
         for keyword in search_keywords:
-            brand_filters.append(Product.brand.ilike(f'%{keyword}%'))
+            keyword_filters.append(
+                db.or_(
+                    Product.name.ilike(f'%{keyword}%'),
+                    Product.description.ilike(f'%{keyword}%'),
+                    Product.address.ilike(f'%{keyword}%'),
+                    Product.brand.ilike(f'%{keyword}%')
+                )
+            )
+    
+        query = query.filter(db.and_(*keyword_filters))
 
-        search_filter = db.or_(
-            Product.name.ilike(f'%{search}%'),
-            Product.description.ilike(f'%{search}%'),
-            *brand_filters
-        )
-        query = query.filter(search_filter)
 
-    if province_search:
-        query = query.filter(Product.address.ilike(f'%{province_search}%'))
+    # if province_search:
+    #     query = query.filter(Product.address.ilike(f'%{province_search}%'))
 
-    if city_search:
-        query = query.filter(Product.address.ilike(f'%{city_search}%'))
+    # if city_search:
+    #     query = query.filter(Product.address.ilike(f'%{city_search}%'))
 
     if address_search:
         query = query.filter(Product.address.ilike(f'%{address_search}%'))
@@ -216,6 +222,7 @@ def live_search():
         else:
             p.first_image_path = None
 
+    logging.warning(f"Found {len(products)} products")
     # به جای رندر کامل صفحه، فقط بخش لیست محصولات را برمی‌گردانیم
     return render_template('_product_list.html', products=products, datetime=datetime)
 
@@ -2036,7 +2043,7 @@ def chatbot_page_render(): # نام تابع را می‌توان تغییر د�
     # این تابع فقط صفحه HTML اولیه را رندر می‌کند.
     # هیچ منطق POST یا پردازش چت در اینجا وجود ندارد.
     # bot_response اولیه را می‌توانید None یا یک پیام خوشامدگویی قرار دهید.
-    return render_template('ai_chat.html', bot_response=None)
+    return render_template('ai_chat.html', bot_response="درود! به پلتفرم استوک خوش آمدید. چه کمکی از دست من برمیاد؟!")
 
 
 def intelligent_product_search(

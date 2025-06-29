@@ -8,10 +8,10 @@
 </button>
 <h2 class="txt-black">پنل مدیریت</h2>
 <hr class="w-100">
-<h3>تعداد محصولات پلتفرم: {{ count*2 }}</h3>
-<h3>تعداد کاربران آنلاین: <span id="userCount">...</span></h3>
-<h3>تعداد کل کاربران: {{ total_users*2 }}</h3>
-<hr class="w-100">
+<h3 class="txt-black">تعداد محصولات پلتفرم: {{ count*2 }}</h3>
+<h3 class="txt-black">تعداد کاربران آنلاین: <span id="userCount">...</span></h3>
+<h3 class="txt-black">تعداد کل کاربران: {{ total_users*2 }}</h3>
+<hr class="w-100 txt-black">
  <script>
         function fetchOnlineUsers() {
             fetch('/online-users')
@@ -43,7 +43,7 @@
                 {% endif %}
                 <p class="card-text txt-black"><strong>{{ "{:,}".format(product.price | int) }} تومان</strong></p>
                 <p class="txt-black">کاربر: {{ users_dict[product.user_id] }}</p>
-                <p class="txt-black">ایجاد شده: {{ product.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p class="txt-black">ایجاد شده: {{ product.created_at | jalali }}</p>
 
                 <form method="POST" action="{{ url_for('main.approve_product', product_id=product.id) }}">
                     <button type="submit" class="btn btn-success w-100 mt-2">✔️ تأیید محصول</button>
@@ -54,7 +54,7 @@
     {% endfor %}
 </div>
 
-<hr class="w-100">
+<hr class="w-100 txt-black">
 
 
 

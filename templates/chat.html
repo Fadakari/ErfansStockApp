@@ -165,7 +165,7 @@ form.myform {
                         <div id="msg-text-{{ msg.id }}">
                             {{ msg.content }}
                             <div class="message-meta">
-                                <span>{{ msg.timestamp.strftime('%H:%M') }}</span>
+                                <span>{{ msg.timestamp | jalali_time }}</span>
                                 <span class="status-icon"><i class="bi bi-check"></i></span>
                             </div>
                         </div>
@@ -276,6 +276,8 @@ form.myform {
         const modalImage = document.getElementById("modalImage");
         modalImage.src = imageUrl;
     }
+
+    
 
     // --- بخش سوم: ساخت و مدیریت حباب‌های پیام در DOM ---
 

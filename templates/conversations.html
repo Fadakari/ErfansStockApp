@@ -119,7 +119,7 @@
                     <div class="chat-header">
                         <span class="chat-username txt-black">{{ other_user.username }}</span>
                         {% if convo.messages %}
-                            <span class="chat-timestamp">{{ convo.messages[-1].timestamp.strftime('%H:%M') }}</span>
+                            <span class="chat-timestamp">{{ convo.messages[-1].timestamp | jalali_time }}</span>
                         {% endif %}
                     </div>
                     <p class="chat-message-preview mb-0 txt-black">

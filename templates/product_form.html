@@ -1,6 +1,36 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+/* ظاهر تصویر در لیست برندها */
+.logo-image {
+    height: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+/* تنظیم کلی select2 */
+.select2-container {
+    width: 100% !important;
+    max-width: 100%;
+    direction: rtl;
+    z-index: 9999;
+}
+
+/* جلوگیری از نصفه دیده شدن منو */
+.select2-results__options {
+    position: fixed;
+    right: 10%;
+    top: 40%;
+    max-height: 30rem !important;
+    width: 100% !important;
+    width: auto !important;
+    max-width: 100%;
+    overflow-y: scroll;
+    box-shadow: 0 0 1rem var(--light-green);
+}
+</style>
+
 <div class="row justify-content-center mt-5 mb-5" id="page-content" class="page-transition">
     <div class="col-md-8 mb-5">
         <div class="card signuper mb-4">
@@ -22,7 +52,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label txt-black">توضیحات</label>
-                        <textarea class="inputs txt-black" placeholder="توضیحات راجب محصول و ویژگی های آن..." id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
+                        <textarea class="inputs txt-black" placeholder="توضیحات محصول و ویژگی های آن..." id="description" name="description" rows="3">{{ product.description if product else '' }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="price" class="form-label txt-black">قیمت (تومان)</label>
@@ -119,40 +149,44 @@
                     </div>
 
 
-                    <div class="mb-3">
-                        <label for="image" class="form-label txt-black">تصویر محصول (حداکثر ۳ عدد)</label>
-                        <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد برای نمایش بهتر در پلتفرم</p>
+<div class="mb-3">
+    <label for="image" class="form-label txt-black">تصویر محصول (حداکثر ۳ عدد)</label>
+    <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد برای نمایش بهتر در پلتفرم</p>
 
-                        <div class="custom-file">
-                            <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*" multiple>
-                        
-                            <div class="image-upload-box" onclick="document.getElementById('image').click();">
-                                <span class="image-upload-plus">+</span>
-                                <p class="image-upload-text">انتخاب عکس‌ها</p>
-                            </div>
-                        </div>
+    <div class="custom-file">
+        <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*" multiple onchange="handleFileSelect(this)">
+        <div class="image-upload-box" onclick="document.getElementById('image').click();">
+            <span class="image-upload-plus">+</span>
+            <p class="image-upload-text">انتخاب عکس‌ها</p>
+        </div>
+    </div>
 
-                        <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths" value="{% if product %}{% for img in product.images %}{{ img.image_path }}{% if not loop.last %},{% endif %}{% else %}{{ product.image_path or '' }}{% endfor %}{% endif %}">
+    <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths"
+        value="{% if product %}{% for img in product.images %}{{ img.image_path }}{% if not loop.last %},{% endif %}{% else %}{{ product.image_path or '' }}{% endfor %}{% endif %}">
 
-                        <div id="image-previews" class="d-flex flex-wrap mt-2">
-                            {% if product %}
-                                {% if product.images %}
-                                    {% for img in product.images %}
-                                        {% endfor %}
-                                {% elif product.image_path %}
-                                    <div class="m-1 position-relative" data-filename="{{ product.image_path }}">
-                                        <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="img-thumbnail" style="height: 150px; width: auto;">
-                                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removePreview(this)">&times;</button>
-                                    </div>
-                                {% endif %}
-                            {% endif %}
-                        </div>
-                    
-                        <div class="progress mt-2" id="uploadProgress" style="display: none;">
-                          <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
-                          <p class="txt-black">در حال آپلود عکس</p>
-                        </div>
+    <div id="image-previews" class="d-flex flex-wrap mt-2">
+        {% if product %}
+            {% if product.images %}
+                {% for img in product.images %}
+                    <div class="m-1 position-relative" data-filename="{{ img.image_path }}">
+                        <img src="{{ url_for('static', filename='uploads/' + img.image_path) }}" class="img-thumbnail" style="height: 150px; width: auto;">
+                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removePreview(this)">&times;</button>
                     </div>
+                {% endfor %}
+            {% elif product.image_path %}
+                <div class="m-1 position-relative" data-filename="{{ product.image_path }}">
+                    <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="img-thumbnail" style="height: 150px; width: auto;">
+                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removePreview(this)">&times;</button>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="progress mt-2" id="uploadProgress" style="display: none;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
+        <p class="txt-black">در حال آپلود عکس</p>
+    </div>
+</div>
 
 
 
@@ -171,34 +205,31 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    $(document).ready(function() {
-        
-        // تابعی برای فرمت‌دهی به گزینه‌های لیست
+    $(document).ready(function () {
+
         function formatBrand(brand) {
-            if (!brand.id) {
-                return brand.text;
-            }
-            
+            if (!brand.id) return brand.text;
+
             var logoPath = $(brand.element).data('logo');
-            if (!logoPath) {
-                return brand.text;
-            }
-            
-            var $brand = $(
+            if (!logoPath) return brand.text;
+
+            return $(
                 '<span><img src="' + logoPath + '" class="logo-image" /> ' + brand.text + '</span>'
             );
-            return $brand;
-        };
+        }
 
-        // فعال‌سازی Select2 روی المان مورد نظر
         $('#brand-select').select2({
             templateResult: formatBrand,
             templateSelection: formatBrand,
-            minimumResultsForSearch: Infinity
+            minimumResultsForSearch: Infinity,
+            width: '100%', // 👈 حل مشکل عرض در موبایل
+            dropdownAutoWidth: true,
+            dir: "rtl", // 👈 تنظیم راست‌چین بودن
+            dropdownParent: $('#brand-select').parent() // 👈 حل مشکل موقعیت در صفحه و موبایل
         });
-
     });
 </script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const priceInput = document.getElementById('price');
@@ -376,7 +407,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // بازسازی پیش‌نمایش‌ها برای عکس‌های موجود در حالت ویرایش
     const hiddenInput = document.getElementById('uploaded_image_paths');
     if (hiddenInput.value) {
         const existingPaths = hiddenInput.value.split(',');
@@ -384,20 +414,21 @@ document.addEventListener('DOMContentLoaded', function () {
             if (path) addPreview(path);
         });
     }
-
-    // اتصال رویداد به اینپوت فایل
-    document.getElementById('image').addEventListener('change', handleFileSelect);
 });
 
-function handleFileSelect(event) {
-    const files = event.target.files;
+function handleFileSelect(input) {
+    const files = input.files;
+    if (!files || files.length === 0) {
+        alert("هیچ فایلی انتخاب نشده.");
+        return;
+    }
+
     const previewContainer = document.getElementById('image-previews');
-    const existingImagesCount = previewContainer.children.length;
+    const existingImagesCount = previewContainer.querySelectorAll('div[data-filename]').length;
 
     if (files.length + existingImagesCount > 3) {
         alert("شما حداکثر می‌توانید ۳ تصویر انتخاب کنید.");
-        // پاک کردن انتخاب فعلی تا کاربر دوباره انتخاب کند
-        event.target.value = ''; 
+        input.value = '';
         return;
     }
 
@@ -406,8 +437,8 @@ function handleFileSelect(event) {
             compressAndUpload(file);
         }
     }
-    // پاک کردن مقدار اینپوت تا کاربر بتواند همان فایل را دوباره انتخاب کند
-    event.target.value = ''; 
+
+    input.value = '';
 }
 
 function compressAndUpload(file) {
@@ -448,10 +479,12 @@ function compressAndUpload(file) {
 function uploadToServer(formData) {
     const progressContainer = document.getElementById("uploadProgress");
     const progressBar = document.getElementById("uploadProgressBar");
+    const submitBtn = document.getElementById("submitBtn");
+    if (submitBtn) submitBtn.disabled = true;
+
     progressContainer.style.display = "block";
     progressBar.style.width = "0%";
     progressBar.innerText = "0%";
-    document.getElementById("submitBtn").disabled = true;
 
     const xhr = new XMLHttpRequest();
     xhr.upload.addEventListener("progress", function(e) {
@@ -464,21 +497,25 @@ function uploadToServer(formData) {
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState === XMLHttpRequest.DONE) {
+            progressContainer.style.display = "none";
+            if (submitBtn) submitBtn.disabled = false;
+
             if (xhr.status === 200) {
-                const data = JSON.parse(xhr.responseText);
-                if (data.image_path) {
-                    addPreview(data.image_path);
-                    updateHiddenInput();
-                    console.log("✅ آپلود موفق:", data.image_path);
-                } else {
-                    alert("❌ خطا در آپلود تصویر");
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.image_path) {
+                        addPreview(data.image_path);
+                        updateHiddenInput();
+                        console.log("✅ آپلود موفق:", data.image_path);
+                    } else {
+                        alert("❌ پاسخ نامعتبر از سرور");
+                    }
+                } catch (err) {
+                    alert("❌ خطا در تجزیه پاسخ سرور");
                 }
             } else {
                 alert("❌ ارتباط با سرور برقرار نشد");
             }
-            // بعد از اتمام هر آپلود، دکمه را فعال و پروگرس را مخفی کن
-            progressContainer.style.display = "none";
-            document.getElementById("submitBtn").disabled = false;
         }
     };
 
@@ -512,11 +549,9 @@ function addPreview(imagePath) {
 }
 
 function removePreview(buttonElement) {
-    // پیدا کردن والد div که عکس و دکمه را در بر دارد
     const wrapper = buttonElement.parentElement;
     if (wrapper) {
         wrapper.remove();
-        // پس از حذف از UI، فیلد مخفی را آپدیت کن
         updateHiddenInput();
     }
 }

@@ -109,7 +109,7 @@ body.is-loading {
     box-shadow: 0 0 2rem var(--light-green);
 }
 .navbar{
-    background-color: var(--black-color)!important;
+    backdrop-filter: blur(15px);
     box-shadow: 0 0 2rem var(--light-green);
 }
 
@@ -173,7 +173,7 @@ body.is-loading {
   transition: width 0.6s ease, height 0.6s ease, opacity 1s ease;
 }
 .header-tabs.light-mode::after {
-  background: #000000da; /* تیره برای لایت‌مود */
+  background: #00000050; /* تیره برای لایت‌مود */
 }
 
 
@@ -479,16 +479,84 @@ tbody {
 
 .dropdown-menu {
   display: none;
-  position: absolute;
   background-color: var(--black-color);
   border: 1px solid #ccc;
   border-radius: 8px;
   padding: 5px;
-  z-index: 100;
-  top: 100%;
+  z-index: 1050!important;
+  top: 50%;
   right: 0;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
+
+/* اصلاحات برای دراپ‌داون استان و شهر */
+.dropdown-menu.chooser {
+  max-height: 20rem;
+  overflow-y: auto;
+  z-index: 1050 !important;
+  position: absolute;
+  width: 100%;
+}
+
+.province-item, .province-item-mobile {
+  display: block;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.province-item:hover, .province-item-mobile:hover {
+  background-color: var(--light-green);
+  color: var(--txt-light);
+}
+
+/* جلوگیری از بسته شدن دراپ‌داون هنگام کلیک */
+.dropdown-menu.chooser {
+  pointer-events: auto;
+}
+
+/* استایل برای علامت تیک استان انتخاب شده */
+.province-checkmark {
+    color: var(--light-green);
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* هایلایت آیتم انتخاب شده */
+.province-item-mobile.selected {
+    background-color: rgba(155, 27, 48, 0.1);
+}
+
+/* بهبود ظاهر فیلد جستجو */
+#provinceSearchMobile {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* استایل‌های جدید برای انتخاب استان */
+.province-item-mobile.selected {
+    background-color: rgba(155, 27, 48, 0.1);
+}
+
+.province-item-mobile a.text-success {
+    color: var(--light-green) !important;
+    font-weight: bold;
+}
+
+.checkmark {
+    color: var(--light-green);
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+#provinceSearchMobile {
+    position: sticky;
+    top: 0;
+    background-color: var(--black-color);
+    z-index: 1;
+    margin-bottom: 8px;
+}
+
 
 .dropdown-menu button {
   display: block;
@@ -1061,6 +1129,9 @@ body.is-loading #page-refresh-loader {
 /* ========================================================== */
 
 /* --- 1. استایل دسته‌بندی‌های جدید (آیکون و متن) --- */
+.categorys-container{
+  z-index: -4!important;
+}
 .categories-scroll-container {
     display: flex;
     overflow-x: auto;
@@ -1068,16 +1139,14 @@ body.is-loading #page-refresh-loader {
     white-space: nowrap;
     padding: 10px 0;
     margin-bottom: 24px;
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    z-index: 0!important;
 }
-.categories-scroll-container::-webkit-scrollbar {
-    display: none; /* Hide scrollbar for Chrome, Safari */
-}
+
 
 .category-item-divar {
     margin-top: 1rem;
     display: inline-flex;
+    z-index: 0!important;
     flex-direction: column;
     align-items: center;
     text-decoration: none;
