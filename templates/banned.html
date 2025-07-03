@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .container{
+        margin-bottom: 5rem !important;
+    }
+</style>
+<div class="container mt-5 pb-5">
+    <div class="row justify-content-center pb-5">
+        <div class="col-md-8 text-center">
+            <div class="card border-danger shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">حساب کاربری مسدود شده است</h4>
+                </div>
+                <div class="card-body p-4">
+                    <i class="bi bi-slash-circle-fill text-danger" style="font-size: 5rem;"></i>
+                    <h5 class="card-title mt-4">دسترسی شما به امکانات سایت محدود شده است</h5>
+                    <p class="card-text fs-5 mt-3">
+                        حساب کاربری شما به دلیل زیر مسدود شده است:
+                    </p>
+                    <p class="lead fs-6">
+                        <strong>"{{ current_user.ban_reason or 'نقض قوانین سایت' }}"</strong>
+                    </p>
+                    <hr>
+                    <p class="text-muted">
+                        در صورت نیاز به پیگیری، لطفاً با پشتیبانی تماس بگیرید.
+                    </p>
+                    <p class="text-muted">02156699640</p>
+                    <a href="{{ url_for('main.logout') }}" class="btn btn-danger mt-3">
+                        <i class="bi bi-box-arrow-right me-2"></i>
+                        خروج از حساب
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

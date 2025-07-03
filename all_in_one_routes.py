@@ -41,8 +41,18 @@ def format_user(user, include_sensitive=False):
     
     return data
 
+# در فایل all_in_one_routes.py
 def format_product(product):
-    """تبدیل محصول به فرمت JSON"""
+    """تبدیل محصول به فرمت JSON با آدرس کامل عکس"""
+    image_full_url = None
+    if product.image_path:
+        try:
+            # 'api.uploaded_file' به تابع uploaded_file در همین بلوپرینت (api) اشاره دارد
+            image_full_url = url_for('api.uploaded_file', filename=product.image_path, _external=True)
+        except Exception as e:
+            current_app.logger.error(f"Error creating URL for image {product.image_path}: {e}")
+            image_full_url = None # در صورت خطا، آدرس خالی برگردان
+
     return {
         'id': product.id,
         'name': product.name,
@@ -50,7 +60,7 @@ def format_product(product):
         'price': product.price,
         'category_id': product.category_id,
         'category_name': product.category.name if product.category else None,
-        'image_path': product.image_path,
+        'image_url': image_full_url,  # <<<< کلید به image_url تغییر کرد
         'status': product.status,
         'views': product.views,
         'user_id': product.user_id,
@@ -64,7 +74,6 @@ def format_product(product):
         'is_promoted': product.is_promoted,
         'expires_at': product.expires_at.isoformat() if product.expires_at else None
     }
-
 def format_category(category):
     """تبدیل دسته‌بندی به فرمت JSON"""
     return {
@@ -130,7 +139,7 @@ def save_image(file, upload_folder='static/uploads'):
     file.save(filepath)
     
     # بازگرداندن مسیر نسبی
-    return os.path.join('uploads', unique_filename)
+    return unique_filename
 
 def send_verification_code(phone, code):
     """ارسال کد تایید به شماره موبایل"""
@@ -1990,20 +1999,55 @@ def api_products():
         'products': [format_product(product) for product in products]
     })
 
-@bp.route('/api/product/<int:product_id>')
+# all_in_one_routes.py
+
+# در فایل all_in_one_routes.py
+
+# در فایل all_in_one_routes.py
+
+@bp.route('/product/<int:product_id>')
 def api_product_detail(product_id):
-    user_id = get_jwt_identity() # 1. هویت (ID) را از توکن می‌گیریم
-    user = User.query.get(user_id) # 2. کاربر را از دیتابیس پیدا می‌کنیم
-    """API برای دریافت جزئیات محصول"""
+    """API نهایی با قابلیت ارسال لیست عکس‌ها"""
     product = Product.query.get_or_404(product_id)
     
-    # افزایش تعداد بازدید
-    if not user.is_authenticated or user.id != product.user_id:
+    # افزایش بازدید
+    try:
         product.views += 1
         db.session.commit()
-    
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error increasing view count for product {product_id}: {e}")
+
+    # <<<< شروع تغییر برای چند عکسی >>>>
+    # ساخت لیست URL های کامل برای همه عکس‌ها
+    image_urls = []
+    if product.images:
+        for img in product.images:
+            try:
+                # 'api.uploaded_file' به تابع uploaded_file در همین بلوپرینت اشاره دارد
+                image_urls.append(url_for('api.uploaded_file', filename=img.image_path, _external=True))
+            except Exception:
+                # اگر خطایی در ساخت URL رخ داد، آن عکس را نادیده بگیر
+                pass
+    elif product.image_path:
+        # برای محصولاتی که فقط یک عکس اصلی دارند (سیستم قدیمی)
+        image_urls.append(url_for('api.uploaded_file', filename=product.image_path, _external=True))
+    # <<<< پایان تغییر برای چند عکسی >>>>
+
     return jsonify({
-        'status': 'success',
-        'product': format_product(product),
-        'seller': format_user(product.owner) if product.owner else None
+        "id": product.id,
+        "name": product.name,
+        "description": product.description,
+        "price": product.price,
+        "address": product.address,
+        "views": product.views,
+        "created_at": product.created_at.isoformat() if product.created_at else None,
+        
+        # <<<< تغییر اصلی: ارسال لیست عکس‌ها >>>>
+        "images": image_urls, # قبلا فقط یک عکس بود
+        
+        "user": {
+            "id": product.owner.id,
+            "phone": product.owner.phone
+        } if product.owner else None
     })

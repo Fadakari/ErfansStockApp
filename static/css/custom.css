@@ -1195,6 +1195,7 @@ body.is-loading #page-refresh-loader {
     height: auto;
     color: var(--txt-color); /* استفاده از رنگ متن تم شما */
     text-decoration: none;
+    border-radius: 0.75rem;
 }
 .divar-card-horizontal-link:hover {
     background-color: #2c2c2e; /* کمی روشن‌تر هنگام هاور */
@@ -1207,7 +1208,7 @@ body.is-loading #page-refresh-loader {
     object-fit: cover;
     flex-shrink: 0;
     margin: 5px; /* ایجاد فاصله از لبه‌های کارت */
-    border-radius: 4px;
+    border-radius: 0.75rem;
 }
 
 /* بخش بدنه (محتوای متنی) */

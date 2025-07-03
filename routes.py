@@ -403,7 +403,6 @@ def login_with_phone():
     if request.method == 'POST':
         phone = request.form.get('phone', '').strip()
 
-        # Basic validation for the phone number format
         if not re.match(r'^09\d{9}$', phone):
             flash('شماره تماس نامعتبر است. باید با 09 شروع شده و 11 رقم باشد.', 'danger')
             return redirect(url_for('main.login_with_phone'))
@@ -411,68 +410,109 @@ def login_with_phone():
         user = User.query.filter_by(phone=phone).first()
 
         if user:
-            # User exists, send OTP and redirect to the existing verification page
             otp = random.randint(1000, 9999)
             session['otp_code'] = otp
             session['user_id'] = user.id
+            # ----> شروع تغییر
+            # زمان انقضا را برای ۱ دقیقه دیگر تنظیم کن
+            session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=1)).timestamp()
+            # <---- پایان تغییر
             send_verification_code(user.phone, otp)
             
-            flash('کد تایید برای شما ارسال شد.', 'info')
-            # We reuse the existing verify_login route and template
+            # ----> شروع تغییر
+            flash('کد تایید برای شما ارسال شد. این کد به مدت ۱ دقیقه معتبر است.', 'info')
+            # <---- پایان تغییر
             return redirect(url_for('main.verify_login'))
         else:
-            # User does not exist, redirect to the standard signup page
             flash('این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت نام کنید.', 'warning')
             return redirect(url_for('main.signup'))
 
-    # For GET requests, show the phone number entry form
     return render_template('login_phone.html')
-
-
 
 
 @limiter.limit("5 per minute")
 @bp.route('/verify_login', methods=['GET', 'POST'])
 def verify_login():
+    # ----> شروع تغییر
+    # اگر کاربر فرآیند ورود را شروع نکرده، او را به صفحه ورود هدایت کن
+    if 'user_id' not in session:
+        flash('جلسه شما نامعتبر است. لطفا از ابتدا وارد شوید.', 'warning')
+        return redirect(url_for('main.login_with_phone'))
+
     if request.method == 'POST':
         entered_code = request.form.get('code')
         user_id = session.get('user_id')
         otp_code = session.get('otp_code')
+        otp_expiry = session.get('otp_expiry')
 
-        if not user_id or not otp_code:
+        if not user_id or not otp_code or not otp_expiry:
             flash('اطلاعات جلسه ناقص است. لطفاً دوباره وارد شوید.', 'danger')
-            current_app.logger.warning("Session data missing during login verification.")
-            return redirect(url_for('main.login'))
+            return redirect(url_for('main.login_with_phone'))
+        
+        # بررسی انقضای کد
+        if datetime.utcnow().timestamp() > otp_expiry:
+            flash('کد تایید منقضی شده است. لطفاً کد جدید درخواست کنید.', 'danger')
+            return redirect(url_for('main.verify_login'))
 
         user = User.query.get(user_id)
-
         if not user:
             flash('کاربر یافت نشد.', 'danger')
-            current_app.logger.warning(f"No user found with ID {user_id}")
-            return redirect(url_for('main.login'))
+            return redirect(url_for('main.login_with_phone'))
 
-        # شماره‌های سفید که تاییدیه لازم ندارند:
-        whitelist_phones = ['09123456789']  # این رو با شماره‌های موردنظر خودت عوض کن
-
-        if user.phone in whitelist_phones:
-            current_app.logger.info(f"User {user.phone} is in whitelist, bypassing OTP.")
-        elif entered_code != str(otp_code):
+        whitelist_phones = ['09123456789']
+        
+        # بررسی صحت کد
+        if user.phone in whitelist_phones or entered_code == str(otp_code):
+            login_user(user, remember=True)
+            # پاک کردن همه اطلاعات از session
+            session.pop('otp_code', None)
+            session.pop('user_id', None)
+            session.pop('otp_expiry', None)
+            flash('ورود با موفقیت انجام شد!', 'success')
+            return redirect(url_for('main.index'))
+        else:
             flash('کد وارد شده اشتباه است!', 'danger')
-            current_app.logger.warning(f"Invalid OTP entered for user {user.phone}. Expected {otp_code}, got {entered_code}")
-            return render_template('verify_login.html')
+            # در صورت اشتباه بودن کد، صفحه دوباره رندر می‌شود و تایمر ادامه می‌یابد
+    
+    # این بخش هم برای درخواست GET و هم بعد از تلاش ناموفق POST اجرا می‌شود
+    time_left = 0
+    otp_expiry = session.get('otp_expiry')
+    if otp_expiry:
+        # محاسبه ثانیه‌های باقی‌مانده
+        time_left = max(0, int(otp_expiry - datetime.utcnow().timestamp()))
 
-        # لاگین موفق
-        login_user(user, remember=True)
-        current_app.logger.info(f"User {user.phone} logged in successfully.")
+    return render_template('verify_login.html', time_left=time_left)
+    # <---- پایان تغییر
 
-        # پاک کردن سشن‌ها
-        session.pop('otp_code', None)
-        session.pop('user_id', None)
 
-        flash('ورود با موفقیت انجام شد!', 'success')
-        return redirect(url_for('main.index'))
+# ----> شروع بخش جدید
+# روت جدید برای ارسال مجدد کد
+@bp.route('/resend-login-otp')
+@limiter.limit("2 per minute") # برای جلوگیری از اسپم، ارسال مجدد را محدود کن
+def resend_login_otp():
+    """
+    یک کد تایید جدید برای کاربری که در حال ورود است ارسال می‌کند.
+    """
+    if 'user_id' not in session:
+        flash('جلسه شما نامعتبر است. لطفاً از ابتدا شروع کنید.', 'danger')
+        return redirect(url_for('main.login_with_phone'))
 
-    return render_template('verify_login.html')
+    user = User.query.get(session['user_id'])
+
+    if not user:
+        flash('کاربر یافت نشد.', 'danger')
+        session.clear()
+        return redirect(url_for('main.login_with_phone'))
+
+    # تولید و ارسال کد جدید
+    otp = random.randint(1000, 9999)
+    session['otp_code'] = otp
+    session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=1)).timestamp()
+    send_verification_code(user.phone, str(otp))
+
+    flash('کد تایید جدید برای شما ارسال شد.', 'info')
+    return redirect(url_for('main.verify_login'))
+
 
 
 
@@ -577,6 +617,8 @@ def dashboard():
 
     can_promote = len(products) >= 5
 
+    blocked_products = [p for p in products if p.status == 'blocked']
+
     
     return render_template(
         'dashboard.html', 
@@ -588,7 +630,8 @@ def dashboard():
         unpaid_product_ids=unpaid_product_ids,
         can_promote=can_promote,
         now=datetime.utcnow(),
-        saved_products=saved_products
+        saved_products=saved_products,
+        blocked_products=blocked_products
     )
 
 
@@ -1530,7 +1573,41 @@ def admin_dashboard():
     categories = Category.query.all()
     reports = Report.query.order_by(Report.created_at.desc()).all()
 
-    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users)
+    highly_reported_products = db.session.query(
+        Product,
+        func.count(Report.id).label('report_count')
+    ).join(Report, Product.id == Report.product_id).group_by(Product.id).having(func.count(Report.id) >= 3).order_by(func.count(Report.id).desc()).all()
+
+    logging.warning(f"محصولات گزارش شده یافت شده: {highly_reported_products}")
+
+    blocked_products = Product.query.filter_by(status='blocked').order_by(Product.updated_at.desc()).all()
+
+    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users, highly_reported_products=highly_reported_products, blocked_products=blocked_products)
+
+
+
+@bp.route("/admin/search_blocked_products")
+@login_required
+def search_blocked_products():
+    if not current_user.is_admin:
+        return jsonify(error="Unauthorized"), 403
+
+    query_term = request.args.get('q', '').strip()
+    
+    query = Product.query.filter_by(status='blocked')
+    
+    if query_term:
+        # جستجو در نام، توضیحات و حتی نام کاربری مالک محصول
+        query = query.join(User).filter(
+            Product.name.ilike(f'%{query_term}%') |
+            Product.description.ilike(f'%{query_term}%') |
+            User.username.ilike(f'%{query_term}%')
+        )
+    
+    products = query.order_by(Product.updated_at.desc()).all()
+    
+    # به جای رندر کامل صفحه، فقط بخش لیست محصولات را برمی‌گردانیم
+    return render_template('_blocked_products_list.html', products=products)
 
 
 
@@ -1547,6 +1624,41 @@ def approve_product(product_id):
 
     flash("محصول با موفقیت تأیید شد", "success")
     return redirect(url_for("main.admin_dashboard"))
+
+
+
+@bp.route("/admin/block_product/<int:product_id>", methods=["POST"])
+@login_required
+def block_product(product_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید", "danger")
+        return redirect(url_for('main.index'))
+
+    product = Product.query.get_or_404(product_id)
+    product.status = 'blocked'  # تغییر وضعیت به 'blocked'
+    db.session.commit()
+    
+    flash(f"محصول '{product.name}' با موفقیت مسدود شد.", "warning")
+    return redirect(url_for('main.product_detail', product_id=product_id))
+
+
+# روت برای رفع مسدودیت محصول توسط ادمین
+@bp.route("/admin/unblock_product/<int:product_id>", methods=["POST"])
+@login_required
+def unblock_product(product_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید", "danger")
+        return redirect(url_for('main.index'))
+
+    product = Product.query.get_or_404(product_id)
+    # شما می‌توانید انتخاب کنید که محصول به حالت 'published' یا 'pending' برگردد.
+    # در اینجا به حالت 'منتشر شده' برمی‌گردانیم.
+    product.status = 'published'
+    db.session.commit()
+    
+    flash(f"محصول '{product.name}' با موفقیت از حالت مسدود خارج و منتشر شد.", "success")
+    return redirect(url_for('main.product_detail', product_id=product_id))
+
 
 
 
@@ -2338,6 +2450,70 @@ def chatbot_ajax():
 
 
 
+@bp.before_request
+def before_request_handler():
+    # --- بررسی وضعیت مسدودی کاربر ---
+    if current_user.is_authenticated and getattr(current_user, 'is_banned', False):
+        # اگر کاربر مسدود بود، فقط به صفحه مسدودیت، لاگ‌اوت و فایل‌های استاتیک دسترسی دارد
+        # این کار برای جلوگیری از حلقه ریدایرکت بی‌نهایت ضروری است
+        if request.endpoint and request.endpoint not in ['main.banned', 'main.logout', 'static']:
+            return redirect(url_for('main.banned'))
+
+    # --- بخش ردیابی کاربران آنلاین (کد قبلی شما) ---
+    session.permanent = True
+    session.modified = True
+    session_id = session.get('id')
+    if not session_id:
+        session['id'] = str(datetime.utcnow().timestamp())
+    active_sessions[session['id']] = datetime.utcnow()
+
+
+# روت برای نمایش صفحه مسدود شده
+@bp.route("/banned")
+@login_required
+def banned():
+    # اگر کاربری که مسدود نیست به این صفحه بیاید، او را به صفحه اصلی هدایت کن
+    if not current_user.is_banned:
+        return redirect(url_for('main.index'))
+    return render_template('banned.html')
+
+
+# روت برای مسدود کردن کاربر
+@bp.route("/admin/ban_user/<int:user_id>", methods=["POST"])
+@login_required
+def ban_user(user_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید", "danger")
+        return redirect(url_for('main.admin_dashboard'))
+
+    user_to_ban = User.query.get_or_404(user_id)
+    
+    if user_to_ban.is_admin:
+        flash("شما نمی‌توانید یک ادمین را مسدود کنید.", "danger")
+        return redirect(url_for('main.admin_dashboard'))
+
+    user_to_ban.is_banned = True
+    user_to_ban.ban_reason = "انتشار محتوای نامناسب"  # می‌توانید این دلیل را داینامیک کنید
+    db.session.commit()
+    flash(f"کاربر '{user_to_ban.username}' با موفقیت مسدود شد.", "success")
+    return redirect(url_for('main.admin_dashboard'))
+
+
+# روت برای رفع مسدودیت کاربر
+@bp.route("/admin/unban_user/<int:user_id>", methods=["POST"])
+@login_required
+def unban_user(user_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی لازم برای این کار را ندارید", "danger")
+        return redirect(url_for('main.admin_dashboard'))
+
+    user_to_unban = User.query.get_or_404(user_id)
+    user_to_unban.is_banned = False
+    user_to_unban.ban_reason = None
+    db.session.commit()
+    flash(f"کاربر '{user_to_unban.username}' با موفقیت از مسدودیت خارج شد.", "success")
+    return redirect(url_for('main.admin_dashboard'))
+
 
 # @bp.route('/api/search_by_image_ajax', methods=['POST'])
 # @login_required
@@ -2873,38 +3049,38 @@ def uploaded_file(filename):
     return send_from_directory('/var/www/myproject2/static/uploads', filename)
 
 
-@bp.route('/api/product/<int:product_id>')
-@limiter.limit("5 per minute")
-def api_product_detail(product_id):
-    try:
-        product = Product.query.get_or_404(product_id)
-        user = User.query.get(product.user_id)
-        category = Category.query.get(product.category_id)
+# @bp.route('/api/product/<int:product_id>')
+# @limiter.limit("5 per minute")
+# def api_product_detail(product_id):
+#     try:
+#         product = Product.query.get_or_404(product_id)
+#         user = User.query.get(product.user_id)
+#         category = Category.query.get(product.category_id)
 
-        return jsonify({
-            "id": product.id,
-            "name": product.name,
-            "description": product.description,
-            "price": product.price,
-            "address": product.address,
-            "postal_code": product.postal_code,
-            "views": product.views,
-            "created_at": product.created_at.isoformat() if product.created_at else None,
-            "promoted_until": product.promoted_until.isoformat() if product.promoted_until else None,
-            "status": product.status,
-            "product_type": str(product.product_type) if product.product_type else None,
-            "category": category.name if category else None,
-            "user": {
-                "id": user.id,
-                "phone": user.phone
-            } if user else None,
-            "image_url": url_for('main.uploaded_file', filename=product.image_path, _external=True)
-        })
+#         return jsonify({
+#             "id": product.id,
+#             "name": product.name,
+#             "description": product.description,
+#             "price": product.price,
+#             "address": product.address,
+#             "postal_code": product.postal_code,
+#             "views": product.views,
+#             "created_at": product.created_at.isoformat() if product.created_at else None,
+#             "promoted_until": product.promoted_until.isoformat() if product.promoted_until else None,
+#             "status": product.status,
+#             "product_type": str(product.product_type) if product.product_type else None,
+#             "category": category.name if category else None,
+#             "user": {
+#                 "id": user.id,
+#                 "phone": user.phone
+#             } if user else None,
+#             "image_url": url_for('main.uploaded_file', filename=product.image_path, _external=True)
+#         })
     
-    except Exception as e:
-        print(f"Error in api_product_detail: {e}")
-        traceback.print_exc()
-        return jsonify({"error": "Internal server error"}), 500
+#     except Exception as e:
+#         print(f"Error in api_product_detail: {e}")
+#         traceback.print_exc()
+#         return jsonify({"error": "Internal server error"}), 500
 
 
 @bp.route('/api/report_violation/<int:product_id>', methods=['POST'])

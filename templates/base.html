@@ -201,7 +201,7 @@
 
                 <form class="d-lg-flex d-md-none d-sm-none w-100" action="{{ url_for('main.index') }}" method="GET">
                     <div class="d-flex w-75 m-auto gap-2 align-items-center">
-                        <div class="dropdown w-25">
+                        <!-- <div class="dropdown w-25">
                             <button class="btn dropdown-toggle w-100 p-2 txt-black chooser" type="button"
                                     id="provinceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span>انتخاب استان</span>
@@ -230,11 +230,23 @@
                                 <li><a class="dropdown-item txt-black" href="#" onclick="selectCity('desktop', '')">انتخاب شهر</a></li>
                             </ul>
                             <input type="hidden" name="city_search" id="cityInput" value="{{ request.args.get('city_search', '') }}">
-                        </div>
+                        </div> -->
                     
                         <div class="input-group w-75 me-2 d-flex flex-nowrap">
-                            <input id="search-input-desktop" class="inputs txt-black mt-2 rounded-2 h-75" type="search" placeholder="جستجو..." name="search"
+                            <input id="search-input-desktop" class="inputs txt-black mt-2 rounded-3 h-75" type="search" placeholder="نام محصول، برند و آدرس مورد نظر را جست و جو کنید..." name="search"
                                 value="{{ request.args.get('search', '') }}">
+                                <!-- <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg rounded-2 w-25 pt-2" id="floatingChatButton1" title="چت با هوش مصنوعی">
+                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <defs>
+                                        <linearGradient id="sparkleGrad" x1="0" y1="0" x2="1" y2="1">
+                                          <stop offset="0%" stop-color="#4facfe"/>
+                                          <stop offset="100%" stop-color="#8e2de2"/>
+                                        </linearGradient>
+                                      </defs>
+                                      <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"
+                                            fill="url(#sparkleGrad)"/>
+                                    </svg>
+                                  </a> -->
                         </div>
                     </div>
                 </form>

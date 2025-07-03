@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
 <style>
 /* ظاهر تصویر در لیست برندها */
 .logo-image {
@@ -200,6 +201,26 @@
         </div>
     </div>
 </div>
+
+</div>
+    </div>
+</div>
+
+<div id="cropper-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
+    <div style="background-color: #1e1e1e; color: white; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; text-align: center;">
+        <h4 style="margin-bottom: 20px;">برش تصویر (نسبت 1x1)</h4>
+        
+        <div>
+            <img id="image-to-be-cropped" style="max-width: 100%;">
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button id="crop-and-upload-btn" class="btn btn-success py-2 px-4">برش و آپلود</button>
+            <button id="cancel-crop-btn" class="btn btn-secondary py-2 px-4">انصراف</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -407,161 +428,180 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const hiddenInput = document.getElementById('uploaded_image_paths');
-    if (hiddenInput.value) {
-        const existingPaths = hiddenInput.value.split(',');
-        existingPaths.forEach(path => {
-            if (path) addPreview(path);
-        });
-    }
-});
-
-function handleFileSelect(input) {
-    const files = input.files;
-    if (!files || files.length === 0) {
-        alert("هیچ فایلی انتخاب نشده.");
-        return;
-    }
-
-    const previewContainer = document.getElementById('image-previews');
-    const existingImagesCount = previewContainer.querySelectorAll('div[data-filename]').length;
-
-    if (files.length + existingImagesCount > 3) {
-        alert("شما حداکثر می‌توانید ۳ تصویر انتخاب کنید.");
-        input.value = '';
-        return;
-    }
-
-    for (const file of files) {
-        if (file && file.type.startsWith('image/')) {
-            compressAndUpload(file);
-        }
-    }
-
-    input.value = '';
-}
-
-function compressAndUpload(file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-            const MAX_WIDTH = 1000;
-            const MAX_HEIGHT = 1000;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height && width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-            } else if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob(function(blob) {
-                const formData = new FormData();
-                formData.append('image', blob, file.name);
-                uploadToServer(formData);
-            }, 'image/jpeg', 0.8);
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-function uploadToServer(formData) {
-    const progressContainer = document.getElementById("uploadProgress");
-    const progressBar = document.getElementById("uploadProgressBar");
+    // --- متغیرهای مربوط به آپلود و برش ---
+    const fileInput = document.getElementById('image');
+    const imagePreviews = document.getElementById('image-previews');
+    const uploadedImagePathsInput = document.getElementById('uploaded_image_paths');
     const submitBtn = document.getElementById("submitBtn");
-    if (submitBtn) submitBtn.disabled = true;
 
-    progressContainer.style.display = "block";
-    progressBar.style.width = "0%";
-    progressBar.innerText = "0%";
+    // --- متغیرهای مربوط به Modal و Cropper ---
+    const cropperModal = document.getElementById('cropper-modal');
+    const imageToBeCropped = document.getElementById('image-to-be-cropped');
+    const cropAndUploadBtn = document.getElementById('crop-and-upload-btn');
+    const cancelCropBtn = document.getElementById('cancel-crop-btn');
+    let cropper = null;
+    let originalFile = null; // برای نگهداری فایل اصلی جهت استفاده از نام آن
 
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener("progress", function(e) {
-        if (e.lengthComputable) {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            progressBar.style.width = percent + "%";
-            progressBar.innerText = percent + "%";
+    // بازگردانی پیش‌نمایش‌های موجود در حالت ویرایش
+    if (uploadedImagePathsInput.value) {
+        const existingPaths = uploadedImagePathsInput.value.split(',').filter(p => p);
+        existingPaths.forEach(path => addPreview(path));
+    }
+
+    // --- تابع اصلی که با انتخاب فایل فراخوانی می‌شود ---
+    window.handleFileSelect = function(input) {
+        if (!input.files || input.files.length === 0) return;
+
+        const existingImagesCount = imagePreviews.querySelectorAll('div[data-filename]').length;
+        if (input.files.length + existingImagesCount > 3) {
+            alert("شما حداکثر می‌توانید ۳ تصویر انتخاب کنید.");
+            input.value = '';
+            return;
+        }
+
+        // فقط اولین فایل انتخاب شده را برای برش باز می‌کنیم
+        originalFile = input.files[0]; 
+        
+        if (originalFile && originalFile.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageToBeCropped.src = e.target.result;
+                cropperModal.style.display = 'block';
+
+                if (cropper) {
+                    cropper.destroy();
+                }
+
+                // مقداردهی اولیه Cropper با نسبت مربعی
+                cropper = new Cropper(imageToBeCropped, {
+                    aspectRatio: 1 / 1,
+                    viewMode: 1,
+                    background: false,
+                    autoCropArea: 0.8,
+                });
+            };
+            reader.readAsDataURL(originalFile);
+        }
+        input.value = ''; // ورودی را خالی می‌کنیم تا برای انتخاب بعدی آماده باشد
+    };
+
+    // --- رویداد کلیک دکمه "برش و آپلود" ---
+    cropAndUploadBtn.addEventListener('click', function() {
+        if (!cropper) return;
+
+        // دریافت تصویر برش خورده با کیفیت مناسب
+        const canvas = cropper.getCroppedCanvas({
+            width: 800,
+            height: 800,
+            imageSmoothingQuality: 'high',
+        });
+
+        canvas.toBlob(function(blob) {
+            const formData = new FormData();
+            // فایل blob برش خورده را با نام فایل اصلی ارسال می‌کنیم
+            formData.append('image', blob, originalFile.name);
+            uploadToServer(formData); // تابع آپلود موجود شما را فراخوانی می‌کنیم
+
+        }, 'image/jpeg', 0.85); // فشرده‌سازی با کیفیت ۸۵٪
+
+        // بستن Modal و پاکسازی
+        cropperModal.style.display = 'none';
+        cropper.destroy();
+        cropper = null;
+    });
+
+    // --- رویداد کلیک دکمه "انصراف" ---
+    cancelCropBtn.addEventListener('click', function() {
+        cropperModal.style.display = 'none';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
         }
     });
 
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-            progressContainer.style.display = "none";
-            if (submitBtn) submitBtn.disabled = false;
+    // --- تابع آپلود به سرور (بدون تغییر باقی می‌ماند) ---
+    function uploadToServer(formData) {
+        const progressContainer = document.getElementById("uploadProgress");
+        const progressBar = document.getElementById("uploadProgressBar");
+        if (submitBtn) submitBtn.disabled = true;
 
-            if (xhr.status === 200) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.image_path) {
-                        addPreview(data.image_path);
-                        updateHiddenInput();
-                        console.log("✅ آپلود موفق:", data.image_path);
-                    } else {
-                        alert("❌ پاسخ نامعتبر از سرور");
-                    }
-                } catch (err) {
-                    alert("❌ خطا در تجزیه پاسخ سرور");
-                }
-            } else {
-                alert("❌ ارتباط با سرور برقرار نشد");
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+        progressBar.innerText = "0%";
+
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + "%";
+                progressBar.innerText = percent + "%";
             }
-        }
-    };
+        });
 
-    xhr.open("POST", "/upload-image", true);
-    xhr.send(formData);
-}
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                progressContainer.style.display = "none";
+                if (submitBtn) submitBtn.disabled = false;
 
-function addPreview(imagePath) {
-    const previewContainer = document.getElementById('image-previews');
-    const wrapper = document.createElement('div');
-    wrapper.className = 'm-1 position-relative';
-    wrapper.setAttribute('data-filename', imagePath);
+                if (xhr.status === 200) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data.image_path) {
+                            addPreview(data.image_path);
+                            updateHiddenInput();
+                        } else {
+                            alert("پاسخ نامعتبر از سرور");
+                        }
+                    } catch (err) {
+                        alert("خطا در تجزیه پاسخ سرور");
+                    }
+                } else {
+                    alert("ارتباط با سرور برقرار نشد. وضعیت: " + xhr.status);
+                }
+            }
+        };
 
-    const img = document.createElement('img');
-    img.src = `/static/uploads/${imagePath}`;
-    img.className = 'img-thumbnail';
-    img.style.height = '150px';
-    img.style.width = 'auto';
-
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
-    removeBtn.innerHTML = '&times;';
-    removeBtn.onclick = function() {
-        removePreview(removeBtn);
-    };
-
-    wrapper.appendChild(img);
-    wrapper.appendChild(removeBtn);
-    previewContainer.appendChild(wrapper);
-}
-
-function removePreview(buttonElement) {
-    const wrapper = buttonElement.parentElement;
-    if (wrapper) {
-        wrapper.remove();
-        updateHiddenInput();
+        xhr.open("POST", "/upload-image", true);
+        xhr.send(formData);
     }
-}
+    
+    // --- توابع کمکی (بدون تغییر باقی می‌مانند) ---
+    function addPreview(imagePath) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'm-1 position-relative';
+        wrapper.setAttribute('data-filename', imagePath);
 
-function updateHiddenInput() {
-    const previewContainer = document.getElementById('image-previews');
-    const images = previewContainer.querySelectorAll('div[data-filename]');
-    const paths = Array.from(images).map(div => div.getAttribute('data-filename'));
-    document.getElementById('uploaded_image_paths').value = paths.join(',');
-}
+        const img = document.createElement('img');
+        img.src = `/static/uploads/${imagePath}`;
+        img.className = 'img-thumbnail';
+        img.style.height = '150px';
+        img.style.width = 'auto';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = function() { removePreview(removeBtn); };
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(removeBtn);
+        imagePreviews.appendChild(wrapper);
+    }
+
+    window.removePreview = function(buttonElement) {
+        const wrapper = buttonElement.parentElement;
+        if (wrapper) {
+            wrapper.remove();
+            updateHiddenInput();
+        }
+    }
+
+    function updateHiddenInput() {
+        const images = imagePreviews.querySelectorAll('div[data-filename]');
+        const paths = Array.from(images).map(div => div.getAttribute('data-filename'));
+        uploadedImagePathsInput.value = paths.join(',');
+    }
+});
 </script>
 <script>
     const toEnglishDigits = (str) => str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
@@ -1142,5 +1182,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 </script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 {% endblock %}

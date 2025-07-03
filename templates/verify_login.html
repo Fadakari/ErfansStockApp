@@ -21,42 +21,90 @@
                         تایید
                     </button>
                 </form>
+                <div id="timer-container" class="text-center mt-3 txt-black" style="display: none;">
+                    <span id="timer"></span> ثانیه تا انقضای کد
+                </div>
+                <div id="resend-container" class="text-center mt-3" style="display: none;">
+                    <a href="{{ url_for('main.resend_login_otp') }}" class="btn btn-link txt-black">ارسال مجدد کد</a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const inputs = document.querySelectorAll(".otp-input");
-    const hiddenInput = document.getElementById("otp-hidden");
-    const form = document.getElementById("otp-form");
-    const submitButton = document.getElementById("submit-btn");
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputs = document.querySelectorAll(".otp-input");
+        const hiddenInput = document.getElementById("otp-hidden");
+        const form = document.getElementById("otp-form");
+        const submitButton = document.getElementById("submit-btn");
 
-    inputs.forEach((input, index) => {
-        input.addEventListener("input", () => {
-            input.value = input.value.replace(/[^0-9]/g, "");
+        const timerElement = document.getElementById("timer");
+        const timerContainer = document.getElementById("timer-container");
+        const resendContainer = document.getElementById("resend-container");
 
-            if (input.value && index < inputs.length - 1) {
-                inputs[index + 1].focus();
-            }
+        // دریافت زمان باقی‌مانده از قالب Flask
+        let timeLeft = {{ time_left|default(0) }};
 
-            const code = Array.from(inputs).map(i => i.value).join('');
-            if (code.length === 4) {
-                hiddenInput.value = code;
-                // نمایش اسپینر
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
-                form.submit();
-            }
+        if (timeLeft > 0) {
+            // اگر زمان باقی بود، تایمر را نمایش بده
+            timerContainer.style.display = 'block';
+            timerElement.textContent = timeLeft;
+            
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    // پس از اتمام زمان، تایمر را متوقف و مخفی کن
+                    clearInterval(countdown);
+                    timerContainer.style.display = 'none';
+                    resendContainer.style.display = 'block';
+                    // فرم را غیرفعال کن
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = 'کد منقضی شده است';
+                    inputs.forEach(input => input.disabled = true);
+                }
+            }, 1000);
+        } else {
+            // اگر از ابتدا زمانی باقی نبود، لینک ارسال مجدد را نشان بده
+            resendContainer.style.display = 'block';
+            submitButton.disabled = true;
+            submitButton.innerHTML = 'کد منقضی شده است';
+            inputs.forEach(input => input.disabled = true);
+        }
+
+        // منطق قبلی برای مدیریت اینپوت‌های OTP
+        inputs.forEach((input, index) => {
+            input.addEventListener("input", () => {
+                input.value = input.value.replace(/[^0-9]/g, "");
+
+                if (input.value && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+
+                const code = Array.from(inputs).map(i => i.value).join('');
+                if (code.length === 4) {
+                    hiddenInput.value = code;
+                    // فقط در صورتی فرم را ارسال کن که دکمه فعال باشد
+                    if (!submitButton.disabled) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
+                        form.submit();
+                    }
+                }
+            });
+
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Backspace" && !input.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
         });
-
-        input.addEventListener("keydown", (e) => {
-            if (e.key === "Backspace" && !input.value && index > 0) {
-                inputs[index - 1].focus();
-            }
-        });
+        
+        // اگر فرم فعال بود، روی اولین اینپوت فوکوس کن
+        if (!submitButton.disabled) {
+            inputs[0].focus();
+        }
     });
-
-    inputs[0].focus();
 </script>
 {% endblock %}

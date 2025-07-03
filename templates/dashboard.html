@@ -375,11 +375,47 @@
                         <i class="bi bi-arrow-left fs-3" style="color: var(--text-color);"></i>
                     </a>
             </button> -->
-            <div id="home-content" class="tab-pane active">
+            <div id="home-content" class="tab-pane active mb-5 pb-5">
                 <h2 class="mb-4">داشبورد</h2>
                 <div class="row g-4">
+                    <div class="col-md-6 col-lg-3">
+
+                        {% if blocked_products %}
+                            <div class="card p-3 h-100 bg-danger bg-opacity-10">
+                                <a href="#" class="text-decoration-none stretched-link" data-tab-target="#products-content" onclick="document.querySelector('.nav-link[data-tab-target=\'#products-content\']').click(); return false;">
+                                    <div class="d-flex align-items-center">
+                                        <div class="p-3 text-danger">
+                                            <i class="bi bi-exclamation-octagon-fill fs-2"></i>
+                                        </div>
+                                        <div class="me-3">
+                                            {% if blocked_products|length == 1 %}
+                                                <h6 class="mb-1 text-danger">محصول زیر مسدود شده:</h6>
+                                                <h5 class="mb-0 text-danger" style="color: var(--text-color); font-size: 1rem;">"{{ blocked_products[0].name }}"</h5>
+                                            {% else %}
+                                                <h6 class="mb-1 text-danger">محصولات مسدود شده</h6>
+                                                <h4 class="mb-0" style="color: var(--text-color);">{{ blocked_products|length }} مورد</h4>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="card p-3 h-100" onclick="document.querySelector('.nav-link[data-tab-target=\'#products-content\']').click(); return false;">
+                                <div class="d-flex align-items-center">
+                                    <div class="p-3 bg-success bg-opacity-10 text-success">
+                                        <i class="bi bi-check-circle-fill fs-2"></i>
+                                    </div>
+                                    <div class="me-3">
+                                        <h6 class="mb-1" style="color: var(--text-color);">وضعیت محصولات</h6>
+                                        <h4 class="mb-0" style="color: var(--text-color);">همگی فعال هستند</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                    </div>
                     <div class="col-md-6 col-lg-4">
-                        <div class="card p-3 h-100">
+                        <div class="card p-3 h-100" onclick="document.querySelector('.nav-link[data-tab-target=\'#products-content\']').click(); return false;">
                             <div class="d-flex align-items-center">
                                 <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 me-3">
                                     <i class="bi bi-box-seam-fill fs-2"></i>
@@ -473,12 +509,20 @@
                                         <span class="badge rounded-pill text-bg-success">منتشر شده</span>
                                     {% elif product.status == 'pending' %}
                                         <span class="badge rounded-pill text-bg-warning">در انتظار تایید</span>
-                                    {% elif product.status == 'awaiting_payment' %}
-                                         <span class="badge rounded-pill text-bg-info">آماده انتشار</span>
+                                     {% elif product.status == 'awaiting_payment' %}
+                                        <span class="badge rounded-pill text-bg-info">آماده انتشار</span>
+                                    {% elif product.status == 'blocked' %}
+                                        <span class="badge rounded-pill text-bg-danger">مسدود شده</span>
                                     {% else %}
                                         <span class="badge rounded-pill text-bg-secondary">{{ product.status }}</span>
                                     {% endif %}
                                 </div>
+                                {% if product.status == 'blocked' %}
+                                    <div class="alert alert-danger small p-2 mt-2">
+                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                                        این محصول به دلیل نقض قوانین مسدود شده است.
+                                    </div>
+                                {% endif %}
 
                                 {% set is_promoted = product.promoted_until and product.promoted_until > now %}
                                 {% if is_promoted %}
@@ -591,6 +635,14 @@
                     <span class="txt-black">محصولات من</span>
                 </a>
             </li>
+            {% if current_user.is_admin %}
+                <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('main.admin_dashboard') }}">
+                    <i class="bi  bi-kanban text-danger"></i>
+                    <span class="txt-black">مدیریت</span>
+                </a>
+            </li>
+            {% endif %}
         </ul>
 
          <div class="footer-links mt-auto">

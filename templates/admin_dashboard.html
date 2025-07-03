@@ -57,9 +57,36 @@
 <hr class="w-100 txt-black">
 
 
+{% if highly_reported_products %}
+<div class="my-4">
+    <h3 class="txt-black">⚠️ هشدارهای گزارش تخلف</h3>
+    {% for product, report_count in highly_reported_products %}
+        {% if report_count >= 5 %}
+            <div class="alert alert-danger d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-shield-fill-exclamation me-2"></i>
+                    <strong>خطر:</strong> محصول <strong>{{ product.name }}</strong> تعداد <strong>{{ report_count }}</strong> گزارش تخلف دریافت کرده است.
+                </div>
+                <a href="{{ url_for('main.product_detail', product_id=product.id) }}" target="_blank" class="btn btn-danger btn-sm">مشاهده محصول</a>
+            </div>
+        {% elif report_count >= 3 %}
+            <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>هشدار:</strong> محصول <strong>{{ product.name }}</strong> تعداد <strong>{{ report_count }}</strong> گزارش تخلف دریافت کرده است.
+                </div>
+                <a href="{{ url_for('main.product_detail', product_id=product.id) }}" target="_blank" class="btn btn-warning btn-sm">مشاهده محصول</a>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+<hr class="w-100 txt-black">
+{% endif %}
 
 
 <h3 class="txt-black">گزارش‌های تخلف</h3>
+
+
 <div class="table-responsive">
     <table class="table bg-black rounded-3 mb-5">
         <thead>
@@ -76,7 +103,7 @@
                 <td>{{ report.reporter.username }}</td>
                 <td><a href="{{ url_for('main.product_detail', product_id=report.product.id) }}" target="_blank">{{ report.product.name }}</a></td>
                 <td>{{ report.text }}</td>
-                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ report.created_at | jalali }}</td>
                 <td>
                     <form action="{{ url_for('main.delete_report', report_id=report.id) }}" method="post" onsubmit="return confirm('آیا از حذف این گزارش مطمئن هستید؟');">
                       <button type="submit" class="btn btn-danger btn-sm">🗑 حذف</button>
@@ -87,8 +114,47 @@
         </tbody>
     </table>
 </div>
+<hr class="w-100 txt-black">
 
 
+<div class="mb-3">
+    <input type="text" id="blocked-product-search" class="inputs flex-grow-1" placeholder="جستجو در نام محصول، توضیحات یا نام مالک...">
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="blocked-products-container">
+    {% include '_blocked_products_list.html' with context %}
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('blocked-product-search');
+    const container = document.getElementById('blocked-products-container');
+    let searchTimeout;
+
+    searchInput.addEventListener('keyup', function() {
+        // پاک کردن تایم‌اوت قبلی تا از ارسال درخواست‌های متعدد جلوگیری شود
+        clearTimeout(searchTimeout);
+        
+        const query = this.value;
+
+        // تنظیم یک تایم‌اوت جدید. درخواست فقط بعد از 500 میلی‌ثانیه توقف تایپ ارسال می‌شود.
+        searchTimeout = setTimeout(() => {
+            fetch(`/admin/search_blocked_products?q=${encodeURIComponent(query)}`)
+                .then(response => response.text())
+                .then(html => {
+                    container.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('خطا در جستجوی ایجکس:', error);
+                    container.innerHTML = '<p class="text-danger text-center">خطا در بارگذاری نتایج.</p>';
+                });
+        }, 500);
+    });
+});
+</script>
+
+<hr class="w-100 txt-black">
 
 <h3 class="txt-black">مدیریت کاربران</h3>
 <form method="GET" action="{{ url_for('main.admin_dashboard') }}" class="d-flex flex-wrap gap-2 mb-3">
@@ -111,6 +177,7 @@
                 <th class="text-end">کد ملی</th>
                 <th class="text-end">دسترسی ادمین</th>
                 <th class="text-end">عملیات</th>
+                <th class="text-end">مسدود/رفع انسداد</th>
             </tr>
         </thead>
         <tbody class="bg-very-black">
@@ -137,6 +204,18 @@
                     <form action="{{ url_for('main.delete_user', user_id=user.id) }}" method="POST">
                         <button type="submit" class="btn btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">حذف کاربر</button>
                     </form>
+                </td>
+                <td>
+                    {% if not user.is_admin %} {% if user.is_banned %}
+                            <form action="{{ url_for('main.unban_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success">رفع مسدودیت</button>
+                            </form>
+                        {% else %}
+                            <form action="{{ url_for('main.ban_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-warning">مسدود کردن</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

@@ -34,6 +34,8 @@ class User(UserMixin, db.Model):
     products = db.relationship('Product', back_populates='owner', lazy=True)
     is_admin = db.Column(db.Boolean, default=False)
     fcm_token = db.Column(db.String(255), nullable=True, unique=True)
+    is_banned = db.Column(db.Boolean, default=False, nullable=False)
+    ban_reason = db.Column(db.String(255), nullable=True)
     # اضافه کردن overlaps
 
     def set_password(self, password):

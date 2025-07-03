@@ -40,7 +40,11 @@
       </a>
     </div>
 </nav>
-
+<script>
+    const searchIn = document.getElementById('search-input-mobile');
+    const category = document.getElementById('categories-scroll-container-id');
+    
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const nav = document.querySelector('nav.rounder');
@@ -132,8 +136,8 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="categorys-container mt-4 w-75">
     
 
-<h2 class="mb-3 txt-black h5">دسته‌بندی‌ها</h2>
-<div class="categories-scroll-container" style="position: relative;">
+<h2 id="categories-title" class="mb-3 txt-black h5">دسته‌بندی‌ها</h2>
+<div id="categories-scroll-container-id" class="categories-scroll-container" style="position: relative;">
     <a href="{{ url_for('main.index') }}" class="category-item-divar animationshow txt-black mx-2">
         <svg class="svgclasses" viewBox="-15.6 -15.6 55.20 55.20" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(3.7200000000000006,3.7200000000000006), scale(0.69)"><path transform="translate(-15.6, -15.6), scale(1.725)" d="M16,28.42664321594768C19.924161769058184,28.598988733545987,24.23254837893754,29.75897553594664,27.276875818991314,27.276875818991314C30.487217392801302,24.65942153110994,32.10317109282902,20.05151544785429,31.24143879943424,16C30.46389620707689,12.34431035201177,25.92783500618298,11.357250222159013,23.321183546345157,8.678816453654845C20.63915943816806,5.9229344149680365,19.82813363662903,0.7042607560856797,16.000000000000004,0.3388404664066105C12.146664909996774,-0.028985466143498284,9.62678634994219,4.172603094131542,7.133606819334071,7.133606819334068C4.932269301079751,9.748006830226688,3.072730792777702,12.59212201678184,2.8132275409168663,15.999999999999998C2.5312715635553604,19.70273420697757,2.969445854390644,23.78124837983062,5.671990551268291,26.328009448731706C8.329826041795894,28.832638498027233,12.351496242004906,28.266404340580944,16,28.42664321594768" fill="#9B1B30" strokewidth="0"></path></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M22 22L2 22" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M2 11L6.06296 7.74968M22 11L13.8741 4.49931C12.7784 3.62279 11.2216 3.62279 10.1259 4.49931L9.34398 5.12486" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M15.5 5.5V3.5C15.5 3.22386 15.7239 3 16 3H18.5C18.7761 3 19 3.22386 19 3.5V8.5" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M4 22V9.5" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M20 9.5V13.5M20 22V17.5" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M15 22V17C15 15.5858 15 14.8787 14.5607 14.4393C14.1213 14 13.4142 14 12 14C10.5858 14 9.87868 14 9.43934 14.4393M9 22V17" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M14 9.5C14 10.6046 13.1046 11.5 12 11.5C10.8954 11.5 10 10.6046 10 9.5C10 8.39543 10.8954 7.5 12 7.5C13.1046 7.5 14 8.39543 14 9.5Z" stroke="#F1F1F1" stroke-width="0.9600000000000002"></path> </g></svg>
         <span class="category-name">همه آگهی‌ها</span>
@@ -639,6 +643,38 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // پیدا کردن تمام اِلِمان‌های مورد نیاز
+    const searchInput = document.getElementById('search-input-mobile');
+    const categoriesContainer = document.getElementById('categories-scroll-container-id');
+    const categoriesTitle = document.getElementById('categories-title'); // این خط جدید است
 
+    // اطمینان از وجود همه اِلِمان‌ها در صفحه
+    if (searchInput && categoriesContainer && categoriesTitle) {
+
+        // رویداد focus: زمانی که کاربر روی کادر جستجو کلیک می‌کند
+        searchInput.addEventListener('focus', function() {
+            categoriesContainer.style.display = 'none';
+            categoriesTitle.style.display = 'none'; // این خط جدید است
+        });
+
+        // رویداد input: زمانی که کاربر در کادر جستجو چیزی تایپ می‌کند
+        searchInput.addEventListener('input', function() {
+            categoriesContainer.style.display = 'none';
+            categoriesTitle.style.display = 'none'; // این خط جدید است
+        });
+
+        // رویداد blur: زمانی که کاربر از کادر جستجو خارج می‌شود
+        searchInput.addEventListener('blur', function() {
+            // اگر کادر جستجو خالی بود، هر دو عنصر را دوباره نمایش بده
+            if (searchInput.value.trim() === '') {
+                categoriesContainer.style.display = '';
+                categoriesTitle.style.display = ''; // این خط جدید است
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 

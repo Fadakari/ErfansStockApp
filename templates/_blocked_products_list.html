@@ -1,0 +1,28 @@
+{% for product in products %}
+<div class="col product-card-blocked">
+    <div class="card h-100 header-tabs text-black" style="background-color: var(--dark-green) !important;">
+    {% if product.image_path %}
+        <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
+        {% endif %}
+        <div class="card-body">
+            <h5 class="card-title txt-black">{{ product.name }}</h5>
+            <p class="card-text txt-black"><strong>مالک:</strong> {{ product.owner.username }}</p>
+            <p class="card-text txt-black"><strong>قیمت:</strong> {{ "{:,}".format(product.price | int) }} تومان</p>
+            <p class="txt-black small">آخرین بروزرسانی: {{ product.updated_at.strftime('%Y-%m-%d') }}</p>
+
+            <form method="POST" action="{{ url_for('main.unblock_product', product_id=product.id) }}" class="mt-2">
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="bi bi-check-circle-fill me-2"></i>رفع انسداد
+                </button>
+            </form>
+             <a href="{{ url_for('main.product_detail', product_id=product.id) }}" target="_blank" class="btn btn-outline-info w-100 mt-2">
+                مشاهده جزئیات
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="col-12">
+    <p class="text-center txt-black">هیچ محصول مسدودی با این مشخصات یافت نشد.</p>
+</div>
+{% endfor %}
