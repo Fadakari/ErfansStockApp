@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+<style>
+    .image-preview-container img {
+        max-width: 200px;
+        max-height: 200px;
+        margin-top: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+    }
+    .progress {
+        height: 25px;
+        background-color: #333;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-top: 15px;
+    }
+    .progress-bar {
+        line-height: 25px;
+        font-size: 14px;
+        color: white;
+        transition: width 0.4s ease;
+    }
+</style>
+
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-8 mb-5">
+        <div class="card signuper mb-4">
+            <div class="card-header" style="background: var(--dark-green);">
+                <a href="{{ url_for('main.new_job_ad_choice') }}" class="btn header-tabs py-2 px-3 float-start">
+                    <i class="bi bi-arrow-left fs-3 txt-black"></i>
+                </a>
+                <h4 class="mb-0 txt-black mt-2">{% if job %}ویرایش آگهی استخدام{% else %}ثبت آگهی استخدام{% endif %}</h4>
+            </div>
+            <div class="card-body bg-very-black p-4">
+                <form method="POST" action="" enctype="multipart/form-data">
+
+                    <div class="mb-4">
+                        <label class="form-label txt-black">عکس پروفایل یا لوگوی شرکت (اختیاری)</label>
+                        <p class="text-warning small">برای نمایش بهتر، از تصویر مربع (نسبت ۱x۱) استفاده کنید.</p>
+
+                        <input type="hidden" name="profile_picture" id="profile_picture_path" value="{{ job.profile_picture if job else '' }}">
+                        <input type="file" id="image_upload_trigger" class="form-control" accept="image/png, image/jpeg, image/jpg" style="display:none;">
+
+                        <label for="image_upload_trigger" class="btn btn-secondary">
+                            <i class="bi bi-upload"></i> انتخاب عکس
+                        </label>
+
+                        <div id="image-preview-container" class="mt-2">
+                            {% if job and job.profile_picture and job.profile_picture != 'default.jpg' %}
+                                <img id="image-preview" src="{{ url_for('static', filename='uploads/' + job.profile_picture) }}" alt="پیش‌نمایش عکس" class="img-thumbnail">
+                            {% else %}
+                                <img id="image-preview" src="#" alt="پیش‌نمایش عکس" class="img-thumbnail" style="display: none;">
+                            {% endif %}
+                        </div>
+
+                        <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="title" class="form-label txt-black">عنوان شغلی</label>
+                        <input type="text" class="inputs txt-black" placeholder="مثال: توسعه‌دهنده پایتون" id="title" name="title" value="{{ job.title if job else '' }}" required>
+                    </div>
+
+                    <hr class="txt-black w-100">
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label txt-black">توضیحات و وظایف شغل</label>
+                        <textarea class="inputs txt-black" placeholder="شرح کامل وظایف، مسئولیت‌ها و مهارت‌های مورد نیاز..." id="description" name="description" rows="4" required>{{ job.description if job else '' }}</textarea>
+                    </div>
+
+                    <hr class="txt-black w-100">
+
+                    <div class="mb-3">
+                        <label for="benefits" class="form-label txt-black">مزایا و تسهیلات</label>
+                        <textarea class="inputs txt-black" placeholder="مثال: ساعت کاری شناور، پاداش، ناهار و..." id="benefits" name="benefits" rows="3">{{ job.benefits if job else '' }}</textarea>
+                    </div>
+
+                    <hr class="txt-black w-100">
+
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="cooperation_type" class="form-label txt-black">نوع همکاری</label>
+                            <select class="form-select inputs txt-black bg-secondary" id="cooperation_type" name="cooperation_type" required>
+                                {% for type in CooperationType %}
+                                <option value="{{ type.name }}" {% if job and job.cooperation_type == type %}selected{% endif %}>{{ type.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <hr class="txt-black w-100">
+
+
+                        <div class="col-md-6 mb-3">
+                            <label for="salary_type" class="form-label txt-black">شیوه پرداخت حقوق</label>
+                            <select class="form-select inputs txt-black bg-secondary" id="salary_type" name="salary_type" required>
+                                {% for type in SalaryType %}
+                                <option value="{{ type.name }}"  {% if job and job.salary_type == type %}selected{% endif %}>{{ type.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr class="txt-black w-100">
+
+                    <div class="mb-3">
+                        <label for="salary_amount" class="form-label txt-black">میزان حقوق (اختیاری)</label>
+                        <input type="text" class="inputs txt-black" placeholder="مثال: ماهانه بین ۱۵ تا ۲۰ میلیون تومان" id="salary_amount" name="salary_amount" value="{{ job.salary_amount if job else '' }}">
+                    </div>
+
+                    <hr class="txt-black w-100">
+                    
+                    <div class="mb-3">
+                        <label for="working_hours" class="form-label txt-black">ساعات کاری</label>
+                        <input type="text" class="inputs txt-black" placeholder="مثال: شنبه تا چهارشنبه، ۹ صبح تا ۵ عصر" id="working_hours" name="working_hours" value="{{ job.working_hours if job else '' }}">
+                    </div>
+
+                    <hr class="txt-black w-100">
+
+                    <div class="mb-3">
+                        <label for="location" class="form-label txt-black">آدرس شرکت (اختیاری)</label>
+                        <input type="text" class="inputs txt-black" placeholder="مثال: تهران، اسلامشهر، خیابان اصلی" id="location" name="location" value="{{ job.location if job else '' }}">
+                    </div>
+
+                    <div class="d-flex justify-content-start gap-4 mt-4 mb-3">
+                        <div class="form-check form-switch fs-5">
+                            <input class="form-check-input mt-2" type="checkbox" role="switch" id="has_insurance" name="has_insurance" {% if job and job.has_insurance %}checked{% endif %}>
+                            <label class="form-check-label txt-black fs-6" for="has_insurance">بیمه</label>
+                        </div>
+                        <div class="form-check form-switch fs-5">
+                            <input class="form-check-input mt-2" type="checkbox" role="switch" id="is_remote_possible" name="is_remote_possible" {% if job and job.is_remote_possible %}checked{% endif %}>
+                            <label class="form-check-label txt-black fs-6" for="is_remote_possible">امکان دورکاری</label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-danger header-tabs py-3 txt-black">{% if job %}ذخیره تغییرات{% else %}ثبت آگهی{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="cropper-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
+    <div style="background-color: #1e1e1e; color: white; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; text-align: center;">
+        <h4 style="margin-bottom: 20px;">برش تصویر (نسبت 1x1)</h4>
+        <div>
+            <img id="image-to-be-cropped" style="max-width: 100%;">
+        </div>
+        <div style="margin-top: 20px;">
+            <button id="crop-and-upload-btn" class="btn btn-success py-2 px-4">برش و آپلود</button>
+            <button id="cancel-crop-btn" class="btn btn-secondary py-2 px-4">انصراف</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('image_upload_trigger');
+    const imagePreview = document.getElementById('image-preview');
+    const profilePicturePathInput = document.getElementById('profile_picture_path');
+    
+    const cropperModal = document.getElementById('cropper-modal');
+    const imageToBeCropped = document.getElementById('image-to-be-cropped');
+    const cropAndUploadBtn = document.getElementById('crop-and-upload-btn');
+    const cancelCropBtn = document.getElementById('cancel-crop-btn');
+    
+    let cropper = null;
+    let originalFile = null;
+
+    fileInput.addEventListener('change', function(event) {
+        if (!event.target.files || event.target.files.length === 0) return;
+        
+        originalFile = event.target.files[0];
+        
+        if (originalFile && originalFile.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageToBeCropped.src = e.target.result;
+                cropperModal.style.display = 'block';
+
+                if (cropper) cropper.destroy();
+
+                cropper = new Cropper(imageToBeCropped, {
+                    aspectRatio: 1 / 1, viewMode: 1, background: false, autoCropArea: 0.8
+                });
+            };
+            reader.readAsDataURL(originalFile);
+        }
+        event.target.value = '';
+    });
+
+    cropAndUploadBtn.addEventListener('click', function() {
+        if (!cropper) return;
+
+        const canvas = cropper.getCroppedCanvas({ width: 800, height: 800, imageSmoothingQuality: 'high' });
+
+        canvas.toBlob(function(blob) {
+            const formData = new FormData();
+            formData.append('image', blob, originalFile.name);
+            uploadToServer(formData);
+        }, 'image/jpeg', 0.85);
+
+        cropperModal.style.display = 'none';
+        cropper.destroy();
+        cropper = null;
+    });
+
+    cancelCropBtn.addEventListener('click', function() {
+        cropperModal.style.display = 'none';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    });
+
+    function uploadToServer(formData) {
+        const progressContainer = document.getElementById("uploadProgress");
+        const progressBar = document.getElementById("uploadProgressBar");
+        
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+        progressBar.innerText = "0%";
+
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + "%";
+                progressBar.innerText = percent + "%";
+            }
+        });
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                progressContainer.style.display = "none";
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.image_path) {
+                        imagePreview.src = `/static/uploads/${data.image_path}`;
+                        imagePreview.style.display = 'block';
+                        profilePicturePathInput.value = data.image_path;
+                    } else {
+                        alert("پاسخ نامعتبر از سرور دریافت شد.");
+                    }
+                } else {
+                    alert("خطا در آپلود عکس. وضعیت: " + xhr.status);
+                }
+            }
+        };
+
+        xhr.open("POST", "{{ url_for('main.upload_image') }}", true);
+        xhr.send(formData);
+    }
+});
+</script>
+{% endblock %}

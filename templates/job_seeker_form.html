@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+
+{% block page_styles %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+    <style>
+    /* همان استایل‌های فایل hiring_form.html */
+    .image-preview-container img { max-width: 200px; max-height: 200px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; padding: 5px; }
+    .progress { height: 25px; background-color: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
+    .progress-bar { line-height: 25px; font-size: 14px; color: white; transition: width 0.4s ease; }
+    .jalali-datepicker-container { z-index: 10000 !important; }
+    #birthdate-picker-display { cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-8 mb-5">
+        <div class="card signuper mb-4">
+            <div class="card-header" style="background: var(--dark-green);">
+                <a href="{{ url_for('main.dashboard') }}" class="btn header-tabs py-2 px-3 float-start">
+                    <i class="bi bi-arrow-right fs-3 txt-black"></i>
+                </a>
+                <h5 class="mb-0 txt-black mt-2">{% if profile %}ویرایش پروفایل کاریابی{% else %}ایجاد پروفایل کاریابی{% endif %}</h5>
+            </div>
+            <div class="card-body bg-very-black p-4">
+                <form method="POST" action="" enctype="multipart/form-data">
+
+                    <div class="mb-4">
+                        <label class="form-label txt-black">عکس پروفایل (اختیاری)</label>
+                        <p class="text-warning small">برای نمایش بهتر، از تصویر مربع (نسبت ۱x۱) استفاده کنید.</p>
+
+                        <input type="hidden" name="profile_picture" id="profile_picture_path" value="{{ profile.profile_picture if profile else '' }}">
+                        <input type="file" id="image_upload_trigger" class="form-control" accept="image/png, image/jpeg, image/jpg" style="display:none;">
+
+                        <label for="image_upload_trigger" class="btn btn-secondary">
+                            <i class="bi bi-upload"></i> انتخاب عکس
+                        </label>
+                        
+                        <div id="image-preview-container" class="mt-2">
+                            {% if profile and profile.profile_picture and profile.profile_picture != 'default.jpg' %}
+                                <img id="image-preview" src="{{ url_for('static', filename='uploads/' + profile.profile_picture) }}" alt="پیش‌نمایش عکس" class="img-thumbnail">
+                            {% else %}
+                                <img id="image-preview" src="#" alt="پیش‌نمایش عکس" class="img-thumbnail" style="display: none;">
+                            {% endif %}
+                        </div>
+
+                        <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
+                        </div>
+                    </div>
+
+                    <h5 class="txt-black border-bottom pb-2 mb-3">اطلاعات تخصصی</h5>
+                    <div class="mb-3">
+                        <label for="title" class="form-label txt-black">عنوان تخصص شما</label>
+                        <input type="text" class="inputs txt-black" placeholder="مثال: کارشناس فروش" id="title" name="title" value="{{ profile.title if profile else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label txt-black">توضیحات مهارت‌ها</label>
+                        <textarea class="inputs txt-black" placeholder="درباره مهارت‌ها، توانایی‌ها و تجربیات خود بنویسید..." id="description" name="description" rows="4" required>{{ profile.description if profile else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="portfolio_links" class="form-label txt-black">لینک نمونه کارها (اختیاری)</label>
+                        <textarea class="inputs txt-black" dir="ltr" placeholder="لینک‌ها را با کاما (,) جدا کنید" id="portfolio_links" name="portfolio_links" rows="2">{{ profile.portfolio_links if profile else '' }}</textarea>
+                    </div>
+                    <!-- <div class="mb-3">
+                        <label for="resume_file" class="form-label txt-black">فایل رزومه (PDF - اختیاری)</label>
+                        <input type="file" class="form-control" id="resume_file" name="resume_file" accept=".pdf,application/pdf">
+                        {% if profile and profile.resume_path %}
+                        <small class="form-text txt-black mt-2">فایل فعلی: <a href="{{ url_for('static', filename='resumes/' + profile.resume_path) }}" target="_blank">{{ profile.resume_path }}</a> (برای تغییر، فایل جدید انتخاب کنید)</small>
+                        {% endif %}
+                    </div> -->
+
+                    <h5 class="txt-black border-bottom pb-2 mt-4 mb-3">اطلاعات فردی و تماس</h5>
+                     <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_phone" class="form-label txt-black">شماره تماس</label>
+                            <input type="tel" class="inputs txt-black" id="contact_phone" name="contact_phone" value="{{ profile.contact_phone if profile else current_user.phone }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_email" class="form-label txt-black">ایمیل</label>
+                            <input type="email" class="inputs txt-black" id="contact_email" name="contact_email" value="{{ profile.contact_email if profile else current_user.email or '' }}">
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label txt-black">محل سکونت</label>
+                            <input type="text" class="inputs txt-black" placeholder="مثال: تهران، سعادت آباد" id="location" name="location" value="{{ profile.location if profile else '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="birthdate-picker-display" class="form-label txt-black">تاریخ تولد</label>
+                            
+                            <input type="text" class="form-control inputs" id="birthdate-picker-display" autocomplete="off" style="background-color: var(--card-bg) !important;" placeholder="انتخاب تاریخ...">
+                            <input type="hidden" id="birthdate-gregorian-alt" name="birth_date" value="{{ profile.birth_date.strftime('%Y-%m-%d') if profile and profile.birth_date }}">
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                           <label for="marital_status" class="form-label txt-black">وضعیت تاهل</label>
+                            <select class="form-select inputs txt-black bg-secondary" id="marital_status" name="marital_status">
+                                {% for status in MaritalStatus %}
+                                <option value="{{ status.name }}" {% if profile and profile.marital_status == status %}selected{% endif %}>{{ status.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <label for="military_status" class="form-label txt-black">وضعیت سربازی</label>
+                            <select class="form-select inputs txt-black bg-secondary" id="military_status" name="military_status">
+                                {% for status in MilitaryStatus %}
+                                <option value="{{ status.name }}" {% if profile and profile.military_status == status %}selected{% endif %}>{{ status.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h5 class="txt-black border-bottom pb-2 mt-4 mb-3">سوابق تحصیلی</h5>
+                     <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                           <label for="highest_education_level" class="form-label txt-black">آخرین مدرک تحصیلی</label>
+                            <select class="form-select inputs txt-black bg-secondary" id="highest_education_level" name="highest_education_level">
+                                {% for level in EducationLevel %}
+                                <option value="{{ level.name }}" {% if profile and profile.highest_education_level == level %}selected{% endif %}>{{ level.value }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                            <label for="education_status" class="form-label txt-black">وضعیت تحصیلی</label>
+                            <select class="form-select inputs txt-black bg-secondary" id="education_status" name="education_status">
+                               <option value="فارغ التحصیل" {% if profile and profile.education_status == 'فارغ التحصیل' %}selected{% endif %}>فارغ التحصیل</option>
+                               <option value="در حال تحصیل" {% if profile and profile.education_status == 'در حال تحصیل' %}selected{% endif %}>در حال تحصیل</option>
+                           </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                        <h5 class="txt-black border-bottom pb-2 mb-0">سوابق شغلی (اختیاری)</h5>
+                        <button type="button" id="add-experience-btn" class="btn btn-sm btn-success header-tabs">
+                            <i class="bi bi-plus-circle me-1"></i> افزودن
+                        </button>
+                    </div>
+                    <div id="work-experience-container">
+                        {% if profile and profile.work_experiences %}
+                            {% for exp in profile.work_experiences %}
+                            <div class="border rounded p-3 mb-3 position-relative experience-item">
+                                <button type="button" class="btn-close position-absolute top-0 start-0 m-2" onclick="this.parentElement.remove()"></button>
+                                <input type="hidden" name="work_experiences-{{ loop.index0 }}-id" value="{{ exp.id }}">
+                                <div class="row g-3">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label txt-black">عنوان شغلی</label>
+                                        <input type="text" class="inputs txt-black" name="work_experiences-{{ loop.index0 }}-job_title" value="{{ exp.job_title }}">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label txt-black">نام شرکت</label>
+                                        <input type="text" class="inputs txt-black" name="work_experiences-{{ loop.index0 }}-company_name" value="{{ exp.company_name }}">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label txt-black">تاریخ شروع</label>
+                                        <input type="text" class="inputs txt-black" name="work_experiences-{{ loop.index0 }}-start_date" value="{{ exp.start_date }}">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label txt-black">تاریخ پایان</label>
+                                        <input type="text" class="inputs txt-black" name="work_experiences-{{ loop.index0 }}-end_date" value="{{ exp.end_date }}">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <h5 class="txt-black border-bottom pb-2 mt-4 mb-3">حقوق درخواستی (تومان)</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-3">
+                           <label for="requested_salary_min" class="form-label txt-black">از مبلغ</label>
+                           <input type="number" class="inputs txt-black" placeholder="مثال: 15000000" id="requested_salary_min" name="requested_salary_min" value="{{ profile.requested_salary_min if profile else '' }}">
+                        </div>
+                         <div class="col-md-6 mb-3">
+                           <label for="requested_salary_max" class="form-label txt-black">تا مبلغ</label>
+                           <input type="number" class="inputs txt-black" placeholder="مثال: 20000000" id="requested_salary_max" name="requested_salary_max" value="{{ profile.requested_salary_max if profile else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-danger header-tabs py-3 txt-black">{% if profile %}ذخیره تغییرات{% else %}ایجاد پروفایل کاریابی{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="experience-template">
+    <div class="border rounded p-3 mb-3 position-relative experience-item">
+        <button type="button" class="btn-close position-absolute top-0 start-0 m-2" onclick="this.parentElement.remove()"></button>
+        <input type="hidden" name="work_experiences-INDEX-id" value="">
+        <div class="row g-3">
+            <div class="col-md-6 mb-2">
+                <label class="form-label txt-black">عنوان شغلی</label>
+                <input type="text" class="inputs txt-black" name="work_experiences-INDEX-job_title">
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label txt-black">نام شرکت</label>
+                <input type="text" class="inputs txt-black" name="work_experiences-INDEX-company_name">
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label txt-black">تاریخ شروع</label>
+                <input type="text" class="inputs txt-black" placeholder="مثال: فروردین ۱۴۰۱" name="work_experiences-INDEX-start_date">
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label txt-black">تاریخ پایان</label>
+                <input type="text" class="inputs txt-black" placeholder="مثال: اسفند ۱۴۰۲ یا تاکنون" name="work_experiences-INDEX-end_date">
+            </div>
+        </div>
+    </div>
+</template>
+
+<div id="cropper-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
+    <div style="background-color: #1e1e1e; color: white; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; text-align: center;">
+        <h4 style="margin-bottom: 20px;">برش تصویر (نسبت 1x1)</h4>
+        <div><img id="image-to-be-cropped" style="max-width: 100%;"></div>
+        <div style="margin-top: 20px;">
+            <button id="crop-and-upload-btn" class="btn btn-success py-2 px-4">برش و آپلود</button>
+            <button id="cancel-crop-btn" class="btn btn-secondary py-2 px-4">انصراف</button>
+        </div>
+    </div>
+</div>
+
+{% block page_scripts %}
+<script type="text/javascript" src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        // فعال‌سازی تقویم شمسی جدید
+        jalaliDatepicker.startWatch({
+            // تنظیمات برای فیلد تاریخ تولد
+            selector: "#birthdate-picker-display",
+            // وقتی کاربر تاریخی را انتخاب کرد، تاریخ میلادی معادل آن در فیلد مخفی قرار می‌گیرد
+            onSelect: function(selectedDate) {
+                const date = new Date(selectedDate * 1000);
+                const year = date.getFullYear();
+                const month = ('0' + (date.getMonth() + 1)).slice(-2);
+                const day = ('0' + date.getDate()).slice(-2);
+                document.getElementById("birthdate-gregorian-alt").value = `${year}-${month}-${day}`;
+            }
+        });
+
+        // تنظیم مقدار اولیه برای حالت ویرایش
+        const initialGregorianDate = document.getElementById('birthdate-gregorian-alt').value;
+        if(initialGregorianDate) {
+            // اگر تاریخ میلادی وجود داشت، معادل شمسی آن را در فیلد نمایشی قرار بده
+            jalaliDatepicker.updateOptions({
+                time: false,
+                // تاریخ را از روی فیلد مخفی می‌خواند و در تقویم انتخاب می‌کند
+                date: new Date(initialGregorianDate)
+            });
+            // به‌روزرسانی مقدار فیلد نمایشی
+            document.getElementById("birthdate-picker-display").value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
+        }
+    });
+</script>
+
+{% endblock %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('image_upload_trigger');
+    const imagePreview = document.getElementById('image-preview');
+    const profilePicturePathInput = document.getElementById('profile_picture_path');
+    const cropperModal = document.getElementById('cropper-modal');
+    const imageToBeCropped = document.getElementById('image-to-be-cropped');
+    const cropAndUploadBtn = document.getElementById('crop-and-upload-btn');
+    const cancelCropBtn = document.getElementById('cancel-crop-btn');
+    let cropper = null;
+    let originalFile = null;
+
+    fileInput.addEventListener('change', function(event) {
+        if (!event.target.files || event.target.files.length === 0) return;
+        originalFile = event.target.files[0];
+        if (originalFile && originalFile.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imageToBeCropped.src = e.target.result;
+                cropperModal.style.display = 'block';
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(imageToBeCropped, { aspectRatio: 1 / 1, viewMode: 1, background: false, autoCropArea: 0.8 });
+            };
+            reader.readAsDataURL(originalFile);
+        }
+        event.target.value = '';
+    });
+
+    cropAndUploadBtn.addEventListener('click', function() {
+        if (!cropper) return;
+        const canvas = cropper.getCroppedCanvas({ width: 800, height: 800, imageSmoothingQuality: 'high' });
+        canvas.toBlob(function(blob) {
+            const formData = new FormData();
+            formData.append('image', blob, originalFile.name);
+            uploadToServer(formData);
+        }, 'image/jpeg', 0.85);
+        cropperModal.style.display = 'none';
+        cropper.destroy();
+        cropper = null;
+    });
+
+    cancelCropBtn.addEventListener('click', function() {
+        cropperModal.style.display = 'none';
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    });
+
+    function uploadToServer(formData) {
+        const progressContainer = document.getElementById("uploadProgress");
+        const progressBar = document.getElementById("uploadProgressBar");
+        progressContainer.style.display = "block";
+        progressBar.style.width = "0%";
+        progressBar.innerText = "0%";
+        const xhr = new XMLHttpRequest();
+        xhr.upload.addEventListener("progress", function(e) {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                progressBar.style.width = percent + "%";
+                progressBar.innerText = percent + "%";
+            }
+        });
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                progressContainer.style.display = "none";
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.image_path) {
+                        imagePreview.src = `/static/uploads/${data.image_path}`;
+                        imagePreview.style.display = 'block';
+                        profilePicturePathInput.value = data.image_path;
+                    } else { alert("پاسخ نامعتبر از سرور."); }
+                } else { alert("خطا در آپلود: " + xhr.status); }
+            }
+        };
+        xhr.open("POST", "{{ url_for('main.upload_image') }}", true);
+        xhr.send(formData);
+    }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const addExperienceBtn = document.getElementById('add-experience-btn');
+    const container = document.getElementById('work-experience-container');
+    const template = document.getElementById('experience-template');
+    
+    // ** شروع شمارنده از تعداد آیتم‌های موجود برای جلوگیری از تداخل نام **
+    let experienceIndex = {{ profile.work_experiences.count() if profile else 0 }};
+
+    addExperienceBtn.addEventListener('click', function() {
+        const clone = template.content.cloneNode(true);
+        // جایگزینی INDEX با شماره منحصر به فرد
+        const html = clone.firstElementChild.outerHTML.replace(/INDEX/g, experienceIndex);
+        container.insertAdjacentHTML('beforeend', html);
+        experienceIndex++;
+    });
+});
+</script>
+{% endblock %}

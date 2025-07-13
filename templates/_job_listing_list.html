@@ -1,0 +1,9 @@
+{# templates/_job_listing_list.html #}
+{% for job in job_listings %}
+    {# تغییر: ارسال متغیر 'job' به 'include' با 'with context' #}
+    {% include '_job_listing_card.html' with context %}
+{% else %}
+    <div class="col-12">
+        <p class="text-center txt-black py-5">آگهی استخدامی یافت نشد.</p>
+    </div>
+{% endfor %}

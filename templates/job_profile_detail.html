@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container my-4 my-md-5">
+    <div class="row">
+        <div class="col-lg-8 col-md-10 mx-auto">
+          <div class="detail-header d-flex flex-nowrap w-100" style="background-color: var(--dark-green);">
+              <h2 class="txt-black mt-2 me-2">آگهی کاریابی</h2>
+              <button class="btn me-auto" onclick="history.back()">
+                  <i class="bi bi-arrow-left fs-3 txt-black"></i>
+              </button>
+          </div>
+            <div class="card shadow-sm" style="background-color: var(--black-color);">
+                <div class="card-body p-lg-5 p-4 mb-5">
+                    <div class="text-center mb-5">
+                        {% if profile.profile_picture and profile.profile_picture != 'default.jpg' %}
+                          <img src="{{ url_for('static', filename='uploads/' + profile.profile_picture) if profile.profile_picture and profile.profile_picture != 'default.jpg' else url_for('static', filename='images/placeholder.png') }}" alt="تصویر پروفایل" class="rounded-circle mb-3" style="width: 140px; height: 140px; object-fit: cover; border: 4px solid var(--primary-accent);">
+                        {% else %}
+                          <img src="{{ url_for('static', filename='images/my_splash_logo(1).png') }}" class="divar-card-img" loading="lazy" style="width: 100px; height: 100px; object-fit: cover; border-radius: 0.75rem; margin-left: 10px;">
+                        {% endif %}
+                        <h1 class="mb-1 txt-black">{{ profile.title }}</h1>
+                        <p class="text-muted fs-5">
+                            <a href="{{ url_for('main.store', user_id=profile.owner.id) }}" class="text-decoration-none" style="color: var(--text-muted-color);">{{ profile.owner.username }}</a>
+                        </p>
+                        {% if profile.location %}
+                            <p class="txt-black"><i class="bi bi-geo-alt-fill me-1 txt-black"></i>{{ profile.location }}</p>
+                        {% endif %}
+                        
+                        <div class="mt-3">
+                        {% if current_user.is_authenticated and current_user.id != profile.user_id %}
+                            <a href="{{ url_for('main.start_conversation', user_id=profile.user_id) }}" class="btn btn-primary btn-lg px-5 txt-black">
+                                <i class="bi bi-chat-dots-fill me-2"></i> شروع گفتگو
+                            </a>
+                        {% elif not current_user.is_authenticated %}
+                             <a href="{{ url_for('main.login_with_phone') }}" class="btn btn-outline-primary">برای گفتگو وارد شوید</a>
+                        {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <h4 class="d-inline-block border-bottom border-2 border-primary pb-2 mb-3 txt-black"><i class="bi bi-person-badge-fill me-2"></i>درباره من</h4>
+                        <p class="lh-lg txt-black" style="white-space: pre-wrap;">{{ profile.description or 'توضیحات ثبت نشده است.' }}</p>
+                    </div>
+
+                    {% if profile.work_experiences.all() %}
+                    <div class="mb-5">
+                        <h4 class="d-inline-block border-bottom border-2 border-success pb-2 mb-4 txt-black"><i class="bi bi-briefcase-fill me-2"></i>سوابق شغلی</h4>
+                        {% for exp in profile.work_experiences.order_by(WorkExperience.start_date.desc()) %}
+                            <div class="position-relative ps-4 mb-4">
+                                <span class="position-absolute top-0 start-0 translate-middle p-1 bg-success border border-light rounded-circle" style="margin-top: 0.5rem;"></span>
+                                <h5 class="mb-1 txt-black">{{ exp.job_title }}</h5>
+                                <p class="mb-1 fw-bold txt-black">{{ exp.company_name }}</p>
+                                <small class="txt-black">{{ exp.start_date }} - {{ exp.end_date or 'تاکنون' }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-5">
+                         <h4 class="d-inline-block border-bottom border-2 border-info pb-2 mb-4 txt-black"><i class="bi bi-info-circle-fill me-2"></i>اطلاعات تکمیلی</h4>
+                         <div class="row g-3">
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-mortarboard-fill ms-2 txt-black"></i>آخرین مدرک: <br><strong class="txt-black">{{ profile.highest_education_level.value if profile.highest_education_level else 'ثبت نشده' }}</strong></div>
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-person-video3 ms-2 txt-black"></i>وضعیت تحصیلی: <br><strong class="txt-black">{{ profile.education_status or 'ثبت نشده' }}</strong></div>
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-person-hearts ms-2 txt-black"></i>وضعیت تاهل: <br><strong class="txt-black">{{ profile.marital_status.value if profile.marital_status else 'ثبت نشده' }}</strong></div>
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-file-person-fill ms-2 txt-black"></i>وضعیت سربازی: <br><strong class="txt-black">{{ profile.military_status.value if profile.military_status else 'ثبت نشده' }}</strong></div>
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-calendar-event-fill ms-2 txt-black"></i>تاریخ تولد: <br><strong class="txt-black">{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else 'ثبت نشده' }}</strong></div>
+                         </div>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#reportJobProfileModal">
+                        <i class="bi bi-flag-fill me-1"></i> گزارش
+                    </button>
+
+                    {% if profile.resume_path %}
+                    <div class="text-center mt-5">
+                         <a href="{{ url_for('static', filename='resumes/' + profile.resume_path) }}" class="btn btn-outline-success btn-lg px-5" target="_blank">
+                            <i class="bi bi-file-earmark-arrow-down-fill me-2 txt-black"></i> دانلود فایل رزومه
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="reportJobProfileModal" tabindex="-1" aria-labelledby="reportJobProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-very-black">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title txt-black" id="reportJobProfileModalLabel">گزارش تخلف پروفایل کاریابی</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.report_job_profile', job_profile_id=profile.id) }}" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="reportReasonProfile" class="form-label txt-black">دلیل گزارش (الزامی):</label>
+            <textarea class="form-control inputs" id="reportReasonProfile" name="report_reason" rows="4" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+          <button type="submit" class="btn btn-danger">ارسال گزارش</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

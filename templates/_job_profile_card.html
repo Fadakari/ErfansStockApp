@@ -1,0 +1,31 @@
+<div class="col">
+    <a href="{{ url_for('main.job_profile_detail', profile_id=profile.id) }}" class="divar-card-horizontal-link header-tabs">
+        <div class="divar-card-body py-2 px-3 flex-nowrap" style="display: flex;">
+            {# نمایش عکس پروفایل کارجو در صورت وجود #}
+            {% if profile.profile_picture and profile.profile_picture != 'default.jpg' %}
+                <img src="{{ url_for('static', filename='uploads/' + profile.profile_picture) }}" class="divar-card-img w-25 m-0" alt="{{ profile.title }}" loading="lazy" style="width: 100px; height: 100px; object-fit: cover; border-radius: 0.75rem; margin-left: 10px;">
+            {% else %}
+                <img src="{{ url_for('static', filename='images/my_splash_logo(1).png') }}" class="divar-card-img" loading="lazy" style="width: 100px; height: 100px; object-fit: cover; border-radius: 0.75rem; margin-left: 10px;">
+            {% endif %}
+
+            <div class="w-75">
+                <h3 class="divar-card-title txt-black">{{ profile.title }}</h3>
+                
+                <p class="divar-card-meta txt-black" style="font-size: 0.8rem;">
+                    <i class="bi bi-geo-alt-fill"></i> {{ profile.location if profile.location else 'ثبت نشده' }}
+                </p>
+
+                <p class="divar-card-price txt-black">
+                    {% if profile.requested_salary_min %}
+                        از {{ "{:,.0f}".format(profile.requested_salary_min) }} تومان
+                    {% else %}
+                        حقوق توافقی
+                    {% endif %}
+                </p>
+
+                
+            </div>
+        </div>
+    </a>
+    <hr class="txt-black">
+</div>

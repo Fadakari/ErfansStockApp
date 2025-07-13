@@ -1,0 +1,9 @@
+{# templates/_job_profile_list.html #}
+{% for profile in job_profiles %}
+    {# تغییر: ارسال متغیر 'profile' به 'include' با 'with context' #}
+    {% include '_job_profile_card.html' with context %}
+{% else %}
+    <div class="col-12">
+        <p class="text-center txt-black py-5">کارجویی با این مشخصات یافت نشد.</p>
+    </div>
+{% endfor %}

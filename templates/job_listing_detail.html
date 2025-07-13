@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block content %}
+{# ### شروع بخش جدید: تعریف ماکرو ### #}
+{# این ماکرو حاوی منطق دکمه‌های ارسال رزومه است #}
+{% macro render_apply_box() %}
+    {% if current_user.is_authenticated %}
+        {% if current_user.job_profile %}
+            {% if already_applied %}
+                <div class="alert alert-success text-center">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    شما قبلا برای این آگهی رزومه ارسال کرده‌اید.
+                </div>
+            {% else %}
+                <p class="text-center">پروفایل کاریابی خود را برای این موقعیت شغلی ارسال کنید.</p>
+                <form action="{{ url_for('main.apply_to_job', job_listing_id=job.id) }}" method="POST">
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">
+                        <i class="bi bi-send-fill me-2"></i> ارسال رزومه
+                    </button>
+                </form>
+            {% endif %}
+        {% else %}
+             <div class="alert alert-warning text-center">
+                <p>برای ارسال رزومه، ابتدا باید پروفایل کاریابی خود را بسازید.</p>
+                <a href="{{ url_for('main.new_job_profile') }}" class="btn btn-success">ایجاد پروفایل کاریابی</a>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info text-center">
+            <p>برای ارسال رزومه، لطفا ابتدا وارد حساب کاربری خود شوید.</p>
+            <a href="{{ url_for('main.login_with_phone') }}" class="btn btn-primary">ورود یا ثبت‌نام</a>
+        </div>
+    {% endif %}
+{% endmacro %}
+{# ### پایان بخش جدید: تعریف ماکرو ### #}
+
+<style>
+    /* استایل برای نوار چسبان پایین صفحه در موبایل */
+    .mobile-apply-bar {
+        background: var(--card-bg);
+        border-top: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+        z-index: 1040; /* برای نمایش روی سایر محتوا */
+    }
+    html[data-theme="dark"] .mobile-apply-bar {
+        box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+    }
+</style>
+<div class="detail-header d-flex flex-nowrap fixed-top" style="background-color: var(--dark-green);">
+        <h2 class="txt-black mt-2 me-2">آگهی استخدام</h2>
+        <button class="btn me-auto" onclick="history.back()">
+            <i class="bi bi-arrow-left fs-3 txt-black"></i>
+        </button>
+    </div>
+<div class="container my-4 my-md-5" style="margin-bottom: 100px !important; margin-top: 5rem !important;">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card bg-transparent border-0">
+                <div class="card-body p-0" style="margin-bottom: 3rem;">
+                    <div class="d-flex align-items-center mb-4">
+                        {% if job.profile_picture and job.profile_picture != 'default.jpg' %}
+                            <img src="{{ url_for('static', filename='uploads/' + job.profile_picture) }}" alt="{{ job.title }}" loading="lazy" class="rounded-3 ms-3" style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                             <div class="p-3 bg-very-black text-primary rounded-3 ms-3 fs-2 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="bi bi-building"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <button class="btn btn-primary me-auto" data-bs-toggle="modal" data-bs-target="#applyModalMobile">ارسال رزومه</button>
+                        
+                    </div>
+                    <div>
+                            <h1 class="card-title h2 mb-1 txt-black" style="font-size: 1.25rem;">{{ job.title }}</h1>
+                            <p class="card-subtitle text-muted fs-6 txt-black">{{ job.owner.username }}</p>
+                        </div><br>
+                    <p class="txt-black">{{ job.location if job.location else 'آدرس شرکت نامشخص' }}</p>
+
+                    <hr class="txt-black w-100">
+
+                    <div class="row g-2 text-center my-4">
+                        <div class="col-6 col-sm-3 mb-2">
+                            <div class="p-3 bg-very-black rounded-3 h-100">
+                                <i class="bi bi-stack fs-4 text-primary"></i>
+                                <p class="mb-0 mt-2 small txt-black">نوع همکاری</p>
+                                <p class="mb-0 fw-bold txt-black">{{ job.cooperation_type.value }}</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-3 mb-2">
+                            <div class="p-3 bg-very-black rounded-3 h-100">
+                                <i class="bi bi-cash-coin fs-4 text-success"></i>
+                                <p class="mb-0 mt-2 small txt-black">حقوق</p>
+                                <p class="mb-0 fw-bold txt-black">{{ job.salary_amount if job.salary_amount else job.salary_type.value }}</p>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-3 mb-2">
+                            <div class="p-3 bg-very-black rounded-3 h-100">
+                                <i class="bi bi-clock-history fs-4 text-info"></i>
+                                <p class="mb-0 mt-2 small txt-black">ساعات کاری</p>
+                                <p class="mb-0 fw-bold txt-black">{{ job.working_hours or 'توافقی' }}</p>
+                            </div>
+                        </div>
+                         <div class="col-6 col-sm-3 mb-2">
+                            <div class="p-3 bg-very-black rounded-3 h-100">
+                                <i class="bi bi-shield-check fs-4 text-warning"></i>
+                                <p class="mb-0 mt-2 small txt-black">بیمه</p>
+                                <p class="mb-0 fw-bold txt-black">{% if job.has_insurance %}دارد{% else %}ندارد{% endif %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="txt-black w-100">
+
+                    <h5 class="mb-3 txt-black">شرح شغل و وظایف</h5>
+                    <p class="lh-lg txt-black">{{ job.description }}</p>
+                    
+                    {% if job.benefits %}
+                        <h5 class="mt-4 mb-3 txt-black">مزایا</h5>
+                        <p class="lh-lg txt-black">{{ job.benefits }}</p>
+                    {% endif %}
+
+                     <p class="mt-4 txt-black small">تاریخ انتشار: {{ job.created_at.strftime('%Y-%m-%d') }}</p>
+
+                    {% if current_user.is_authenticated and current_user.id != job.owner.id %}
+                        <button type="button" class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#reportJobListingModal">
+                            <i class="bi bi-flag-fill me-1"></i> گزارش
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 d-none d-lg-block">
+            <div class="card sticky-top" style="top: 20px; background-color: var(--card-bg);">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-center" style="color: var(--text-color);">ارسال درخواست</h5>
+                    <hr>
+                    {# ### تغییر: فراخوانی ماکرو به جای include ### #}
+                    {{ render_apply_box() }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="fixed-bottom d-lg-none mobile-apply-bar">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <p class="mb-0 small" style="color: var(--text-color);">برای این موقعیت آماده‌اید؟</p>
+        </div>
+        <div>
+            {# دکمه اصلی مودال را باز می‌کند #}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#applyModalMobile">ارسال رزومه</button>
+        </div>
+    </div>
+</div> -->
+
+<div class="modal fade" id="applyModalMobile" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background-color: var(--card-bg);">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" style="color: var(--text-color);">ارسال درخواست</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        {# ### تغییر: فراخوانی ماکرو به جای include ### #}
+        {{ render_apply_box() }}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="reportJobListingModal" tabindex="-1" aria-labelledby="reportJobListingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-very-black">
+      <div class="modal-header border-bottom-0">
+        <h5 class="modal-title txt-black" id="reportJobListingModalLabel">گزارش تخلف آگهی استخدام</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.report_job_listing', job_listing_id=job.id) }}" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="reportReason" class="form-label txt-black">دلیل گزارش (الزامی):</label>
+            <textarea class="form-control inputs" id="reportReason" name="report_reason" rows="4" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-top-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+          <button type="submit" class="btn btn-danger">ارسال گزارش</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

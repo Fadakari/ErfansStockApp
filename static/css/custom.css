@@ -75,6 +75,18 @@
 .bg-black{background: var(--dark-green);}
 .bg-red{background: var(--light-green)!important;}
 .txt-lighting{color: var(--txt-light) !important;}
+
+::selection {
+  background-color: #9B1B30;
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: #9B1B30;
+  color: #ffffff;
+}
+
+
 #toggleButton {
   padding: 10px 20px;
   border: none;
@@ -800,8 +812,9 @@ body.loaded #loader {
   margin: auto;
   background: var(--black-color);
   padding: 20px;
+  padding-bottom: 0 !important;
   border-radius: 10px;
-  box-shadow: 0 0 2rem var(--light-green);
+  /* box-shadow: 0 0 2rem var(--light-green); */
 }
 .ccp{
   flex-shrink: 0; /* فرم همیشه اندازه خودش رو حفظ کنه */
@@ -1198,7 +1211,7 @@ body.is-loading #page-refresh-loader {
     border-radius: 0.75rem;
 }
 .divar-card-horizontal-link:hover {
-    background-color: #2c2c2e; /* کمی روشن‌تر هنگام هاور */
+    background-color: var(--dark-green); /* کمی روشن‌تر هنگام هاور */
 }
 
 /* بخش تصویر */

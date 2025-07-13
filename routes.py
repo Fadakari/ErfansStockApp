@@ -5,14 +5,14 @@ import secrets
 import traceback
 from urllib.parse import urlparse
 from aplication import db
-from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks
+from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks, UserReport, CooperationType, SalaryType, MilitaryStatus, MaritalStatus, EducationLevel, JobListing, JobProfile, WorkExperience, job_applications, JobListingReport, JobProfileReport
 from utils import save_image
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import logging
 import random
 import requests
-from models import ProductType  # جایگزین yourapp با نام پروژه شما
+from models import ProductType
 from aplication import limiter
 from sms_utils import send_verification_code
 import re
@@ -23,6 +23,7 @@ from flask_limiter.errors import RateLimitExceeded
 from flask_limiter.util import get_remote_address
 from sqlalchemy import case, func, or_
 from firebase_admin import messaging
+from sqlalchemy.sql.expression import func
 # from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
 # from tensorflow.keras.preprocessing import image
 # import numpy as np
@@ -37,7 +38,16 @@ def custom_key():
 
 
 
-
+@bp.context_processor
+def inject_enums_into_templates():
+    return dict(
+        CooperationType=CooperationType,
+        SalaryType=SalaryType,
+        MilitaryStatus=MilitaryStatus,
+        MaritalStatus=MaritalStatus,
+        EducationLevel=EducationLevel,
+        WorkExperience=WorkExperience
+    )
 
 
 # لیست استان‌ها و شهرهای مربوطه
@@ -49,6 +59,7 @@ def index():
     city_search = request.args.get('city_search', '').strip()
     category_id = request.args.get('category', '').strip()  # جستجو بر اساس دسته‌بندی
     address_search = request.args.get('address_search', '').strip()
+    
 
 
     query = Product.query.filter(Product.status == 'published')
@@ -530,6 +541,9 @@ def dashboard():
     # دریافت محصولات کاربر
     products = Product.query.filter_by(user_id=current_user.id).all()
     saved_products = current_user.saved_products.order_by(bookmarks.c.product_id.desc()).all()
+
+    user_job_listings = JobListing.query.filter_by(user_id=current_user.id).order_by(JobListing.created_at.desc()).all()
+    user_job_profile = JobProfile.query.filter_by(user_id=current_user.id).first()
     
     # --- بررسی تاریخ انقضای محصولات (حذف محصولات منقضی‌شده) و نمایش هشدار تمدید برای محصولات نزدیک به انقضا ---
     now = datetime.utcnow()
@@ -631,7 +645,9 @@ def dashboard():
         can_promote=can_promote,
         now=datetime.utcnow(),
         saved_products=saved_products,
-        blocked_products=blocked_products
+        blocked_products=blocked_products,
+        user_job_listings=user_job_listings,
+        user_job_profile=user_job_profile
     )
 
 
@@ -1135,10 +1151,15 @@ def delete_product(id):
 @bp.route('/product/<int:product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
+    similar_products = Product.query.filter(
+        Product.category_id == product.category_id,
+        Product.id != product.id,
+        Product.status == 'published'
+    ).order_by(func.random()).limit(10).all()
     categories = Category.query.all()
     user = User.query.get(product.user_id)  # یا می‌توانید با استفاده از ارتباطات sqlalchemy این اطلاعات را بدست آورید
     phone = user.phone if user else None
-    return render_template('product_detail.html', user=user, product=product, categories=categories, phone=phone)
+    return render_template('product_detail.html', user=user, product=product, categories=categories, phone=phone, similar_products=similar_products)
 
 
 
@@ -1152,8 +1173,9 @@ def init_categories():
             {'name': 'فرز', 'icon': 'bi-gear'},
             {'name': 'کمپرسور', 'icon': 'bi-wind'}
         ]},
+        {'name': 'بتن کن', 'icon': 'bi-hammer', 'subcategories': []},
         {'name': 'ابزار اندازه گیری', 'icon': 'bi-rulers', 'subcategories': [
-            {'name': 'اره برقی', 'icon': 'bi-tree'},
+            {'name': 'اره', 'icon': 'bi-tree'},
             {'name': 'چمن‌زن', 'icon': 'bi-flower3'}
         ]},
         {'name': 'مته و قلم', 'icon': 'bi-tools', 'subcategories': [
@@ -1187,6 +1209,52 @@ def init_categories():
     
     return redirect(url_for('main.index'))
 
+
+
+
+
+
+@bp.route('/categories')
+def categories_page():
+    """
+    صفحه‌ای برای نمایش دسته‌بندی‌ها و محصولات مرتبط با آن‌ها.
+    - اگر category_id در URL نباشد، فقط لیست دسته‌بندی‌ها نمایش داده می‌شود.
+    - اگر category_id باشد، محصولات آن دسته (و زیردسته‌هایش) نمایش داده می‌شود.
+    """
+    # همیشه دسته‌بندی‌های اصلی (که والد ندارند) را برای نمایش در سایدبار واکشی می‌کنیم
+    parent_categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+
+    # دریافت شناسه دسته‌بندی انتخاب شده از URL
+    selected_category_id = request.args.get('category_id', type=int)
+    
+    selected_category = None
+    products = []
+
+    if selected_category_id:
+        # واکشی دسته‌بندی انتخاب شده
+        selected_category = Category.query.get_or_404(selected_category_id)
+        
+        # منطق واکشی محصولات:
+        # اگر دسته انتخاب شده والد باشد، محصولات آن و تمام زیردسته‌هایش را نشان بده
+        if selected_category.subcategories:
+            category_ids = [selected_category.id] + [sub.id for sub in selected_category.subcategories]
+            products = Product.query.filter(
+                Product.category_id.in_(category_ids),
+                Product.status == 'published'
+            ).order_by(Product.created_at.desc()).all()
+        # در غیر این صورت (اگر زیردسته بود)، فقط محصولات همان زیردسته را نشان بده
+        else:
+            products = Product.query.filter_by(
+                category_id=selected_category.id,
+                status='published'
+            ).order_by(Product.created_at.desc()).all()
+
+    return render_template(
+        'categories.html',
+        parent_categories=parent_categories,
+        selected_category=selected_category,
+        products=products
+    )
 
 
 
@@ -1572,6 +1640,10 @@ def admin_dashboard():
     # دریافت تمام دسته‌بندی‌ها
     categories = Category.query.all()
     reports = Report.query.order_by(Report.created_at.desc()).all()
+    user_reports = UserReport.query.order_by(UserReport.created_at.desc()).all()
+
+    job_listing_reports = JobListingReport.query.order_by(JobListingReport.created_at.desc()).all()
+    job_profile_reports = JobProfileReport.query.order_by(JobProfileReport.created_at.desc()).all()
 
     highly_reported_products = db.session.query(
         Product,
@@ -1582,7 +1654,7 @@ def admin_dashboard():
 
     blocked_products = Product.query.filter_by(status='blocked').order_by(Product.updated_at.desc()).all()
 
-    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users, highly_reported_products=highly_reported_products, blocked_products=blocked_products)
+    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, user_reports=user_reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users, highly_reported_products=highly_reported_products, blocked_products=blocked_products, job_listing_reports=job_listing_reports, job_profile_reports=job_profile_reports)
 
 
 
@@ -1995,7 +2067,12 @@ def conversation(conversation_id):
         return redirect(url_for("main.conversation", conversation_id=conversation_id))
 
     messages = Message.query.filter_by(conversation_id=conversation_id).order_by(Message.timestamp.asc()).all()
-    return render_template("chat.html", conversation=convo, messages=messages)
+
+    other_user = convo.user2 if current_user.id == convo.user1_id else convo.user1
+    is_blocked = current_user.has_blocked(other_user)
+    am_i_blocked = other_user.has_blocked(current_user)
+
+    return render_template("chat.html", conversation=convo, messages=messages, is_blocked=is_blocked, am_i_blocked=am_i_blocked)
 
 
 
@@ -2066,6 +2143,13 @@ def send_message():
         file.save(file_path)
 
     receiver_id = convo.user2_id if current_user.id == convo.user1_id else convo.user1_id
+    receiver = User.query.get(receiver_id)
+
+    if current_user.has_blocked(receiver):
+        return jsonify({"error": "شما این کاربر را مسدود کرده‌اید و نمی‌توانید پیام ارسال کنید."}), 403
+        
+    if receiver.has_blocked(current_user):
+        return jsonify({"error": "شما توسط این کاربر مسدود شده‌اید و نمی‌توانید پیام ارسال کنید."}), 403
 
     new_msg = Message(
         sender_id=current_user.id,
@@ -2107,6 +2191,56 @@ def send_message():
         "timestamp": new_msg.timestamp.strftime('%Y-%m-%d %H:%M'),
         "file_path": new_msg.file_path
     })
+
+
+
+@bp.route('/block_user/<int:user_id>', methods=['POST'])
+@login_required
+def block_user(user_id):
+    user_to_block = User.query.get_or_404(user_id)
+    if user_to_block == current_user:
+        flash("شما نمی‌توانید خودتان را مسدود کنید.", "danger")
+        return redirect(request.referrer or url_for('main.index'))
+    
+    current_user.block(user_to_block)
+    db.session.commit()
+    flash(f"کاربر {user_to_block.username} با موفقیت مسدود شد.", "success")
+    return redirect(request.referrer)
+
+
+@bp.route('/unblock_user/<int:user_id>', methods=['POST'])
+@login_required
+def unblock_user(user_id):
+    user_to_unblock = User.query.get_or_404(user_id)
+    current_user.unblock(user_to_unblock)
+    db.session.commit()
+    flash(f"کاربر {user_to_unblock.username} از حالت مسدود خارج شد.", "success")
+    return redirect(request.referrer)
+
+
+@bp.route('/report_user/<int:user_id>/<int:conversation_id>', methods=['POST'])
+@login_required
+def report_user(user_id, conversation_id):
+    reported_user = User.query.get_or_404(user_id)
+    reason = request.form.get('reason')
+    
+    if not reason:
+        flash("دلیل گزارش نمی‌تواند خالی باشد.", "danger")
+        return redirect(request.referrer)
+        
+    report = UserReport(
+        reporter_id=current_user.id,
+        reported_id=reported_user.id,
+        conversation_id=conversation_id,
+        reason=reason
+    )
+    db.session.add(report)
+    db.session.commit()
+    
+    flash("گزارش تخلف شما با موفقیت ثبت شد و توسط مدیران بررسی خواهد شد.", "success")
+    return redirect(request.referrer)
+
+
 
 
 
@@ -2317,8 +2451,8 @@ def chatbot_ajax():
     # <<<<<<< شروع: تعریف پیام سیستمی >>>>>>>
     # این پیام را مطابق با نیازهای دقیق‌تر خودتان ویرایش کنید
     system_prompt_content = (
-        "شما یک دستیار هوشمند متخصص برای پلتفرم 'استوک دیوار' (stockdivar.ir) هستید و هویت شما کاملاً به این پلتفرم گره خورده است. وظیفه اصلی شما پاسخ به سوالات کاربران در مورد خرید و فروش ابزارآلات نو و دست دوم است."
-        " هر سوالی خارج از این حوزه را با احترام رد کرده و بگویید که فقط در زمینه ابزارآلات در استوک دیوار می‌توانید کمک کنید."
+        "شما یک دستیار هوشمند متخصص برای پلتفرم 'استوک' (stockdivar.ir) هستید و هویت شما کاملاً به این پلتفرم گره خورده است. وظیفه اصلی شما پاسخ به سوالات کاربران در مورد خرید و فروش ابزارآلات نو و دست دوم است."
+        " هر سوالی خارج از این حوزه را با احترام رد کرده و بگویید که فقط در زمینه ابزارآلات در استوک می‌توانید کمک کنید."
         " به هیچ عنوان از منابع یا وب‌سایت‌های دیگر اطلاعات ندهید و محصولی را معرفی نکنید."
         "\n\n"
         "**قوانین پاسخ‌دهی:**"
@@ -2330,7 +2464,7 @@ def chatbot_ajax():
         "\n\n"
         "3. **جستجوی برند یا محصول:**"
         " - **اگر محصول دقیق پیدا شد:** اگر از طریق ابزارهای داخلی شناسه محصول را داشتی، لینک مستقیم محصول را به این شکل بده: 'می‌توانید <a href=\"https://stockdivar.ir/product/[ID محصول]\" target=\"_blank\">[نام محصول]</a> را اینجا ببینید.'"
-        " - **اگر برند یا عبارت کلی جستجو شد:** اگر کاربر نام یک برند (مثلا 'بوش') یا یک دسته (مثلا 'فرز انگشتی') را گفت، در انتهای پاسخت لینک جستجوی آن را به این شکل قرار بده: '<a href=\"https://stockdivar.ir/?search=[نام لاتین برند یا عبارت]\" target=\"_blank\">محصولات [نام فارسی برند یا عبارت] در استوک دیوار</a>'."
+        " - **اگر برند یا عبارت کلی جستجو شد:** اگر کاربر نام یک برند (مثلا 'بوش') یا یک دسته (مثلا 'فرز انگشتی') را گفت، در انتهای پاسخت لینک جستجوی آن را به این شکل قرار بده: '<a href=\"https://stockdivar.ir/?search=[نام لاتین برند یا عبارت]\" target=\"_blank\">محصولات [نام فارسی برند یا عبارت] در استوک</a>'."
         "\n\n"
         "همیشه مودب باش و اطمینان حاصل کن که تمام تگ‌های <a> دارای `target='_blank'` هستند. از دادن وعده‌هایی که از آن مطمئن نیستی، خودداری کن."
         "\n\n"
@@ -3357,3 +3491,741 @@ def test_height_page():
     A simple route to render the height test page.
     """
     return render_template('test_height.html')
+
+
+
+
+
+## routes.py ##
+
+# ... (کدهای دیگر فایل شما در اینجا قرار دارد) ...
+
+# ---------------------------------------------------------------------------
+# ### شروع بخش مسیرهای استخدام و کاریابی (کد اصلاح شده) ###
+# ---------------------------------------------------------------------------
+
+# روت جدید برای صفحه انتخاب نوع آگهی (استخدام یا کاریابی)
+@bp.route('/product/new_job_ad_choice')
+@login_required
+def new_job_ad_choice():
+    """
+    کاربر را به صفحه‌ای هدایت می‌کند تا بین ثبت آگهی استخدام یا پروفایل کاریابی یکی را انتخاب کند.
+    """
+    return render_template('job_ad_choice.html')
+
+
+# --- مسیرهای مربوط به آگهی استخدام (توسط کارفرما) ---
+
+@bp.route('/product/new_hiring_ad', methods=['GET', 'POST'])
+@login_required
+def new_hiring_ad():
+    """
+    ایجاد یک آگهی استخدام جدید.
+    این تابع مسیر عکس را از یک فیلد پنهان در فرم می‌خواند که توسط آپلود AJAX پر شده است.
+    """
+    if request.method == 'POST':
+        try:
+            new_listing = JobListing(
+                user_id=current_user.id,
+                title=request.form.get('title'),
+                description=request.form.get('description'),
+                benefits=request.form.get('benefits'),
+                cooperation_type=CooperationType[request.form.get('cooperation_type')],
+                salary_type=SalaryType[request.form.get('salary_type')],
+                salary_amount=request.form.get('salary_amount'),
+                has_insurance='has_insurance' in request.form,
+                is_remote_possible='is_remote_possible' in request.form,
+                working_hours=request.form.get('working_hours'),
+                profile_picture=request.form.get('profile_picture'),
+                location=request.form.get('location')
+            )
+            db.session.add(new_listing)
+            db.session.commit()
+            flash('آگهی استخدام شما با موفقیت ثبت شد.', 'success')
+            return redirect(url_for('main.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"خطا در ایجاد آگهی استخدام: {e}")
+            flash('خطایی در هنگام ثبت آگهی رخ داد. لطفا دوباره تلاش کنید.', 'danger')
+
+    return render_template('hiring_form.html', job=None, CooperationType=CooperationType, SalaryType=SalaryType)
+
+
+@bp.route('/job-listing/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_job_listing(id):
+    """
+    ویرایش یک آگهی استخدام موجود.
+    """
+    job = JobListing.query.get_or_404(id)
+    if job.owner != current_user and not current_user.is_admin:
+        abort(403)
+
+    if request.method == 'POST':
+        try:
+            job.title = request.form.get('title')
+            job.description = request.form.get('description')
+            job.benefits = request.form.get('benefits')
+            job.cooperation_type = CooperationType[request.form.get('cooperation_type')]
+            # --- اصلاح باگ: یک بار ایندکس کردن کافی است ---
+            job.salary_type = SalaryType[request.form.get('salary_type')]
+            job.salary_amount = request.form.get('salary_amount')
+            job.has_insurance = 'has_insurance' in request.form
+            job.is_remote_possible = 'is_remote_possible' in request.form
+            job.working_hours = request.form.get('working_hours')
+            job.profile_picture = request.form.get('profile_picture')
+            job.location = request.form.get('location')
+            
+            db.session.commit()
+            flash('آگهی استخدام با موفقیت به‌روزرسانی شد.', 'success')
+            return redirect(url_for('main.dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"خطا در ویرایش آگهی استخدام: {e}")
+            flash('خطایی در هنگام به‌روزرسانی رخ داد.', 'danger')
+    
+    return render_template('hiring_form.html', job=job, CooperationType=CooperationType, SalaryType=SalaryType)
+
+
+@bp.route('/job-listing/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_job_listing(id):
+    """
+    حذف یک آگهی استخدام و عکس مرتبط با آن.
+    """
+    job = JobListing.query.get_or_404(id)
+    if job.owner != current_user and not current_user.is_admin:
+        abort(403)
+    
+    if job.profile_picture and job.profile_picture != 'default.jpg':
+        try:
+            image_path = os.path.join(current_app.root_path, 'static/uploads', job.profile_picture)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            logging.error(f"خطا در حذف فایل عکس آگهی استخدام: {e}")
+
+    db.session.delete(job)
+    db.session.commit()
+    flash('آگهی استخدام با موفقیت حذف شد.', 'success')
+    return redirect(url_for('main.dashboard'))
+
+
+# --- مسیرهای مربوط به پروفایل کاریابی (توسط کارجو) ---
+
+# تابع کمکی برای ذخیره رزومه
+def save_resume(file):
+    """
+    فایل رزومه را در پوشه static/resumes ذخیره می‌کند و نام آن را برمی‌گرداند.
+    **نکته:** مطمئن شوید پوشه‌ای به نام resumes در کنار پوشه uploads شما وجود دارد.
+    """
+    resume_folder = os.path.join(current_app.root_path, 'static/resumes')
+    if not os.path.exists(resume_folder):
+        os.makedirs(resume_folder)
+        
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(file.filename)
+    resume_fn = random_hex + f_ext
+    resume_path = os.path.join(resume_folder, resume_fn)
+    file.save(resume_path)
+    return resume_fn
+
+
+# فایل: routes.py
+
+# ... (کدهای دیگر)
+
+@bp.route('/product/new_job_profile', methods=['GET', 'POST'])
+@login_required
+def new_job_profile():
+    """
+    ایجاد پروفایل کاریابی جدید. این نسخه اصلاح شده و منطق ذخیره سوابق شغلی را نیز شامل می‌شود.
+    """
+    if JobProfile.query.filter_by(user_id=current_user.id).first():
+        flash('شما قبلاً یک پروفایل کاریابی ثبت کرده‌اید. برای تغییر، آن را ویرایش کنید.', 'warning')
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        try:
+            # --- شروع افزودن منطق پردازش سوابق شغلی ---
+            
+            # 1. ایجاد آبجکت پروفایل اصلی و ذخیره موقت در session
+            picture_path = request.form.get('profile_picture')
+            resume_path = None
+            if 'resume_file' in request.files:
+                file = request.files['resume_file']
+                if file.filename != '':
+                    resume_path = save_resume(file)
+
+            birth_date_str = request.form.get('birth_date')
+            birth_date_obj = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
+            
+            salary_min_str = request.form.get('requested_salary_min')
+            salary_min_int = int(salary_min_str) if salary_min_str and salary_min_str.isdigit() else None
+
+            salary_max_str = request.form.get('requested_salary_max')
+            salary_max_int = int(salary_max_str) if salary_max_str and salary_max_str.isdigit() else None
+            
+            new_profile = JobProfile(
+                user_id=current_user.id,
+                title=request.form.get('title'),
+                description=request.form.get('description'),
+                portfolio_links=request.form.get('portfolio_links'),
+                contact_phone=request.form.get('contact_phone'),
+                contact_email=request.form.get('contact_email'),
+                location=request.form.get('location'),
+                birth_date=birth_date_obj,
+                marital_status=MaritalStatus[request.form.get('marital_status')] if request.form.get('marital_status') else None,
+                military_status=MilitaryStatus[request.form.get('military_status')] if request.form.get('military_status') else None,
+                highest_education_level=EducationLevel[request.form.get('highest_education_level')] if request.form.get('highest_education_level') else None,
+                education_status=request.form.get('education_status'),
+                requested_salary_min=salary_min_int,
+                requested_salary_max=salary_max_int,
+                profile_picture=picture_path,
+                resume_path=resume_path
+            )
+            db.session.add(new_profile)
+            # کامیت اولیه برای گرفتن ID پروفایل
+            db.session.commit()
+
+            # 2. پردازش و افزودن سوابق شغلی به پروفایل ایجاد شده
+            form_experiences = {}
+            for key, value in request.form.items():
+                match = re.match(r'work_experiences-(\d+)-(\w+)', key)
+                if match:
+                    index, field = int(match.group(1)), match.group(2)
+                    if index not in form_experiences: form_experiences[index] = {}
+                    form_experiences[index][field] = value
+            
+            for data in form_experiences.values():
+                if data.get('job_title'): # فقط اگر عنوان شغلی وجود داشت، آن را اضافه کن
+                    new_exp = WorkExperience(
+                        profile_id=new_profile.id, # استفاده از ID پروفایل جدید
+                        job_title=data.get('job_title'),
+                        company_name=data.get('company_name'),
+                        start_date=data.get('start_date'),
+                        end_date=data.get('end_date')
+                    )
+                    db.session.add(new_exp)
+
+            # کامیت نهایی برای ذخیره سوابق شغلی
+            db.session.commit()
+            
+            flash('پروفایل کاریابی شما با موفقیت ایجاد شد.', 'success')
+            return redirect(url_for('main.dashboard'))
+
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"خطا در ایجاد پروفایل کاریابی: {e}")
+            flash('یک خطای پیش‌بینی نشده رخ داد. لطفاً مقادیر ورودی خود را بررسی کرده و دوباره تلاش کنید.', 'danger')
+            # بعد از خطا، دوباره به همان فرم برمی‌گردیم تا کاربر اطلاعاتش را از دست ندهد
+            return render_template('job_seeker_form.html', profile=None)
+            
+    # برای درخواست GET
+    return render_template('job_seeker_form.html', profile=None)
+
+
+
+# فایل: routes.py
+
+# ... (کدهای دیگر)
+
+@bp.route('/job-profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_job_profile():
+    """
+    ویرایش پروفایل کاریابی موجود. این نسخه تضمین می‌کند که تمام Enum ها به قالب ارسال شوند.
+    """
+    profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
+
+    if request.method == 'POST':
+        try:
+            # منطق پردازش فرم POST (این بخش صحیح است و نیازی به تغییر ندارد)
+            profile.title = request.form.get('title')
+            profile.description = request.form.get('description')
+            profile.portfolio_links = request.form.get('portfolio_links')
+            profile.contact_phone = request.form.get('contact_phone')
+            profile.contact_email = request.form.get('contact_email')
+            profile.location = request.form.get('location')
+            birth_date_str = request.form.get('birth_date')
+            profile.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
+            profile.marital_status = MaritalStatus[request.form.get('marital_status')] if request.form.get('marital_status') else None
+            profile.military_status = MilitaryStatus[request.form.get('military_status')] if request.form.get('military_status') else None
+            profile.highest_education_level = EducationLevel[request.form.get('highest_education_level')] if request.form.get('highest_education_level') else None
+            profile.education_status = request.form.get('education_status')
+            salary_min_str = request.form.get('requested_salary_min')
+            profile.requested_salary_min = int(salary_min_str) if salary_min_str and salary_min_str.isdigit() else None
+            salary_max_str = request.form.get('requested_salary_max')
+            profile.requested_salary_max = int(salary_max_str) if salary_max_str and salary_max_str.isdigit() else None
+            profile.profile_picture = request.form.get('profile_picture')
+
+            if 'resume_file' in request.files:
+                file = request.files['resume_file']
+                if file.filename != '':
+                    if profile.resume_path:
+                        old_resume_path = os.path.join(current_app.root_path, 'static/resumes', profile.resume_path)
+                        if os.path.exists(old_resume_path):
+                            os.remove(old_resume_path)
+                    profile.resume_path = save_resume(file)
+
+            form_experiences = {}
+            for key, value in request.form.items():
+                match = re.match(r'work_experiences-(\d+)-(\w+)', key)
+                if match:
+                    index, field = int(match.group(1)), match.group(2)
+                    if index not in form_experiences: form_experiences[index] = {}
+                    form_experiences[index][field] = value
+            
+            db_experience_ids = {exp.id for exp in profile.work_experiences}
+            form_experience_ids = {int(data['id']) for data in form_experiences.values() if data.get('id') and data.get('id').isdigit()}
+            
+            ids_to_delete = db_experience_ids - form_experience_ids
+            if ids_to_delete:
+                WorkExperience.query.filter(WorkExperience.id.in_(ids_to_delete)).delete(synchronize_session=False)
+
+            for data in form_experiences.values():
+                exp_id = data.get('id')
+                if exp_id and exp_id.isdigit():
+                    experience = WorkExperience.query.get(int(exp_id))
+                    if experience and experience.profile_id == profile.id:
+                        experience.job_title, experience.company_name, experience.start_date, experience.end_date = data.get('job_title'), data.get('company_name'), data.get('start_date'), data.get('end_date')
+                elif data.get('job_title'):
+                    new_exp = WorkExperience(profile_id=profile.id, job_title=data.get('job_title'), company_name=data.get('company_name'), start_date=data.get('start_date'), end_date=data.get('end_date'))
+                    db.session.add(new_exp)
+            
+            db.session.commit()
+            flash('پروفایل کاریابی شما با موفقیت به‌روزرسانی شد.', 'success')
+            return redirect(url_for('main.dashboard'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"خطا در ویرایش پروفایل کاریابی: {e}")
+            flash('خطایی در هنگام ویرایش پروفایل رخ داد.', 'danger')
+    
+    # برای درخواست GET، تمام متغیرهای لازم را به قالب ارسال می‌کنیم
+    return render_template('job_seeker_form.html', 
+                           profile=profile,
+                           MaritalStatus=MaritalStatus,
+                           MilitaryStatus=MilitaryStatus,
+                           EducationLevel=EducationLevel)
+
+
+
+
+@bp.route('/job-profile/delete', methods=['POST'])
+@login_required
+def delete_job_profile():
+    """
+    حذف پروفایل کاریابی و فایل‌های ضمیمه آن (عکس و رزومه).
+    """
+    profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
+    
+    if profile.profile_picture and profile.profile_picture != 'default.jpg':
+        try:
+            image_path = os.path.join(current_app.root_path, 'static/uploads', profile.profile_picture)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            logging.error(f"خطا در حذف عکس پروفایل کاریابی: {e}")
+    
+    if profile.resume_path:
+        try:
+            resume_path = os.path.join(current_app.root_path, 'static/resumes', profile.resume_path)
+            if os.path.exists(resume_path):
+                os.remove(resume_path)
+        except Exception as e:
+            logging.error(f"خطا در حذف فایل رزومه: {e}")
+
+    db.session.delete(profile)
+    db.session.commit()
+    flash('پروفایل کاریابی شما با موفقیت حذف شد.', 'success')
+    return redirect(url_for('main.dashboard'))
+
+
+# --- مسیرهای نمایش لیست‌ها و جزئیات ---
+
+@bp.route('/hiring')
+def job_listings_page():
+    """
+    نمایش لیست آگهی‌های استخدام با قابلیت جستجو.
+    """
+    # در رندر اولیه، نیازی به اعمال فیلتر از request.args نیست
+    # چرا که تابع performLiveSearch در JS خودش این کار را بعد از لود صفحه انجام می‌دهد.
+    # پس فقط کافی است که یک لیست خالی یا لیست اولیه را بفرستیم، 
+    # و سپس AJAX آن را با محتوای واقعی پر کند.
+    # با این حال، بهتر است داده‌های اولیه را بفرستیم تا صفحه خالی نباشد.
+    job_listings = JobListing.query.order_by(JobListing.created_at.desc()).all()
+    
+    return render_template('job_listings.html',
+                           job_listings=job_listings, # این لیست برای رندر اولیه استفاده می‌شود
+                           CooperationType=CooperationType,
+                           SalaryType=SalaryType
+                           )
+
+
+@bp.route('/seekers')
+def job_seekers_page():
+    """
+    نمایش لیست پروفایل‌های کاریابی با قابلیت جستجو.
+    """
+    # مشابه job_listings_page، داده‌های اولیه را بفرستیم.
+    job_profiles = JobProfile.query.order_by(JobProfile.created_at.desc()).all()
+    
+    return render_template('job_seekers.html',
+                           job_profiles=job_profiles, # این لیست برای رندر اولیه استفاده می‌شود
+                           EducationLevel=EducationLevel,
+                           MaritalStatus=MaritalStatus,
+                           MilitaryStatus=MilitaryStatus
+                           )
+
+
+@bp.route('/job-listing/<int:job_id>')
+def job_listing_detail(job_id):
+    """
+    نمایش جزئیات یک آگهی استخدام خاص.
+    """
+    job = JobListing.query.get_or_404(job_id)
+    already_applied = False
+    if current_user.is_authenticated and current_user.job_profile:
+        if job in current_user.job_profile.applied_to_listings.all():
+            already_applied = True
+
+    return render_template('job_listing_detail.html', job=job, already_applied=already_applied)
+
+
+@bp.route('/job-profile/<int:profile_id>')
+def job_profile_detail(profile_id):
+    """
+    نمایش جزئیات یک پروفایل کاریابی خاص.
+    """
+    profile = JobProfile.query.get_or_404(profile_id)
+    return render_template('job_profile_detail.html', profile=profile)
+
+
+
+# فایل: routes.py
+
+# ... (کدهای دیگر) ...
+
+@bp.route('/job-profile/edit/summary', methods=['POST'])
+@login_required
+def edit_job_profile_summary():
+    """
+    روت AJAX برای ویرایش سریع عنوان و توضیحات پروفایل کاریابی.
+    """
+    profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
+    data = request.get_json()
+
+    if 'title' in data and 'description' in data:
+        profile.title = data['title']
+        profile.description = data['description']
+        db.session.commit()
+        return jsonify({
+            'success': True, 
+            'message': 'اطلاعات با موفقیت به‌روزرسانی شد.',
+            'new_title': profile.title,
+            'new_description': profile.description
+        })
+    
+    return jsonify({'success': False, 'message': 'اطلاعات ارسالی ناقص است.'}), 400
+
+# فایل: routes.py
+
+# ... (کدهای دیگر)
+
+@bp.route('/job-profile/edit/contact', methods=['POST'])
+@login_required
+def edit_job_profile_contact():
+    profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
+    data = request.get_json()
+    try:
+        profile.contact_phone = data.get('contact_phone')
+        profile.contact_email = data.get('contact_email')
+        profile.location = data.get('location')
+        birth_date_str = data.get('birth_date')
+        profile.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
+        profile.marital_status = MaritalStatus[data.get('marital_status')] if data.get('marital_status') else None
+        profile.military_status = MilitaryStatus[data.get('military_status')] if data.get('military_status') else None
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'اطلاعات تماس و فردی با موفقیت به‌روزرسانی شد.',
+            'new_data': {
+                'phone': profile.contact_phone,
+                'email': profile.contact_email or 'ثبت نشده',
+                'location': profile.location or 'ثبت نشده',
+                'birth_date': profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else 'ثبت نشده',
+                'marital_status': profile.marital_status.value if profile.marital_status else 'ثبت نشده',
+                'military_status': profile.military_status.value if profile.military_status else 'ثبت نشده'
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'خطا: {e}'}), 400
+
+
+@bp.route('/job-profile/edit/education', methods=['POST'])
+@login_required
+def edit_job_profile_education():
+    profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
+    data = request.get_json()
+    try:
+        profile.highest_education_level = EducationLevel[data.get('highest_education_level')] if data.get('highest_education_level') else None
+        profile.education_status = data.get('education_status')
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'اطلاعات تحصیلی با موفقیت به‌روزرسانی شد.',
+            'new_data': {
+                'level': profile.highest_education_level.value if profile.highest_education_level else 'ثبت نشده',
+                'status': profile.education_status or 'ثبت نشده'
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'خطا: {e}'}), 400
+
+
+@bp.route('/job-profile/edit/picture', methods=['POST'])
+@login_required
+def edit_job_profile_picture():
+    profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
+    data = request.get_json()
+    new_path = data.get('image_path')
+    if new_path:
+        profile.profile_picture = new_path
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'عکس پروفایل با موفقیت تغییر کرد.',
+            'new_path': url_for('static', filename=f'uploads/{new_path}')
+        })
+    return jsonify({'success': False, 'message': 'مسیر عکسی ارسال نشده است.'}), 400
+
+
+@bp.route('/apply/<int:job_listing_id>', methods=['POST'])
+@login_required
+def apply_to_job(job_listing_id):
+    job_listing = JobListing.query.get_or_404(job_listing_id)
+    job_seeker_profile = current_user.job_profile
+
+    # بررسی اینکه آیا کاربر پروفایل کاریابی دارد یا خیر
+    if not job_seeker_profile:
+        flash('برای ارسال رزومه، ابتدا باید پروفایل کاریابی خود را بسازید.', 'warning')
+        return redirect(url_for('main.new_job_profile'))
+
+    # بررسی اینکه آیا کاربر قبلا برای این آگهی رزومه ارسال کرده است
+    if job_listing in job_seeker_profile.applied_to_listings:
+        flash('شما قبلاً برای این آگهی رزومه ارسال کرده‌اید.', 'info')
+        return redirect(url_for('main.job_listing_detail', job_id=job_listing_id))
+
+    # ثبت درخواست
+    job_seeker_profile.applied_to_listings.append(job_listing)
+    db.session.commit()
+
+    flash('رزومه شما با موفقیت برای این آگهی ارسال شد.', 'success')
+    return redirect(url_for('main.job_listing_detail', job_id=job_listing_id))
+
+
+# مسیر جدید برای مشاهده رزومه‌های ارسالی برای یک آگهی
+@bp.route('/job-listing/<int:job_listing_id>/applications')
+@login_required
+def view_job_applications(job_listing_id):
+    job_listing = JobListing.query.get_or_404(job_listing_id)
+
+    # بررسی امنیتی: فقط صاحب آگهی یا ادمین می‌تواند رزومه‌ها را ببیند
+    if job_listing.owner != current_user and not current_user.is_admin:
+        abort(403)
+
+    # دریافت لیست کارجویان به ترتیب جدیدترین درخواست
+    applicants = job_listing.applicants.order_by(job_applications.c.application_date.desc()).all()
+
+    return render_template('job_applications.html', job_listing=job_listing, applicants=applicants)
+
+
+
+@bp.route('/report_job_listing/<int:job_listing_id>', methods=['POST'])
+@login_required
+def report_job_listing(job_listing_id):
+    job_listing = JobListing.query.get_or_404(job_listing_id)
+    report_reason = request.form.get('report_reason')
+
+    if not report_reason:
+        flash('دلیل گزارش نمی‌تواند خالی باشد.', 'danger')
+        return redirect(url_for('main.job_listing_detail', job_id=job_listing_id))
+
+    if job_listing.user_id == current_user.id:
+        flash('شما نمی‌توانید آگهی خود را گزارش دهید.', 'warning')
+        return redirect(url_for('main.job_listing_detail', job_id=job_listing_id))
+
+    report = JobListingReport(
+        job_listing_id=job_listing_id,
+        reporter_id=current_user.id,
+        reason=report_reason
+    )
+    db.session.add(report)
+    db.session.commit()
+    flash('آگهی استخدام با موفقیت گزارش شد و توسط مدیران بررسی خواهد شد.', 'success')
+    return redirect(url_for('main.job_listing_detail', job_id=job_listing_id))
+
+
+@bp.route('/report_job_profile/<int:job_profile_id>', methods=['POST'])
+@login_required
+def report_job_profile(job_profile_id):
+    job_profile = JobProfile.query.get_or_404(job_profile_id)
+    report_reason = request.form.get('report_reason')
+
+    if not report_reason:
+        flash('دلیل گزارش نمی‌تواند خالی باشد.', 'danger')
+        return redirect(url_for('main.job_profile_detail', profile_id=job_profile_id))
+
+    if job_profile.user_id == current_user.id:
+        flash('شما نمی‌توانید پروفایل خود را گزارش دهید.', 'warning')
+        return redirect(url_for('main.job_profile_detail', profile_id=job_profile_id))
+        
+    report = JobProfileReport(
+        job_profile_id=job_profile_id,
+        reporter_id=current_user.id,
+        reason=report_reason
+    )
+    db.session.add(report)
+    db.session.commit()
+    flash('پروفایل کاریابی با موفقیت گزارش شد و توسط مدیران بررسی خواهد شد.', 'success')
+    return redirect(url_for('main.job_profile_detail', profile_id=job_profile_id))
+
+
+
+@bp.route('/admin/delete_job_listing_report/<int:report_id>', methods=['POST'])
+@login_required
+def delete_job_listing_report(report_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی به این بخش را ندارید", "danger")
+        return redirect(url_for('main.index'))
+
+    report = JobListingReport.query.get_or_404(report_id)
+    db.session.delete(report)
+    db.session.commit()
+    flash("گزارش آگهی استخدام با موفقیت حذف شد.", "success")
+    return redirect(url_for('main.admin_dashboard'))
+
+@bp.route('/admin/delete_job_profile_report/<int:report_id>', methods=['POST'])
+@login_required
+def delete_job_profile_report(report_id):
+    if not current_user.is_admin:
+        flash("شما دسترسی به این بخش را ندارید", "danger")
+        return redirect(url_for('main.index'))
+
+    report = JobProfileReport.query.get_or_404(report_id)
+    db.session.delete(report)
+    db.session.commit()
+    flash("گزارش پروفایل کاریابی با موفقیت حذف شد.", "success")
+    return redirect(url_for('main.admin_dashboard'))
+
+
+
+@bp.route('/live_search_jobs')
+def live_search_jobs():
+    search_term = request.args.get('search', '').strip()
+    active_tab = request.args.get('active_tab', 'hiring') # 'hiring' یا 'seekers'
+
+    # فیلترهای آگهی‌های استخدام
+    cooperation_type_filter = request.args.get('cooperation_type_filter')
+    salary_type_filter = request.args.get('salary_type_filter')
+    has_insurance_filter = request.args.get('has_insurance_filter')
+    is_internship_filter = request.args.get('is_internship_filter') # برای همکاری از نوع کارآموزی
+
+    # فیلترهای کارجویان
+    education_level_filter = request.args.get('education_level_filter')
+    education_status_filter = request.args.get('education_status_filter')
+    marital_status_filter = request.args.get('marital_status_filter')
+    military_status_filter = request.args.get('military_status_filter')
+
+    if active_tab == 'hiring':
+        query = JobListing.query
+        if search_term:
+            search_keywords = search_term.lower().split()
+            conditions = []
+            for kw in search_keywords:
+                conditions.append(JobListing.title.ilike(f'%{kw}%'))
+                conditions.append(JobListing.description.ilike(f'%{kw}%'))
+                conditions.append(JobListing.benefits.ilike(f'%{kw}%')) # جستجو در مزایا
+                conditions.append(JobListing.working_hours.ilike(f'%{kw}%')) # جستجو در ساعات کاری
+                conditions.append(JobListing.location.ilike(f'%{kw}%'))
+            query = query.filter(db.or_(*conditions))
+        
+        # اعمال فیلترهای جدید آگهی استخدام
+        if cooperation_type_filter:
+            try:
+                enum_cooperation = CooperationType[cooperation_type_filter]
+                query = query.filter(JobListing.cooperation_type == enum_cooperation)
+            except KeyError:
+                pass # نادیده گرفتن فیلتر نامعتبر
+        
+        if salary_type_filter:
+            try:
+                enum_salary = SalaryType[salary_type_filter]
+                query = query.filter(JobListing.salary_type == enum_salary)
+            except KeyError:
+                pass
+        
+        if has_insurance_filter == 'true': # فقط اگر کاربر صراحتاً "دارای بیمه" را انتخاب کرده باشد
+            query = query.filter(JobListing.has_insurance == True)
+
+        if is_internship_filter == 'true':
+            query = query.filter(JobListing.cooperation_type == CooperationType.INTERNSHIP)
+
+
+        job_listings = query.order_by(JobListing.created_at.desc()).all()
+        # برای رندر جزئی، از قالب "_job_listing_card.html" استفاده می‌کنیم
+        return render_template('_job_listing_list.html', job_listings=job_listings)
+
+    elif active_tab == 'seekers':
+        query = JobProfile.query
+        if search_term:
+            search_keywords = search_term.lower().split()
+            conditions = []
+            for kw in search_keywords:
+                conditions.append(JobProfile.title.ilike(f'%{kw}%'))
+                conditions.append(JobProfile.description.ilike(f'%{kw}%'))
+                conditions.append(JobProfile.location.ilike(f'%{kw}%')) # جستجو در مکان
+                # برای سوابق شغلی هم جستجو می‌کنیم (نیاز به JOIN)
+                conditions.append(
+                    JobProfile.work_experiences.any(
+                        db.or_(
+                            WorkExperience.job_title.ilike(f'%{kw}%'),
+                            WorkExperience.company_name.ilike(f'%{kw}%')
+                        )
+                    )
+                )
+            query = query.filter(db.or_(*conditions))
+
+        # اعمال فیلترهای جدید پروفایل کاریابی
+        if education_level_filter:
+            try:
+                enum_edu_level = EducationLevel[education_level_filter]
+                query = query.filter(JobProfile.highest_education_level == enum_edu_level)
+            except KeyError:
+                pass
+
+        if education_status_filter: # 'در حال تحصیل' یا 'فارغ التحصیل'
+            query = query.filter(JobProfile.education_status.ilike(f'%{education_status_filter}%'))
+        
+        if marital_status_filter:
+            try:
+                enum_marital = MaritalStatus[marital_status_filter]
+                query = query.filter(JobProfile.marital_status == enum_marital)
+            except KeyError:
+                pass
+
+        if military_status_filter:
+            try:
+                enum_military = MilitaryStatus[military_status_filter]
+                query = query.filter(JobProfile.military_status == enum_military)
+            except KeyError:
+                pass
+
+        job_profiles = query.order_by(JobProfile.created_at.desc()).all()
+        # برای رندر جزئی، از قالب "_job_profile_card.html" استفاده می‌کنیم
+        return render_template('_job_profile_list.html', job_profiles=job_profiles)
+    
+    return ""

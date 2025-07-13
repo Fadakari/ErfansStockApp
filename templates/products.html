@@ -16,11 +16,15 @@
     #search-input-mobile:focus{
         scale: 1.03;
     }
+
+    .rounding{
+        border-radius: 4rem !important;
+    }
 </style>
 
 
-<nav class="navbar animationshow rounder d-lg-none d-md-none d-sm-flex sticky-top py-0" style="backdrop-filter: blur(15px);">
-    <div class="container-fluid d-flex flex-nowrap ps-0">
+<nav class="navbar animationshow rounder d-lg-none d-md-none d-sm-flex sticky-top py-0" style="backdrop-filter: blur(15px); width: 100% !important;">
+    <div class="container-fluid d-flex flex-nowrap ps-0" style="width: 100% !important;">
       <div class="d-flex flex-wrap w-75 align-items-center">
               <div class="input-group flex-grow-1">
                   <input id="search-input-mobile" class="inputs searcher txt-black rounder px-3 py-1" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
@@ -59,6 +63,16 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 </script>
+
+
+<div class="container-fluid px-3 mt-3 text-center">
+    <div class="btn-group" role="group" aria-label="Navigation Buttons">
+        <a href="{{ url_for('main.index') }}" class="btn btn-danger rounding px-2" style="font-size: .75rem;">محصولات</a>
+        <a href="{{ url_for('main.job_listings_page') }}" class="btn btn-outline-danger rounding px-2 mx-2" style="font-size: .75rem;">آگهی‌های استخدام</a>
+        <a href="{{ url_for('main.job_seekers_page') }}" class="btn btn-outline-danger rounding px-2" style="font-size: .75rem;">کارجویان</a>
+    </div>
+</div>
+
 
 <!-- فرم موبایل -->
     {# در فایل base.html، داخل فرم جستجوی موبایل #}

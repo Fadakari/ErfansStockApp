@@ -22,7 +22,6 @@
     <style>
 
  body {
-    height: 50rem;
   margin: 0;
   padding: 0;
   display: flex;
@@ -44,6 +43,7 @@ form.myform {
 .custom-file-upload {
     position: relative; /* مهم برای position:absolute پیش‌نمایش */
 }
+.chat{height: 100%;}
 
 /* تنظیم موقعیت باکس پیش‌نمایش */
 .preview-tooltip {
@@ -127,6 +127,7 @@ form.myform {
 .message.sent .message-meta .status-icon {
     margin-left: 5px; /* کمی فاصله بین زمان و تیک */
 }
+.chat-header {  background-color: var(--black-color);}
 
 .message.sent .message-meta {
     direction: ltr; /* برای نمایش صحیح زمان و تیک در پیام‌های ارسالی */
@@ -137,13 +138,53 @@ form.myform {
     <!-- <div id="pull-spinner" style="position: fixed; top: -60px; left: 50%; transform: translateX(-50%); z-index: 9999; transition: top 0.3s;">
         <div class="spinner"></div>
       </div> -->
-        <header class="chat-header d-flex justify-content-between">
-            {% set other_user = conversation.user2 if conversation.user1_id == current_user.id else conversation.user1 %}
-            <span class="me-3 contact-name">{{ other_user.username }}</span>
-            <a href="{{ url_for('main.conversations') }}" class="btn txt-black"><i class="bi bi-arrow-left"></i></a>
-        </header>
-        <div class="chat-box">
-            <div class="chat">
+            <header class="chat-header d-flex justify-content-between align-items-center fixed-top">
+                    {% set other_user = conversation.user2 if conversation.user1_id == current_user.id else conversation.user1 %}
+                    <span class="me-3 contact-name">{{ other_user.username }}</span>
+
+                    <div class="d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="btn btn-sm txt-black" type="button" id="chatActions" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical fs-5"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-start" aria-labelledby="chatActions" style="background: var(--dark-green);">
+                                <li>
+                                    <button class="dropdown-item txt-black" data-bs-toggle="modal" data-bs-target="#reportUserModal">
+                                        <i class="bi bi-flag-fill me-2"></i> گزارش تخلف کاربر
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    {% if is_blocked %}
+                                        <form action="{{ url_for('main.unblock_user', user_id=other_user.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="dropdown-item text-success">
+                                                <i class="bi bi-unlock-fill me-2"></i> رفع مسدودیت کاربر
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form action="{{ url_for('main.block_user', user_id=other_user.id) }}" method="POST" onsubmit="return confirm('آیا از مسدود کردن این کاربر مطمئن هستید؟ دیگر نمی‌توانید از او پیام دریافت کنید.')" class="d-inline">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-slash-circle-fill me-2"></i> مسدود کردن کاربر
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                        <a href="{{ url_for('main.conversations') }}" class="btn txt-black"><i class="bi bi-arrow-left"></i></a>
+                    </div>
+            </header>
+        <div class="chat-box px-0 pt-5 mx-2">
+            {% if am_i_blocked %}
+            <div class="alert alert-danger text-center small p-2 m-2">
+                شما توسط این کاربر مسدود شده‌اید و نمی‌توانید پیام ارسال کنید.
+            </div>
+            {% elif is_blocked %}
+            <div class="alert alert-warning text-center small p-2 m-2">
+                شما این کاربر را مسدود کرده‌اید. برای ارسال پیام، ابتدا او را از حالت مسدود خارج کنید.
+            </div>
+            {% endif %}
+            <div class="chat" style="padding-bottom: 6rem;">
                 {% for msg in messages %}
                     <div class="message {{ 'sent' if msg.sender_id == current_user.id else 'received' }} txt-black position-relative" id="message-{{ msg.id }}">
                         {% if msg.sender_id == current_user.id %}
@@ -203,26 +244,63 @@ form.myform {
                 </div>
             </div>
 
-            <form id="messageForm" enctype="multipart/form-data" class="myform sticky-bottom" onsubmit="return false;">
-                <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
-                <input type="text" class="myinput inputs" name="content" id="content" placeholder="پیام بنویسید..." required>
-                <label for="file-upload" class="custom-file-upload me-2 position-relative" style="display: inline-block;">
-                    <i class="bi bi-paperclip"></i>
-                    <input id="file-upload" type="file" name="file" accept="image/*,application/pdf" style="display: none;">
+                <div class="fixed-bottom pb-3 px-2" style="background-color: var(--black-color);">
+                    {% if is_blocked %}
+                        <div class="blocked-message-footer text-center p-3">
+                            <p class="mb-2 txt-black">شما این کاربر را مسدود کرده‌اید.</p>
+                            <form action="{{ url_for('main.unblock_user', user_id=other_user.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-success">رفع مسدودیت</button>
+                            </form>
+                        </div>
+                    {% elif am_i_blocked %}
+                        <div class="blocked-message-footer text-center p-3">
+                            <p class="txt-black">شما توسط این کاربر مسدود شده‌اید و امکان ارسال پیام وجود ندارد.</p>
+                        </div>
+                    {% else %}
+                        <form id="messageForm" enctype="multipart/form-data" class="myform" onsubmit="return false;">
+                            <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+                            <input type="text" class="myinput inputs txt-black" name="content" id="content" placeholder="پیام بنویسید..." required>
+                            <label for="file-upload" class="custom-file-upload me-2 position-relative" style="display: inline-block;">
+                                <i class="bi bi-paperclip fs-4"></i>
+                                <input id="file-upload" type="file" name="file" accept="image/*,application/pdf" style="display: none;">
+                                <div id="simple-preview" class="d-none preview-tooltip position-absolute">
+                                    <button id="remove-preview" type="button" class="btn-close txt-black" aria-label="حذف"></button>
+                                    <img id="simple-preview-img" src="" alt="پیش‌نمایش">
+                                </div>
+                            </label>
+                            <button type="submit" class="mybtn">ارسال</button>
+                        </form>
+                    {% endif %}
+                </div>
 
-                    <div id="simple-preview" class="d-none preview-tooltip position-absolute">
-                        <button id="remove-preview" type="button" class="btn-close txt-black" aria-label="حذف"></button>
-                        <img id="simple-preview-img" src="" alt="پیش‌نمایش">
-                    </div>
-                </label>
 
-
-                <button type="submit" class="mybtn">ارسال</button>
+            <form id="messageForm" enctype="multipart/form-data" class="myform sticky-bottom" onsubmit="return false;" {% if is_blocked or am_i_blocked %}style="display: none;"{% endif %}>
             </form>
 
-            
-
         </div>
+        
+
+        <div class="modal fade" id="reportUserModal" tabindex="-1" aria-labelledby="reportUserModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: var(--black-color);">
+              <div class="modal-header">
+                <h5 class="modal-title txt-black" id="reportUserModalLabel">گزارش تخلف {{ other_user.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form action="{{ url_for('main.report_user', user_id=other_user.id, conversation_id=conversation.id) }}" method="POST">
+                  <div class="modal-body">
+                    <p class="txt-black">لطفاً دلیل گزارش خود را به طور کامل شرح دهید تا توسط مدیران بررسی شود.</p>
+                    <textarea name="reason" class="form-control" rows="4" placeholder="توضیحات تخلف..." required></textarea>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-danger">ثبت گزارش</button>
+                  </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        
         <!-- <form id="messageForm" enctype="multipart/form-data" class="myform sticky-bottom" onsubmit="return false;">
                 <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
                 <input type="text" class="myinput inputs" name="content" id="content" placeholder="پیام بنویسید..." required>
@@ -475,7 +553,17 @@ form.myform {
     });
 
     // اسکرول به پایین در زمان بارگذاری صفحه
-    window.onload = scrollToBottom;
+    // تمام کدهای مربوط به scrollToBottom و window.onload قبلی را پاک کرده و این کد را جایگزین کنید
+
+function scrollToBottom() {
+    // این دستور کل پنجره مرورگر را به انتهای صفحه اسکرول می‌کند
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+// پس از بارگذاری کامل صفحه، تابع اسکرول را با یک تأخیر کوتاه اجرا می‌کنیم
+window.onload = function() {
+    setTimeout(scrollToBottom, 100);
+};
 
     // دریافت دوره‌ای پیام‌های جدید
     setInterval(async () => {

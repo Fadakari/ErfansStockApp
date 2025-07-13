@@ -14,6 +14,19 @@ bookmarks = db.Table('bookmarks',
 )
 
 
+blocked_users = db.Table('blocked_users',
+    db.Column('blocker_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('blocked_id', db.Integer, db.ForeignKey('user.id'), primary_key=True)
+)
+
+
+job_applications = db.Table('job_applications',
+    db.Column('job_listing_id', db.Integer, db.ForeignKey('job_listing.id'), primary_key=True),
+    db.Column('job_profile_id', db.Integer, db.ForeignKey('job_profile.id'), primary_key=True),
+    db.Column('application_date', db.DateTime, default=datetime.utcnow)
+)
+
+
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
@@ -38,11 +51,30 @@ class User(UserMixin, db.Model):
     ban_reason = db.Column(db.String(255), nullable=True)
     # اضافه کردن overlaps
 
+    blocked = db.relationship(
+        'User', secondary=blocked_users,
+        primaryjoin=(blocked_users.c.blocker_id == id),
+        secondaryjoin=(blocked_users.c.blocked_id == id),
+        backref=db.backref('blocked_by', lazy='dynamic'),
+        lazy='dynamic'
+    )
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def block(self, user):
+        if not self.has_blocked(user):
+            self.blocked.append(user)
+    
+    def unblock(self, user):
+        if self.has_blocked(user):
+            self.blocked.remove(user)
+            
+    def has_blocked(self, user):
+        return self.blocked.filter(blocked_users.c.blocked_id == user.id).count() > 0
     
 
 class SignupTempData(db.Model):
@@ -227,6 +259,19 @@ class Report(db.Model):
     reporter = db.relationship('User')
 
 
+class UserReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reported_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=True)
+    reason = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    reporter = db.relationship('User', foreign_keys=[reporter_id], backref='sent_user_reports')
+    reported = db.relationship('User', foreign_keys=[reported_id], backref='received_user_reports')
+    conversation = db.relationship('Conversation', backref='user_reports')
+
+
 class ChatBotInteraction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -234,3 +279,138 @@ class ChatBotInteraction(db.Model):
     bot_response = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     products_related = db.Column(db.String(255))
+
+
+
+# ... (کدهای قبلی شما در models.py)
+
+# ENUMs برای فیلدهای انتخابی جهت ثبات داده‌ها
+class CooperationType(Enum):
+    FULL_TIME = 'تمام وقت'
+    PART_TIME = 'پاره وقت'
+    REMOTE = 'دورکاری'
+    PROJECT = 'پروژه‌ای'
+    INTERNSHIP = 'کارآموزی'
+
+class SalaryType(Enum):
+    MONTHLY = 'ماهانه'
+    HOURLY = 'ساعتی'
+    DAILY = 'روزانه'
+    COMMISSION = 'پورسانتی'
+    NEGOTIABLE = 'توافقی'
+
+class MilitaryStatus(Enum):
+    NOT_APPLICABLE = 'مشمول نیستم'
+    COMPLETED = 'کارت پایان خدمت'
+    EXEMPT = 'کارت معافیت'
+    PENDING = 'در حال خدمت'
+
+class MaritalStatus(Enum):
+    SINGLE = 'مجرد'
+    MARRIED = 'متاهل'
+
+class EducationLevel(Enum):
+    CYCLE = 'سیکل'
+    DIPLOMA = 'دیپلم'
+    ASSOCIATE = 'فوق دیپلم'
+    BACHELOR = 'کارشناسی'
+    MASTER = 'کارشناسی ارشد'
+    PHD = 'دکترا'
+
+
+# مدل برای آگهی‌های استخدام (توسط کارفرما)
+class JobListing(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    profile_picture = db.Column(db.String(100), nullable=True, default='default.jpg')
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    benefits = db.Column(db.Text, nullable=True)
+    cooperation_type = db.Column(db.Enum(CooperationType), nullable=False)
+    salary_type = db.Column(db.Enum(SalaryType), nullable=False)
+    salary_amount = db.Column(db.String(100), nullable=True) # به صورت رشته برای انعطاف‌پذیری (مثلا "بین ۱۰ تا ۱۵ میلیون")
+    has_insurance = db.Column(db.Boolean, default=False)
+    military_status_required = db.Column(db.Enum(MilitaryStatus), nullable=True) # الزامی بودن وضعیت سربازی
+    is_remote_possible = db.Column(db.Boolean, default=False)
+    working_hours = db.Column(db.String(100), nullable=True) # مثلا "۹ صبح تا ۵ عصر"
+    location = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    
+    owner = db.relationship('User', backref='job_listings')
+
+    applicants = db.relationship(
+        'JobProfile',
+        secondary=job_applications,
+        back_populates='applied_to_listings',
+        lazy='dynamic'
+    )
+
+
+# مدل برای پروفایل کارجویان (هر کاربر فقط یک پروفایل)
+class JobProfile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # با uselist=False اطمینان حاصل می‌کنیم که هر کاربر فقط یک پروفایل کاریابی دارد
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    profile_picture = db.Column(db.String(100), nullable=True, default='default.jpg')
+    title = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    portfolio_links = db.Column(db.Text, nullable=True) # لینک‌ها با کاما جدا می‌شوند
+    resume_path = db.Column(db.String(255), nullable=True) # مسیر فایل رزومه
+    contact_phone = db.Column(db.String(15), nullable=False)
+    contact_email = db.Column(db.String(120), nullable=True)
+    marital_status = db.Column(db.Enum(MaritalStatus), nullable=True)
+    military_status = db.Column(db.Enum(MilitaryStatus), nullable=True)
+    location = db.Column(db.String(200), nullable=True)
+    birth_date = db.Column(db.Date, nullable=True)
+    requested_salary_min = db.Column(db.Integer, nullable=True)
+    requested_salary_max = db.Column(db.Integer, nullable=True)
+    education_status = db.Column(db.String(50), nullable=True) # "در حال تحصیل" یا "فارغ التحصیل"
+    highest_education_level = db.Column(db.Enum(EducationLevel), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # ارتباط یک به یک با کاربر
+    owner = db.relationship('User', backref=db.backref('job_profile', uselist=False))
+    # ارتباط یک به چند با سوابق شغلی
+    work_experiences = db.relationship('WorkExperience', backref='profile', lazy='dynamic', cascade="all, delete-orphan")
+
+    applied_to_listings = db.relationship(
+        'JobListing',
+        secondary=job_applications,
+        back_populates='applicants',
+        lazy='dynamic'
+    )
+
+
+# مدل برای سوابق شغلی (قابل تکرار برای هر پروفایل)
+class WorkExperience(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    profile_id = db.Column(db.Integer, db.ForeignKey('job_profile.id'), nullable=False)
+    company_name = db.Column(db.String(100), nullable=False)
+    job_title = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.String(20), nullable=True) # رشته برای سادگی، مثلا "فروردین ۱۴۰۱"
+    end_date = db.Column(db.String(20), nullable=True) # یا "تاکنون"
+    description = db.Column(db.Text, nullable=True)
+
+
+class JobListingReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    job_listing_id = db.Column(db.Integer, db.ForeignKey('job_listing.id'), nullable=False)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reason = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    job_listing = db.relationship('JobListing', backref='reports')
+    reporter = db.relationship('User', foreign_keys=[reporter_id])
+
+# مدل جدید برای گزارش پروفایل کاریابی
+class JobProfileReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    job_profile_id = db.Column(db.Integer, db.ForeignKey('job_profile.id'), nullable=False)
+    reporter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    reason = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    job_profile = db.relationship('JobProfile', backref='reports')
+    reporter = db.relationship('User', foreign_keys=[reporter_id])

@@ -1,7 +1,15 @@
 {% extends "base.html" %}
-
+{% block page_styles %}
+    <!-- <style>
+        .jalali-datepicker-container {
+            z-index: 1060 !important; /* z-index مودال بوت‌استرپ ۱۰۵۵ است، ما عدد بالاتری انتخاب می‌کنیم */
+        }
+        #birthdate-picker-display-modal { /* استفاده از آی‌دی جدید برای جلوگیری از تداخل */
+            cursor: pointer;
+        }
+    </style> -->
+{% endblock %}
 {% block content %}
-
     <style>
         @font-face {
             font-family: 'yekan';
@@ -311,6 +319,8 @@
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        jdp-container { z-index: 20000 !important; }
+        #birthdate-picker-display { cursor: pointer; }
     </style>
 </head>
 <body>
@@ -350,6 +360,26 @@
             </ul>
         
             <div class="footer-links">
+                <ul class="nav flex-column p-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#job-listings-content">
+                        <i class="bi bi-building-fill"></i>
+                        <span>آگهی‌های استخدام</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#job-profile-content">
+                        <i class="bi bi-file-person-fill"></i>
+                        <span>پروفایل کاریابی</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('main.conversations') }}">
+                        <i class="bi bi-chat-left-text txt-black"></i>
+                        <span class="txt-black">گفت و گوها</span>
+                    </a>
+                </li>
+                </ul>
                 <a class="nav-link" href="#" data-tab-target="#saved-content">
                     <i class="bi bi-bookmark-fill"></i>
                     <span>ذخیره شده‌ها</span>
@@ -599,6 +629,161 @@
                     {% endfor %}
                 </div>
             </div>
+
+
+            <div id="job-listings-content" class="tab-pane" style="margin-bottom: 5rem;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>آگهی‌های استخدام من</h2>
+                    <a href="{{ url_for('main.new_hiring_ad') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-2"></i>آگهی جدید
+                    </a>
+                </div>
+                <div class="row g-4">
+                    {% if user_job_listings %}
+                        {% for job in user_job_listings %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 d-flex flex-column">
+                                <div class="card-body">
+                                    <h5 class="card-title" style="color: var(--text-color);">{{ job.title }}</h5>
+                                    <p class="card-text small text-muted">{{ job.cooperation_type.value }} | {{ job.salary_type.value }}</p>
+                                    <p class="card-text small flex-grow-1" style="color: var(--text-color);">{{ job.description | truncate(100) }}</p>
+                                </div>
+                                <div class="card-footer bg-transparent d-flex gap-2">
+                                    <a href="{{ url_for('main.edit_job_listing', id=job.id) }}" class="btn btn-sm btn-outline-secondary flex-grow-1">ویرایش</a>
+                                    
+                                    <a href="{{ url_for('main.view_job_applications', job_listing_id=job.id) }}" class="btn btn-sm btn-outline-info flex-grow-1">
+                                        رزومه‌ها 
+                                        <span class="badge bg-primary rounded-pill">{{ job.applicants.count() }}</span>
+                                    </a>
+                                    <form action="{{ url_for('main.delete_job_listing', id=job.id) }}" method="POST" class="flex-grow-1">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('آیا از حذف این آگهی اطمینان دارید؟')">حذف</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-12">
+                            <div class="card text-center p-5">
+                                <p class="mb-0">هنوز آگهی استخدامی ثبت نکرده‌اید.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div id="job-profile-content" class="tab-pane" style="margin-bottom: 5rem;">
+                {% if user_job_profile %}
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="position-relative">
+                                            <img id="profile-picture-display" src="{{ url_for('static', filename='uploads/' + user_job_profile.profile_picture) }}" alt="تصویر پروفایل" class="rounded-circle me-4" style="width: 90px; height: 90px; object-fit: cover;">
+                                            <button class="btn btn-light btn-sm rounded-circle position-absolute bottom-0 start-0 ms-4" style="transform: translateY(25%);" data-bs-toggle="modal" data-bs-target="#editPictureModal" title="ویرایش عکس پروفایل">
+                                                <i class="bi bi-camera-fill"></i>
+                                            </button>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h3 id="profile-title-display" class="mb-1" style="color: var(--text-color);">{{ user_job_profile.title }}</h3>
+                                            </div>
+                                            <p id="profile-location-display" class="text-muted mb-2">{{ user_job_profile.location or 'موقعیت ثبت نشده' }}</p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0">درباره من</h6>
+                                        <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="modal" data-bs-target="#editAboutModal">
+                                            <i class="bi bi-pencil-square me-1"></i> ویرایش
+                                        </button>
+                                    </div>
+                                    <p id="profile-description-display" class="text-pre-wrap" style="color: var(--text-color);">{{ user_job_profile.description }}</p>
+                                </div>
+                            </div>
+                        
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
+                                    <h5 class="mb-0" style="color: var(--text-color);">سوابق شغلی</h5>
+                                    <a href="{{ url_for('main.edit_job_profile') }}" class="btn btn-sm btn-link text-decoration-none">
+                                        <i class="bi bi-pencil-square me-1"></i> ویرایش/افزودن سوابق
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    {% if user_job_profile.work_experiences.all() %}
+                                        {% for exp in user_job_profile.work_experiences %}
+                                            <div class="mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                                                <h6 class="mb-0" style="color: var(--text-color);">{{ exp.job_title }}</h6>
+                                                <p class="mb-1" style="color: var(--text-color);">{{ exp.company_name }}</p>
+                                                <small class="text-muted">{{ exp.start_date }} - {{ exp.end_date or 'تاکنون' }}</small>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted">هنوز سابقه‌ی شغلی ثبت نکرده‌اید.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    
+                        <div class="col-lg-4">
+                            <div class="card mb-4">
+                                 <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
+                                    <h5 class="mb-0" style="color: var(--text-color);">اطلاعات فردی و تماس</h5>
+                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="modal" data-bs-target="#editContactModal">
+                                        <i class="bi bi-pencil-square me-1"></i> ویرایش
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <p><i class="bi bi-telephone-fill me-2"></i><span id="profile-phone-display">{{ user_job_profile.contact_phone }}</span></p>
+                                    <p><i class="bi bi-envelope-fill me-2"></i><span id="profile-email-display">{{ user_job_profile.contact_email or 'ثبت نشده' }}</span></p>
+                                    <p><i class="bi bi-calendar-event-fill me-2"></i>تاریخ تولد: 
+                                        <span id="profile-birthdate-display">
+                                            {{ user_job_profile.birth_date.strftime('%Y-%m-%d') if user_job_profile.birth_date else 'ثبت نشده' }}
+                                        </span>
+                                    </p>
+                                    <p><i class="bi bi-person-hearts me-2"></i>وضعیت تاهل: <span id="profile-marital-display">{{ user_job_profile.marital_status.value if user_job_profile.marital_status else 'ثبت نشده' }}</span></p>
+                                    <p><i class="bi bi-file-person-fill me-2"></i>وضعیت سربازی: <span id="profile-military-display">{{ user_job_profile.military_status.value if user_job_profile.military_status else 'ثبت نشده' }}</span></p>
+                                </div>
+                            </div>
+                        
+                            <div class="card mb-4">
+                                 <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
+                                    <h5 class="mb-0" style="color: var(--text-color);">تحصیلات</h5>
+                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="modal" data-bs-target="#editEducationModal">
+                                        <i class="bi bi-pencil-square me-1"></i> ویرایش
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <p>آخرین مدرک: <strong id="profile-education-level-display">{{ user_job_profile.highest_education_level.value if user_job_profile.highest_education_level else 'ثبت نشده' }}</strong></p>
+                                    <p>وضعیت تحصیلی: <strong id="profile-education-status-display">{{ user_job_profile.education_status or 'ثبت نشده' }}</strong></p>
+                                </div>
+                            </div>
+                        
+                            <div class="card">
+                                 <div class="card-header bg-transparent"><h5 class="mb-0" style="color: var(--text-color);">تنظیمات</h5></div>
+                                 <div class="card-body">
+                                    <a href="{{ url_for('main.edit_job_profile') }}" class="btn btn-outline-secondary w-100 mb-2">ویرایش کامل پروفایل</a>
+                                    <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteProfileModal">
+                                        <i class="bi bi-trash-fill me-2"></i> حذف کامل پروفایل کاریابی
+                                    </button>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                {% else %}
+                    <div class="card text-center p-5">
+                        <p class="mb-2">شما هنوز پروفایل کاریابی خود را ایجاد نکرده‌اید.</p>
+                        <div class="mt-2">
+                            <a href="{{ url_for('main.new_job_profile') }}" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-2"></i>ایجاد پروفایل کاریابی
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
         </main>
     </div>
 
@@ -618,21 +803,39 @@
 
         <ul class="nav flex-column p-0">
             <li class="nav-item">
-                <a class="nav-link active" href="#" data-tab-target="#home-content" data-bs-dismiss="offcanvas">
+                <a class="nav-link active" href="#" data-tab-target="#home-content" data-bs-dismiss="offcanvas" aria-label="Close">
                     <i class="bi bi-house-door-fill txt-black"></i>
                     <span class="txt-black">داشبورد اصلی</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" data-tab-target="#profile-content" data-bs-dismiss="offcanvas">
+                <a class="nav-link" href="#" data-tab-target="#profile-content" data-bs-dismiss="offcanvas" aria-label="Close">
                     <i class="bi bi-person-fill txt-black"></i>
-                    <span class="txt-black">اطلاعات کاربری</span>
+                    <span class="txt-black" aria-label="Close">اطلاعات کاربری</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#" data-tab-target="#products-content" data-bs-dismiss="offcanvas">
+                <a class="nav-link" href="#" data-tab-target="#products-content" data-bs-dismiss="offcanvas" aria-label="Close">
                     <i class="bi bi-box-seam-fill txt-black"></i>
                     <span class="txt-black">محصولات من</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab-target="#job-listings-content" data-bs-dismiss="offcanvas" aria-label="Close">
+                    <i class="bi bi-building-fill"></i>
+                    <span>آگهی‌های استخدام</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-tab-target="#job-profile-content" data-bs-dismiss="offcanvas" aria-label="Close">
+                    <i class="bi bi-file-person-fill"></i>
+                    <span>پروفایل کاریابی</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('main.conversations') }}">
+                    <i class="bi bi-chat-left-text txt-black"></i>
+                    <span class="txt-black">گفت و گوها</span>
                 </a>
             </li>
             {% if current_user.is_admin %}
@@ -646,7 +849,7 @@
         </ul>
 
          <div class="footer-links mt-auto">
-             <a class="nav-link py-3 px-2 rounded-3" href="#" data-tab-target="#saved-content" data-bs-dismiss="offcanvas">
+             <a class="nav-link py-3 px-2 rounded-3" href="#" data-tab-target="#saved-content" data-bs-dismiss="offcanvas" aria-label="Close">
                 <i class="bi bi-bookmark-fill" style="color: var(--text-color);"></i>
                 <span style="color: var(--text-color);">ذخیره شده‌ها</span>
             </a>
@@ -713,7 +916,109 @@
         </li>
     </ul>
 </div> -->
+{% if user_job_profile %}
+<div class="modal fade" id="editAboutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg"><div class="modal-content" style="background-color: var(--card-bg);">
+      <div class="modal-header"><h5 class="modal-title" style="color: var(--text-color);">ویرایش درباره من و تخصص</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="edit-about-form">
+          <div class="mb-3"><label class="form-label" style="color: var(--text-color);">عنوان تخصص</label><input type="text" class="form-control inputs" name="title" value="{{ user_job_profile.title }}"></div>
+          <div class="mb-3"><label class="form-label" style="color: var(--text-color);">توضیحات</label><textarea class="form-control inputs" name="description" rows="8">{{ user_job_profile.description }}</textarea></div>
+        </form>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button><button type="button" id="save-about-changes" class="btn btn-primary">ذخیره</button></div>
+  </div></div>
+</div>
 
+<div class="modal fade" id="editContactModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" style="background-color: var(--card-bg); z-index: 1000 !important;">
+      <div class="modal-header"><h5 class="modal-title" style="color: var(--text-color);">ویرایش اطلاعات فردی</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <form id="edit-contact-form">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">شماره تماس</label><input type="tel" class="form-control inputs" name="contact_phone" value="{{ user_job_profile.contact_phone }}"></div>
+                <div class="col-md-6"><label class="form-label">ایمیل</label><input type="email" class="form-control inputs" name="contact_email" value="{{ user_job_profile.contact_email }}"></div>
+                <div class="col-12"><label class="form-label">محل سکونت</label><input type="text" class="form-control inputs" name="location" value="{{ user_job_profile.location }}"></div>
+                <div class="col-md-4 mb-3">
+                    <label for="birthdate-picker-display-modal" class="form-label txt-black">تاریخ تولد</label>
+                                
+                    <input type="text" class="form-control inputs" id="birthdate-picker-display-modal" autocomplete="off" style="background-color: var(--card-bg) !important;" placeholder="انتخاب تاریخ...">
+                                
+                    <input type="hidden" id="birthdate-gregorian-alt-modal" name="birth_date" 
+                           value="{{ user_job_profile.birth_date.strftime('%Y-%m-%d') if user_job_profile and user_job_profile.birth_date }}">
+                </div>
+                <div class="col-md-4"><label class="form-label">وضعیت تاهل</label><select name="marital_status" class="form-select inputs bg-secondary">{% for s in MaritalStatus %}<option value="{{ s.name }}" {% if user_job_profile.marital_status == s %}selected{% endif %}>{{ s.value }}</option>{% endfor %}</select></div>
+                <div class="col-md-4"><label class="form-label">وضعیت سربازی</label><select name="military_status" class="form-select inputs bg-secondary">{% for s in MilitaryStatus %}<option value="{{ s.name }}" {% if user_job_profile.military_status == s %}selected{% endif %}>{{ s.value }}</option>{% endfor %}</select></div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button><button type="button" id="save-contact-changes" class="btn btn-primary">ذخیره</button></div>
+      </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editEducationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content" style="background-color: var(--card-bg);">
+        <div class="modal-header"><h5 class="modal-title" style="color: var(--text-color);">ویرایش تحصیلات</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <form id="edit-education-form">
+                <div class="mb-3">
+                    <label class="form-label">آخرین مدرک تحصیلی</label>
+                    <select name="highest_education_level" class="form-select inputs bg-secondary">
+                        {% for l in EducationLevel %}
+                        <option value="{{ l.name }}" {% if user_job_profile.highest_education_level == l %}selected{% endif %}>{{ l.value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">وضعیت تحصیلی</label>
+                    <select name="education_status" class="form-select inputs bg-secondary">
+                       <option value="فارغ التحصیل" {% if user_job_profile and user_job_profile.education_status == 'فارغ التحصیل' %}selected{% endif %}>فارغ التحصیل</option>
+                       <option value="در حال تحصیل" {% if user_job_profile and user_job_profile.education_status == 'در حال تحصیل' %}selected{% endif %}>در حال تحصیل</option>
+                   </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button><button type="button" id="save-education-changes" class="btn btn-primary">ذخیره</button></div>
+    </div>
+</div>
+</div>
+
+<div class="modal fade" id="editPictureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content" style="background-color: var(--card-bg);">
+      <div class="modal-header"><h5 class="modal-title" style="color: var(--text-color);">تغییر عکس پروفایل</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="text-warning small">برای نمایش بهتر، از تصویر مربع (نسبت ۱x۱) استفاده کنید.</p>
+        <input type="hidden" id="profile_picture_path" value="{{ user_job_profile.profile_picture }}">
+        <input type="file" id="image_upload_trigger" class="d-none" accept="image/*">
+        <label for="image_upload_trigger" class="btn btn-outline-primary w-100">
+            <i class="bi bi-upload"></i> انتخاب عکس جدید
+        </label>
+        <div class="progress mt-2" id="uploadProgress" style="display: none;">
+            <div class="progress-bar bg-success" id="uploadProgressBar" style="width: 0%;">0%</div>
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button><button type="button" id="save-picture-changes" class="btn btn-primary">ذخیره عکس</button></div>
+  </div></div>
+</div>
+
+<div class="modal fade" id="deleteProfileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content bg-danger text-white">
+    <div class="modal-header border-0"><h5 class="modal-title">تایید حذف پروفایل</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <p>آیا از حذف کامل پروفایل کاریابی خود اطمینان دارید؟</p>
+      <p class="small">این عمل غیرقابل بازگشت است و تمام اطلاعات شما شامل سوابق شغلی و رزومه حذف خواهد شد.</p>
+    </div>
+    <div class="modal-footer border-0">
+      <button type="button" class="btn btn-light" data-bs-dismiss="modal">انصراف</button>
+      <form action="{{ url_for('main.delete_job_profile') }}" method="POST">
+        <button type="submit" class="btn btn-outline-light">بله، حذف کن</button>
+      </form>
+    </div>
+  </div></div>
+</div>
+{% endif %}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
@@ -738,9 +1043,105 @@
             });
         });
     </script>
+
+{% block page_scripts %}
+<script type="text/javascript" src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script>
+    /**
+ * تابع یکپارچه برای راه‌اندازی و مقداردهی اولیه تقویم شمسی.
+ */
+function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
+    const displayEl = document.getElementById(pickerDisplayId);
+    const hiddenEl = document.getElementById(hiddenInputId);
+
+    if (!displayEl || !hiddenEl) return;
+
+    jalaliDatepicker.startWatch({
+        selector: '#' + pickerDisplayId,
+        container: 'body',
+        onSelect: function(selectedDate) {
+            const date = new Date(selectedDate * 1000);
+            const year = date.getFullYear();
+            const month = ('0' + (date.getMonth() + 1)).slice(-2);
+            const day = ('0' + date.getDate()).slice(-2);
+            hiddenEl.value = `${year}-${month}-${day}`;
+        }
+    });
+
+    const initialGregorianDate = hiddenEl.value;
+    if (initialGregorianDate) {
+        jalaliDatepicker.updateOptions({
+            date: new Date(initialGregorianDate),
+            selector: '#' + pickerDisplayId
+        });
+        displayEl.value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
+    }
+}
+</script>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        // فعال‌سازی تقویم شمسی جدید
+        jalaliDatepicker.startWatch({
+            // تنظیمات برای فیلد تاریخ تولد
+            selector: "#birthdate-picker-display",
+            // وقتی کاربر تاریخی را انتخاب کرد، تاریخ میلادی معادل آن در فیلد مخفی قرار می‌گیرد
+            onSelect: function(selectedDate) {
+                const date = new Date(selectedDate * 1000);
+                const year = date.getFullYear();
+                const month = ('0' + (date.getMonth() + 1)).slice(-2);
+                const day = ('0' + date.getDate()).slice(-2);
+                document.getElementById("birthdate-gregorian-alt").value = `${year}-${month}-${day}`;
+            }
+        });
+
+        // تنظیم مقدار اولیه برای حالت ویرایش
+        const initialGregorianDate = document.getElementById('birthdate-gregorian-alt').value;
+        if(initialGregorianDate) {
+            // اگر تاریخ میلادی وجود داشت، معادل شمسی آن را در فیلد نمایشی قرار بده
+            jalaliDatepicker.updateOptions({
+                time: false,
+                // تاریخ را از روی فیلد مخفی می‌خواند و در تقویم انتخاب می‌کند
+                date: new Date(initialGregorianDate)
+            });
+            // به‌روزرسانی مقدار فیلد نمایشی
+            document.getElementById("birthdate-picker-display").value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
+        }
+    });
+</script>
+
+{% endblock %}
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            initJalaliDatepicker('birthdate-picker-display-modal', 'birthdate-gregorian-alt-modal');
+
+            function displayInitialShamsiDate() {
+                const initialDateElem = document.getElementById('initial-gregorian-date');
+                if (initialDateElem && initialDateElem.innerText) {
+                    const gregorianDate = initialDateElem.innerText;
+                    // تبدیل تاریخ میلادی به یک فرمت خوانا و زیبای شمسی
+                    const shamsiDate = new Date(gregorianDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
+                    document.getElementById('profile-birthdate-display').innerText = shamsiDate;
+                }
+            }
+            displayInitialShamsiDate();
+
+            const contactModal = document.getElementById('editContactModal');
+            if(contactModal) {
+                contactModal.addEventListener('show.bs.modal', function () {
+                    const initialGregorianDate = document.getElementById('birthdate-gregorian-alt-modal').value;
+                    const displayInput = document.getElementById('birthdate-picker-modal');
+                    if(initialGregorianDate) {
+                        const shamsiDate = new Date(initialGregorianDate).toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '/');
+                        displayInput.value = shamsiDate;
+                    } else {
+                        displayInput.value = '';
+                    }
+                });
+            }
             // --- Tab Switching Logic ---
             // تغییر کلیدی: حالا لینک‌های داخل سایدبار و آف‌کنوس هر دو انتخاب می‌شوند
             const tabLinks = document.querySelectorAll('.sidebar .nav-link[data-tab-target], .offcanvas .nav-link[data-tab-target]');
@@ -894,5 +1295,161 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<script>
+// فایل: dashboard.html (داخل تگ اسکریپت)
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Helper function to send form data via fetch
+    function sendAjaxForm(formId, url, successCallback) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                if (successCallback) successCallback(result);
+                const modalEl = form.closest('.modal');
+                if (modalEl) {
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+
+                    // یک event listener اضافه می‌کنیم که فقط یک بار پس از بسته شدن کامل مودال اجرا شود
+                    modalEl.addEventListener('hidden.bs.modal', function () {
+                        // استایل‌های اضافه شده توسط بوت استرپ را به صورت دستی حذف می‌کنیم
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }, { once: true }); // { once: true } باعث می‌شود این listener بعد از یک بار اجرا حذف شود
+
+                    modalInstance.hide();
+                }
+                // --- پایان تغییر ---
+
+                alert(result.message);
+            } else {
+                alert('خطا: ' + result.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Listener for "About Me" modal
+    document.getElementById('save-contact-changes')?.addEventListener('click', function() {
+        sendAjaxForm('edit-contact-form', "{{ url_for('main.edit_job_profile_contact') }}", (result) => {
+            const data = result.new_data;
+            document.getElementById('profile-phone-display').innerText = data.phone;
+            document.getElementById('profile-email-display').innerText = data.email;
+            document.getElementById('profile-location-display').innerText = data.location;
+        
+            // *** تغییر اصلی اینجاست ***
+            // تاریخ میلادی را به شمسی تبدیل کرده و سپس نمایش می‌دهد
+            document.getElementById('profile-birthdate-display').innerText = toPersianDate(data.birth_date);
+        
+            document.getElementById('profile-marital-display').innerText = data.marital_status;
+            document.getElementById('profile-military-display').innerText = data.military_status;
+        });
+    });
+
+    // Listener for "Contact Info" modal
+    document.getElementById('save-contact-changes')?.addEventListener('click', function() {
+        sendAjaxForm('edit-contact-form', "{{ url_for('main.edit_job_profile_contact') }}", (result) => {
+            const data = result.new_data;
+            document.getElementById('profile-phone-display').innerText = data.phone;
+            document.getElementById('profile-email-display').innerText = data.email;
+            document.getElementById('profile-location-display').innerText = data.location;
+            document.getElementById('profile-birthdate-display').innerText = data.birth_date;
+            document.getElementById('profile-marital-display').innerText = data.marital_status;
+            document.getElementById('profile-military-display').innerText = data.military_status;
+        });
+    });
+
+    // Listener for "Education" modal
+    document.getElementById('save-education-changes')?.addEventListener('click', function() {
+        sendAjaxForm('edit-education-form', "{{ url_for('main.edit_job_profile_education') }}", (result) => {
+            document.getElementById('profile-education-level-display').innerText = result.new_data.level;
+            document.getElementById('profile-education-status-display').innerText = result.new_data.status;
+        });
+    });
+
+    // Logic for Profile Picture Upload
+    const imageUploadTrigger = document.getElementById('image_upload_trigger');
+    const savePictureBtn = document.getElementById('save-picture-changes');
+
+    if (imageUploadTrigger) {
+        imageUploadTrigger.addEventListener('change', function(event){
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const progressContainer = document.getElementById("uploadProgress");
+            const progressBar = document.getElementById("uploadProgressBar");
+            progressContainer.style.display = "block";
+            progressBar.style.width = "0%";
+            progressBar.innerText = "0%";
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "{{ url_for('main.upload_image') }}", true);
+
+            xhr.upload.addEventListener("progress", function(e) {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percent + "%";
+                    progressBar.innerText = percent + "%";
+                }
+            });
+
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.image_path) {
+                        document.getElementById('profile_picture_path').value = data.image_path;
+                        alert('عکس آپلود شد. برای نهایی شدن، دکمه ذخیره عکس را بزنید.');
+                    }
+                }
+            };
+            xhr.send(formData);
+        });
+    }
+
+    if(savePictureBtn) {
+        savePictureBtn.addEventListener('click', function() {
+            const newPath = document.getElementById('profile_picture_path').value;
+            fetch("{{ url_for('main.edit_job_profile_picture') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image_path: newPath })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('profile-picture-display').src = result.new_path;
+                    bootstrap.Modal.getInstance(document.getElementById('editPictureModal')).hide();
+                    alert(result.message);
+                }
+            });
+        });
+    }
+});
+</script>
+<script>
+    function toPersianDate(gregorianDateString) {
+        if (!gregorianDateString || gregorianDateString === 'ثبت نشده') {
+            return 'ثبت نشده';
+        }
+        return new Date(gregorianDateString).toLocaleDateString('fa-IR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+</script>
 {% endblock %}

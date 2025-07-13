@@ -116,6 +116,103 @@
 </div>
 <hr class="w-100 txt-black">
 
+<h3 class="txt-black">گزارش‌های تخلف کاربران</h3>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead>
+            <tr>
+                <th class="text-end">کاربر گزارش‌دهنده</th>
+                <th class="text-end">کاربر متخلف</th>
+                <th class="text-end">شرح گزارش</th>
+                <th class="text-end">تاریخ</th>
+                <th class="text-end">مکالمه</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for report in user_reports %}
+            <tr>
+                <td><a href="{{ url_for('main.user_dashboard', user_id=report.reporter.id) }}" target="_blank">{{ report.reporter.username }}</a></td>
+                <td><a href="{{ url_for('main.user_dashboard', user_id=report.reported.id) }}" target="_blank">{{ report.reported.username }}</a></td>
+                <td>{{ report.reason }}</td>
+                <td>{{ report.created_at | jalali }}</td>
+                <td>
+                    {% if report.conversation %}
+                        <a href="{{ url_for('main.conversation', conversation_id=report.conversation.id) }}" target="_blank" class="btn btn-info btn-sm">مشاهده چت</a>
+                    {% else %}
+                        <span>-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<hr class="w-100 txt-black">
+
+<h3 class="txt-black">گزارش‌های تخلف آگهی‌های استخدام</h3>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead>
+            <tr>
+                <th class="text-end">کاربر گزارش‌دهنده</th>
+                <th class="text-end">آگهی استخدام</th>
+                <th class="text-end">شرح گزارش</th>
+                <th class="text-end">تاریخ</th>
+                <th class="text-end">عملیات</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for report in job_listing_reports %}
+            <tr>
+                <td>{{ report.reporter.username }}</td>
+                <td><a href="{{ url_for('main.job_listing_detail', job_id=report.job_listing.id) }}" target="_blank">{{ report.job_listing.title }}</a></td>
+                <td>{{ report.reason }}</td>
+                <td>{{ report.created_at | jalali }}</td>
+                <td>
+                    <form action="{{ url_for('main.delete_job_listing_report', report_id=report.id) }}" method="post" onsubmit="return confirm('آیا از حذف این گزارش مطمئن هستید؟');">
+                      <button type="submit" class="btn btn-danger btn-sm">🗑 حذف</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<hr class="w-100 txt-black">
+{# >>>>> پایان: بخش جدید برای نمایش گزارش‌های آگهی استخدام <<<<< #}
+
+{# >>>>> شروع: بخش جدید برای نمایش گزارش‌های پروفایل کاریابی <<<<< #}
+<h3 class="txt-black">گزارش‌های تخلف پروفایل‌های کاریابی</h3>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead>
+            <tr>
+                <th class="text-end">کاربر گزارش‌دهنده</th>
+                <th class="text-end">پروفایل کاریابی</th>
+                <th class="text-end">شرح گزارش</th>
+                <th class="text-end">تاریخ</th>
+                <th class="text-end">عملیات</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for report in job_profile_reports %}
+            <tr>
+                <td>{{ report.reporter.username }}</td>
+                <td><a href="{{ url_for('main.job_profile_detail', profile_id=report.job_profile.id) }}" target="_blank">{{ report.job_profile.title }}</a></td>
+                <td>{{ report.reason }}</td>
+                <td>{{ report.created_at | jalali }}</td>
+                <td>
+                    <form action="{{ url_for('main.delete_job_profile_report', report_id=report.id) }}" method="post" onsubmit="return confirm('آیا از حذف این گزارش مطمئن هستید؟');">
+                      <button type="submit" class="btn btn-danger btn-sm">🗑 حذف</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<hr class="w-100 txt-black">
+
 
 <div class="mb-3">
     <input type="text" id="blocked-product-search" class="inputs flex-grow-1" placeholder="جستجو در نام محصول، توضیحات یا نام مالک...">

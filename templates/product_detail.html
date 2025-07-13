@@ -41,9 +41,7 @@
     .info-block {
         background-color: var(--black-color);
         border-radius: 1rem;
-        padding: 1.5rem;
         margin-top: 1.5rem;
-        box-shadow: 0 0 1rem var(--light-green);
     }
 
     .product-title {
@@ -224,6 +222,44 @@
       transform: translateX(-50%); transition: top 0.3s ease; z-index: 10000;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .similar-product-card {
+        display: block;
+        text-decoration: none;
+        background-color: var(--dark-green); /* یک پس‌زمینه ملایم */
+        border-radius: 0.75rem;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        height: 100%;
+    }
+    .similar-product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .similar-product-image-wrapper {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+    }
+    .similar-product-image-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .similar-product-info {
+        padding: 0.75rem;
+    }
+    .similar-product-title {
+        font-weight: 600;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* برای نام‌های طولانی، سه نقطه نمایش می‌دهد */
+    }
+    .similar-product-price {
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-bottom: 0;
+    }
 </style>
 
 <div id="page-content">
@@ -243,7 +279,7 @@
         </div>
     </div>
     
-    <div class="container detail-container pb-5">
+    <div class="container detail-container" style="padding-bottom: 7rem;">
         <div class="product-gallery">
             {% if product.images %}
                 <div id="productDetailCarousel" class="carousel slide" data-bs-ride="carousel">
@@ -284,7 +320,7 @@
 
         <div class="info-block">
             <p class="meta-info mb-2 txt-black">منتشر شده در {{ product.updated_at | jalali }}</p>
-            <h1 class="product-title mb-3 txt-black">{{ product.name }}</h1>
+            <h4 class="product-title mb-3 txt-black fs-4">{{ product.name }}</h4>
             <p class="product-price">
                 {% if product.price == 0 %}
                     توافقی
@@ -292,7 +328,7 @@
                     {{ "{:,.0f}".format(product.price) }} تومان
                 {% endif %}
             </p>
-        </div>
+        
 
         <div class="cta-block mb-3">
             {% if current_user.id != product.owner.id %}
@@ -322,8 +358,12 @@
                     {% endif %}
         {% endif %}
 
-        <div class="info-block">
+        
             <h4 class="mb-3 txt-black">مشخصات</h4>
+            <hr class="txt-black">
+            <h4 class="mb-3 txt-black">توضیحات</h4>
+            <p class="description-text txt-black">{{ product.description }}</p>
+
             <hr class="txt-black">
             <ul class="specs-list">
                 <li>
@@ -346,22 +386,21 @@
                     <span class="spec-value txt-black">{{ product.address or "نامشخص" }}</span>
                 </li>
             </ul>
-        </div>
         
-        <div class="info-block">
-             <h4 class="mb-3 txt-black">توضیحات</h4>
-             <p class="description-text txt-black">{{ product.description }}</p>
-        </div>
+        
+            <hr class="txt-black">
+             
+        
 
-        <div class="info-block">
+        
             <h4 class="mb-3 txt-black">فروشنده</h4>
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-5">
                 <span class="txt-black">{{ product.owner.username }}</span>
                 <a href="{{ url_for('main.store', user_id=product.owner.id) }}" class="seller-link txt-black">همه آگهی‌های این فروشنده <i class="bi bi-arrow-left-short"></i></a>
             </div>
-        </div>
-
-        <div class="info-block mb-5">
+        
+            <hr class="txt-black">
+        
             <div class="d-flex justify-content-between align-items-center">
                 <span class="txt-black">این آگهی مشکلی دارد؟</span>
                 <button class="btn btn-outline-danger btn-sm" onclick="document.getElementById('reportForm').classList.toggle('d-none')">
@@ -372,7 +411,43 @@
                 <textarea name="report_text" class="form-control mb-2" rows="3" placeholder="شرح تخلف را وارد کنید..." required></textarea>
                 <button type="submit" class="btn btn-warning">ارسال گزارش</button>
             </form>
+
+            <hr class="txt-black">
         </div>
+
+
+        {% if similar_products %}
+        <div class="info-block mt-4 mb-5">
+            <h4 class="mb-3 txt-black">محصولات مشابه</h4>
+            <div class="row g-3">
+                {% for p in similar_products %}
+                <div class="col-6 col-md-3">
+                    <a href="{{ url_for('main.product_detail', product_id=p.id) }}" class="similar-product-card">
+                        <div class="similar-product-image-wrapper">
+                            {% if p.images %}
+                                <img src="{{ url_for('static', filename='uploads/' + p.images[0].image_path) }}" alt="{{ p.name }}">
+                            {% elif p.image_path %}
+                                <img src="{{ url_for('static', filename='uploads/' + p.image_path) }}" alt="{{ p.name }}">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='images/placeholder.png') }}" alt="No Image">
+                            {% endif %}
+                        </div>
+                        <div class="similar-product-info">
+                            <h6 class="similar-product-title txt-black">{{ p.name }}</h6>
+                            <p class="similar-product-price txt-black">
+                                {% if p.price == 0 %}
+                                    توافقی
+                                {% else %}
+                                    {{ "{:,.0f}".format(p.price) }} تومان
+                                {% endif %}
+                            </p>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 

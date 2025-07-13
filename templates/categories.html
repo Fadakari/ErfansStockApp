@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}دسته‌بندی‌ها - استوک{% endblock %}
+
+{% block content %}
+<style>
+    /* --- استایل‌های اصلی صفحه --- */
+    .category-page-container {
+        padding-top: 1.5rem;
+    }
+
+    .category-sidebar {
+        background-color: var(--black-color);
+        padding: 1rem;
+        border-radius: 1rem;
+        box-shadow: 0 0 1rem var(--light-green);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    /* <<<<<<< شروع تغییر ۱: استایل‌های جدید برای منوی آکاردئونی >>>>>>> */
+    .accordion-item {
+        background-color: transparent;
+        border: none;
+        margin-bottom: 0.5rem;
+    }
+
+    .accordion-button {
+        background-color: var(--dark-green);
+        color: var(--text-color);
+        font-weight: 700;
+        font-size: 1.1rem;
+        border-radius: 0.5rem !important; /* برای غلبه بر استایل بوت‌استرپ */
+        padding: 0.75rem 1rem;
+        transition: background-color 0.2s ease;
+    }
+
+    .accordion-button:not(.collapsed) {
+        background-color: var(--primary-accent);
+        color: white;
+        box-shadow: none;
+    }
+
+    .accordion-button:focus {
+        box-shadow: 0 0 0 0.25rem rgba(var(--primary-accent-rgb), 0.5);
+    }
+    
+    /* تغییر رنگ آیکون فلش آکاردئون */
+    .accordion-button::after {
+        filter: brightness(0) invert(1);
+    }
+
+    .accordion-body {
+        padding: 0.5rem 0 0 0;
+    }
+
+    .subcategory-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .subcategory-list a {
+        display: block;
+        padding: 0.6rem 1.5rem; /* تورفتگی بیشتر برای زیردسته‌ها */
+        color: var(--text-muted-color);
+        text-decoration: none;
+        border-radius: 0.5rem;
+        transition: background-color 0.2s, color 0.2s;
+        font-size: 0.95rem;
+    }
+
+    .subcategory-list a:hover {
+        background-color: var(--dark-green);
+        color: var(--text-color);
+    }
+    
+    .subcategory-list a.active {
+        background-color: var(--dark-green);
+        color: white;
+        font-weight: bold;
+    }
+    /* <<<<<<< پایان تغییر ۱ >>>>>>> */
+
+
+    /* <<<<<<< شروع تغییر ۲: استایل‌های جدید برای کارت‌های محصول افقی >>>>>>> */
+    .divar-card-horizontal-link {
+        display: flex;
+        text-decoration: none;
+        color: inherit;
+        gap: 1rem;
+    }
+
+    .divar-card-img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        background-color: var(--border-color);
+        flex-shrink: 0; /* جلوگیری از کوچک شدن عکس */
+    }
+
+    .divar-card-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex-grow: 1;
+        padding-top: 0.25rem;
+    }
+
+    .divar-card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        /* برای نام‌های طولانی */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;  
+        overflow: hidden;
+    }
+
+    .divar-card-meta {
+        font-size: 0.85rem;
+        color: var(--text-muted-color);
+        margin-top: auto; /* متا را به پایین هل می‌دهد */
+        padding-top: 0.5rem;
+    }
+    
+    .divar-card-price {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--primary-accent);
+        margin: 0;
+    }
+
+    .products-list-container hr {
+        border-top: 1px solid var(--border-color);
+        margin: 1rem 0;
+    }
+    /* <<<<<<< پایان تغییر ۲ >>>>>>> */
+
+</style>
+
+<div class="container category-page-container">
+    <div class="row">
+        <div class="col-md-3">
+            <aside class="category-sidebar">
+                <h3 class="mb-3 txt-black">دسته‌بندی‌ها</h3>
+                
+                <div class="accordion" id="categoryAccordion">
+                    {% for parent_cat in parent_categories %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-{{ parent_cat.id }}">
+                            <button class="accordion-button txt-black d-flex justify-content-between {% if not selected_category or (selected_category.id != parent_cat.id and selected_category.parent_id != parent_cat.id) %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ parent_cat.id }}" aria-expanded="{% if selected_category and (selected_category.id == parent_cat.id or selected_category.parent_id == parent_cat.id) %}true{% else %}false{% endif %}" aria-controls="collapse-{{ parent_cat.id }}">
+                                <span class="ms-2">{{ parent_cat.name }}</span>
+                            </button>
+                        </h2>
+                        <div id="collapse-{{ parent_cat.id }}" class="accordion-collapse collapse {% if selected_category and (selected_category.id == parent_cat.id or selected_category.parent_id == parent_cat.id) %}show{% endif %}" aria-labelledby="heading-{{ parent_cat.id }}" data-bs-parent="#categoryAccordion">
+                            <div class="accordion-body">
+                                <ul class="subcategory-list">
+                                    <li>
+                                        <a href="{{ url_for('main.categories_page', category_id=parent_cat.id) }}" class="{% if selected_category and selected_category.id == parent_cat.id %}active{% endif %}">
+                                           همه موارد این دسته
+                                        </a>
+                                    </li>
+                                    {% for sub_cat in parent_cat.subcategories %}
+                                    <li>
+                                        <a href="{{ url_for('main.categories_page', category_id=sub_cat.id) }}" class="{% if selected_category and selected_category.id == sub_cat.id %}active{% endif %}">
+                                           {{ sub_cat.name }}
+                                        </a>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                </aside>
+        </div>
+
+        <div class="col-md-9 mt-4" style="margin-bottom: 7rem;">
+            <main>
+                {% if selected_category %}
+                    <h2 class="mb-4 txt-black">محصولات دسته: {{ selected_category.name }}</h2>
+                    
+                    <div class="products-list-container">
+                        {% for product in products %}
+                        <div class="col">
+                            <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="divar-card-horizontal-link">
+                                
+                                {% if product.images and product.images[0].image_path %}
+                                    {% set image_url = url_for('static', filename='uploads/' + product.images[0].image_path) %}
+                                {% elif product.image_path %}
+                                    {% set image_url = url_for('static', filename='uploads/' + product.image_path) %}
+                                {% else %}
+                                    {% set image_url = url_for('static', filename='images/placeholder.png') %}
+                                {% endif %}
+                                <img src="{{ image_url }}" class="divar-card-img" alt="{{ product.name }}" loading="lazy">
+                                
+                                <div class="divar-card-body">
+                                    <div>
+                                       <h3 class="divar-card-title txt-black">{{ product.name }}</h3>
+                                       <p class="divar-card-meta txt-black mt-2">
+                                            در {% if product.address %}{{ product.address }}{% else %}استوک{% endif %}
+                                       </p>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                       <p class="divar-card-price txt-black mb-0">
+                                            {% if product.price and product.price > 0 %}
+                                                {{ "{:,.0f}".format(product.price) }} تومان
+                                            {% else %}
+                                                توافقی
+                                            {% endif %}
+                                        </p>
+                                        {% if product.promoted_until and product.promoted_until > datetime.utcnow() %}
+                                            <span style="color: #00A478; font-weight: 500; font-size: 0.8rem;">
+                                                <i class="bi bi-rocket-takeoff-fill"></i> نردبان
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                            <hr class="txt-black">
+                        </div>
+                        {% else %}
+                            <div class="alert alert-warning txt-black" style="background-color: var(--dark-green);">
+                                در حال حاضر محصولی در این دسته برای نمایش وجود ندارد.
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center p-5" style="background-color: var(--black-color); border-radius: 1rem;">
+                        <i class="bi bi-tags-fill fs-1 txt-black"></i>
+                        <h4 class="mt-3 txt-black">به بخش دسته‌بندی‌ها خوش آمدید</h4>
+                        <p class="text-muted txt-black">برای مشاهده محصولات، لطفاً یک دسته‌بندی را از لیست کنار انتخاب کنید.</p>
+                    </div>
+                {% endif %}
+            </main>
+        </div>
+    </div>
+</div>
+{% endblock %}

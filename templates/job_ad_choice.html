@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-6">
+        <div class="card signuper mb-4 text-center">
+            <div class="card-header" style="background: var(--dark-green);">
+                <h4 class="mb-0 txt-black">انتخاب نوع آگهی</h4>
+            </div>
+            <div class="card-body bg-very-black p-4">
+                <p class="txt-black mb-4">قصد ثبت چه نوع آگهی را دارید؟</p>
+                
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('main.new_hiring_ad') }}" class="btn btn-lg btn-danger header-tabs py-3 txt-black">
+                        <i class="bi bi-person-plus-fill me-2"></i>
+                        می‌خواهم استخدام کنم (کارفرما)
+                    </a>
+                    
+                    <a href="{{ url_for('main.new_job_profile') }}" class="btn btn-lg btn-success header-tabs py-3 txt-black" style="background-color: #198754;">
+                        <i class="bi bi-person-workspace me-2"></i>
+                        دنبال کار می‌گردم (کارجو)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
