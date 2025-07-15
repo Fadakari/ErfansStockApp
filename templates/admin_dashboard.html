@@ -21,8 +21,8 @@
                 });
         }
 
-        fetchOnlineUsers();              // اولین بار
-        setInterval(fetchOnlineUsers, 1000);  // هر ۱ ثانیه
+        fetchOnlineUsers();
+        setInterval(fetchOnlineUsers, 1000);
     </script>
 
 
@@ -230,12 +230,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchTimeout;
 
     searchInput.addEventListener('keyup', function() {
-        // پاک کردن تایم‌اوت قبلی تا از ارسال درخواست‌های متعدد جلوگیری شود
         clearTimeout(searchTimeout);
         
         const query = this.value;
 
-        // تنظیم یک تایم‌اوت جدید. درخواست فقط بعد از 500 میلی‌ثانیه توقف تایپ ارسال می‌شود.
         searchTimeout = setTimeout(() => {
             fetch(`/admin/search_blocked_products?q=${encodeURIComponent(query)}`)
                 .then(response => response.text())

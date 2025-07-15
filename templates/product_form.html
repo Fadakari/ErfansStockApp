@@ -3,14 +3,12 @@
 {% block content %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
 <style>
-/* ظاهر تصویر در لیست برندها */
 .logo-image {
     height: 20px;
     margin-left: 8px;
     vertical-align: middle;
 }
 
-/* تنظیم کلی select2 */
 .select2-container {
     width: 100% !important;
     max-width: 100%;
@@ -18,7 +16,6 @@
     z-index: 9999;
 }
 
-/* جلوگیری از نصفه دیده شدن منو */
 .select2-results__options {
     position: fixed;
     right: 10%;
@@ -243,10 +240,10 @@
             templateResult: formatBrand,
             templateSelection: formatBrand,
             minimumResultsForSearch: Infinity,
-            width: '100%', // 👈 حل مشکل عرض در موبایل
+            width: '100%',
             dropdownAutoWidth: true,
-            dir: "rtl", // 👈 تنظیم راست‌چین بودن
-            dropdownParent: $('#brand-select').parent() // 👈 حل مشکل موقعیت در صفحه و موبایل
+            dir: "rtl",
+            dropdownParent: $('#brand-select').parent()
         });
     });
 </script>
@@ -256,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const priceInput = document.getElementById('price');
     const priceWordsElement = document.getElementById('price-in-words');
 
-    // تابع برای تبدیل عدد به حروف فارسی
     function numberToWords(num) {
         if (num === 0) return 'صفر';
         if (!num) return '';
@@ -311,32 +307,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    // رویداد برای هر بار تایپ کردن در فیلد قیمت
     priceInput.addEventListener('input', function(e) {
-        // 1. دریافت مقدار خام و حذف کاماهای قبلی
         let rawValue = e.target.value.replace(/,/g, '');
         
-        // اگر مقدار غیرعددی بود، آن را پاک می‌کنیم
         if (isNaN(rawValue)) {
             rawValue = rawValue.replace(/\D/g, '');
         }
 
-        // 2. فرمت‌دهی عدد با جداکننده سه‌رقمی
         const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         
-        // 3. قرار دادن مقدار فرمت‌شده در فیلد
         e.target.value = formattedValue;
 
-        // 4. تبدیل عدد به حروف و نمایش آن
         const numberValue = parseInt(rawValue, 10);
         if (numberValue > 0) {
             priceWordsElement.textContent = numberToWords(numberValue) + ' تومان';
         } else {
-            priceWordsElement.innerHTML = '&nbsp;'; // پاک کردن متن در صورت خالی بودن
+            priceWordsElement.innerHTML = '&nbsp;';
         }
     });
     
-    // اجرای اولیه برای مقادیری که از قبل در فیلد وجود دارند
     if(priceInput.value){
         priceInput.dispatchEvent(new Event('input'));
     }
@@ -344,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <script>
-    // مقادیر از Jinja درون جاوااسکریپت:
     const initialProvince = "{{ product.address.split('-')[0] if product else '' }}";
     const initialCity = "{{ product.address.split('-')[1] if product else '' }}";
 </script>
@@ -409,16 +397,12 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 <script>
-    // پیدا کردن فرم با id مشخص شده
     const loginForm = document.getElementById('productForm');
 
-    // اضافه کردن یک event listener برای رویداد 'submit' فرم
     loginForm.addEventListener('submit', function() {
-        // پیدا کردن دکمه submit در داخل همین فرم
         const submitButton = loginForm.querySelector('button[type="submit"]');
         
         if (submitButton) {
-            // حالا دکمه را غیرفعال کرده و اسپینر را نمایش می‌دهیم
             submitButton.disabled = true;
             submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
         }
@@ -428,27 +412,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // --- متغیرهای مربوط به آپلود و برش ---
     const fileInput = document.getElementById('image');
     const imagePreviews = document.getElementById('image-previews');
     const uploadedImagePathsInput = document.getElementById('uploaded_image_paths');
     const submitBtn = document.getElementById("submitBtn");
 
-    // --- متغیرهای مربوط به Modal و Cropper ---
     const cropperModal = document.getElementById('cropper-modal');
     const imageToBeCropped = document.getElementById('image-to-be-cropped');
     const cropAndUploadBtn = document.getElementById('crop-and-upload-btn');
     const cancelCropBtn = document.getElementById('cancel-crop-btn');
     let cropper = null;
-    let originalFile = null; // برای نگهداری فایل اصلی جهت استفاده از نام آن
+    let originalFile = null;
 
-    // بازگردانی پیش‌نمایش‌های موجود در حالت ویرایش
     if (uploadedImagePathsInput.value) {
         const existingPaths = uploadedImagePathsInput.value.split(',').filter(p => p);
         existingPaths.forEach(path => addPreview(path));
     }
 
-    // --- تابع اصلی که با انتخاب فایل فراخوانی می‌شود ---
     window.handleFileSelect = function(input) {
         if (!input.files || input.files.length === 0) return;
 
@@ -459,7 +439,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // فقط اولین فایل انتخاب شده را برای برش باز می‌کنیم
         originalFile = input.files[0]; 
         
         if (originalFile && originalFile.type.startsWith('image/')) {
@@ -472,7 +451,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     cropper.destroy();
                 }
 
-                // مقداردهی اولیه Cropper با نسبت مربعی
                 cropper = new Cropper(imageToBeCropped, {
                     aspectRatio: 1 / 1,
                     viewMode: 1,
@@ -482,14 +460,12 @@ document.addEventListener('DOMContentLoaded', function () {
             };
             reader.readAsDataURL(originalFile);
         }
-        input.value = ''; // ورودی را خالی می‌کنیم تا برای انتخاب بعدی آماده باشد
+        input.value = '';
     };
 
-    // --- رویداد کلیک دکمه "برش و آپلود" ---
     cropAndUploadBtn.addEventListener('click', function() {
         if (!cropper) return;
 
-        // دریافت تصویر برش خورده با کیفیت مناسب
         const canvas = cropper.getCroppedCanvas({
             width: 800,
             height: 800,
@@ -498,19 +474,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         canvas.toBlob(function(blob) {
             const formData = new FormData();
-            // فایل blob برش خورده را با نام فایل اصلی ارسال می‌کنیم
             formData.append('image', blob, originalFile.name);
-            uploadToServer(formData); // تابع آپلود موجود شما را فراخوانی می‌کنیم
+            uploadToServer(formData);
 
-        }, 'image/jpeg', 0.85); // فشرده‌سازی با کیفیت ۸۵٪
+        }, 'image/jpeg', 0.85);
 
-        // بستن Modal و پاکسازی
         cropperModal.style.display = 'none';
         cropper.destroy();
         cropper = null;
     });
 
-    // --- رویداد کلیک دکمه "انصراف" ---
     cancelCropBtn.addEventListener('click', function() {
         cropperModal.style.display = 'none';
         if (cropper) {
@@ -519,7 +492,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // --- تابع آپلود به سرور (بدون تغییر باقی می‌ماند) ---
     function uploadToServer(formData) {
         const progressContainer = document.getElementById("uploadProgress");
         const progressBar = document.getElementById("uploadProgressBar");
@@ -565,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function () {
         xhr.send(formData);
     }
     
-    // --- توابع کمکی (بدون تغییر باقی می‌مانند) ---
     function addPreview(imagePath) {
         const wrapper = document.createElement('div');
         wrapper.className = 'm-1 position-relative';
@@ -611,7 +582,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   </script>
 <script>
-    // لیست شهرهای مربوط به هر استان
     if (!window.citiesByProvince) {
         window.citiesByProvince = {
     "آذربایجان شرقی": [
@@ -1106,7 +1076,6 @@ document.addEventListener("DOMContentLoaded", function () {
               });
         });
 
-        // مقدار اولیه (برای حالت ویرایش)
         if (initialProvince && initialCity) {
             provinceSelect.value = initialProvince;
             const cities = citiesByProvince[initialProvince] || [];
@@ -1139,7 +1108,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // لغو انتخاب تصویر
     function removeImage() {
         const imagePath = document.getElementById('uploaded_image_path').value;
         
@@ -1164,7 +1132,6 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
     
-        // پاک‌سازی UI
         const preview = document.getElementById('imagePreview');
         preview.style.display = 'none';
         preview.querySelector("img").src = '';

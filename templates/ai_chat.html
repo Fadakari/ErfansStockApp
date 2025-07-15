@@ -79,7 +79,7 @@
         margin-right: auto;
         max-width: 75%;
       }
-      .bot-message p { /* برای قرارگیری اسپینر و متن در یک خط */
+      .bot-message p {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -102,23 +102,21 @@
           color: var(--bs-body-color);
       }
 
-      /* <<<<<<< شروع استایل جدید برای اسپینر >>>>>>> */
-      .chat-spinner-container { /* برای وسط‌چین کردن اسپینر در پیام ربات */
+      .chat-spinner-container {
         display: flex;
-        justify-content: flex-start; /* برای پیام ربات که چپ‌چین است */
+        justify-content: flex-start;
         align-items: center;
         width: 100%;
-        min-height: 24px; /* حداقل ارتفاع برای جای دادن اسپینر */
+        min-height: 24px;
       }
       .chat-spinner {
         display: inline-block; 
         width: 20px; 
         height: 20px;
-        border: 3px solid rgba(var(--bs-emphasis-color-rgb), 0.2); /* رنگ حلقه ثابت، کمی شفاف‌تر */
+        border: 3px solid rgba(var(--bs-emphasis-color-rgb), 0.2);
         border-radius: 50%;
-        border-top-color: var(--bs-primary); /* رنگ بخش متحرک اسپینر */
+        border-top-color: var(--bs-primary);
         animation: chat-spin 0.8s linear infinite;
-        /* margin-right: 8px; // اگر متنی کنارش باشد */
       }
       .inputs {
         width: 100%;
@@ -156,7 +154,6 @@
           transform: rotate(360deg);
         }
       }
-      /* <<<<<<< پایان استایل جدید برای اسپینر >>>>>>> */
     </style>
 </head>
 <body class="container-fluid">
@@ -213,7 +210,7 @@
       appendMessage(query, 'user'); 
       userQueryInput.value = ''; 
       
-      const tempBotMessageDiv = appendMessage('', 'bot', true); // ایجاد پیام موقت با اسپینر
+      const tempBotMessageDiv = appendMessage('', 'bot', true);
 
       productSuggestionsDiv.innerHTML = ''; 
 
@@ -265,15 +262,13 @@
       p.style.whiteSpace = 'pre-wrap'; 
       
       if (isLoading) {
-        // <<<<<<< شروع تغییر: استفاده از اسپینر به جای سه نقطه >>>>>>>
-        const spinnerContainer = document.createElement('div'); // یک div برای نگهداری اسپینر
-        spinnerContainer.classList.add('chat-spinner-container'); // برای استایل‌دهی احتمالی
+        const spinnerContainer = document.createElement('div');
+        spinnerContainer.classList.add('chat-spinner-container');
         
         const spinnerSpan = document.createElement('span');
         spinnerSpan.classList.add('chat-spinner');
         spinnerContainer.appendChild(spinnerSpan);
-        p.appendChild(spinnerContainer); // اسپینر را به پاراگراف اضافه می‌کنیم
-        // <<<<<<< پایان تغییر >>>>>>>
+        p.appendChild(spinnerContainer);
       } else {
         if (sender === 'bot') {
           p.innerHTML = text; 
@@ -292,7 +287,6 @@
         const p = messageDiv.querySelector('p');
         if (p) {
             p.innerHTML = newHtmlContent; 
-            // اسپینر که داخل p بود، با محتوای جدید جایگزین می‌شود و نیازی به حذف دستی نیست.
         }
         chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; 
     }

@@ -78,13 +78,13 @@
             opacity: 0.6;
         }
 
-        /* <<<< شروع تغییر ۱: اضافه کردن position: relative >>>> */
+
         .bottom-nav .nav-link {
             display: flex;
             flex-direction: column;
             align-items: center;
             font-size: 0.75rem;
-            position: relative; /* این خط اضافه شد */
+            position: relative;
         }
         
         .bottom-nav .nav-link i {
@@ -121,7 +121,7 @@
         }
         .fab-menu {
         position: absolute;
-        bottom: 80px; /* بالای دکمه اصلی */
+        bottom: 80px;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -193,17 +193,16 @@
             vertical-align: middle;
         }
 
-        /* <<<< شروع تغییر ۲: تنظیم موقعیت نقطه نسبت به والد جدید >>>> */
         .notification-dot {
             position: absolute;
-            top: 2px; /* تنظیم فاصله از بالا */
-            right: 15px; /* تنظیم فاصله از راست */
+            top: 2px;
+            right: 15px;
             width: 10px;
             height: 10px;
             background-color: #9B1B30;
             border-radius: 50%;
             border: 2px solid var(--black-color);
-            display: none; /* در ابتدا مخفی */
+            display: none;
         }
         .header-tabs .notification-dot {
             top: 5px;
@@ -355,8 +354,22 @@
     </nav>
 
     
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
-    <div class="container m-0">
+
+
+    <div class="container">
         {% block content %}{% endblock %}
     </div>
 
@@ -389,8 +402,8 @@
         </li>
         <div class="fab-container">
             <div id="fab-menu" class="fab-menu">
-                <a href="{{ url_for('main.new_product') }}" class="fab-menu-item txt-black">ثبت محصول</a>
-                <a href="{{ url_for('main.new_job_ad_choice') }}" class="fab-menu-item txt-black">ثبت آگهی استخدام/کاریابی</a>
+                <a href="{{ url_for('main.new_product') }}" class="fab-menu-item text-light">ثبت محصول</a>
+                <a href="{{ url_for('main.new_job_ad_choice') }}" class="fab-menu-item text-light">ثبت آگهی استخدام/کاریابی</a>
             </div>
         
             <a href="#" id="fab-main-button" class="fab pt-1 pb-0" title="ثبت جدید">
@@ -474,12 +487,11 @@
                 const fabMenu = document.getElementById('fab-menu');
             
                 mainFab.addEventListener('click', function(event) {
-                    event.preventDefault(); // جلوگیری از رفرش صفحه
+                    event.preventDefault();
                     fabMenu.classList.toggle('active');
                     mainFab.classList.toggle('active');
                 });
             
-                // بستن منو با کلیک در جای دیگر صفحه
                 document.addEventListener('click', function(event) {
                     if (!mainFab.contains(event.target) && !fabMenu.contains(event.target)) {
                         fabMenu.classList.remove('active');
@@ -490,7 +502,6 @@
         </script>
         <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // این اسکریپت فقط برای کاربران لاگین کرده اجرا می‌شود
         {% if current_user.is_authenticated %}
         
         const desktopIndicator = document.getElementById('global-unread-indicator-desktop');
@@ -516,7 +527,6 @@
                 });
         }
 
-        // بررسی در لحظه بارگذاری صفحه و سپس هر ۱۰ ثانیه
         checkUnreadStatus();
         setInterval(checkUnreadStatus, 10000);
 
@@ -535,12 +545,10 @@
     <script src="https://unpkg.com/feather-icons"></script>
     <!-- <script src="{{ url_for('static', filename='bootst/js/bootstrap.min.js') }}"></script> -->
     <script>
-        // تابع برای تشخیص اینکه آیا کاربر از اپلیکیشن اندروید آمده است یا نه
         function isAndroidApp() {
             return /StockDivarApp/i.test(navigator.userAgent);
         }
 
-        // اگر کاربر از اپلیکیشن آمده بود، یک متغیر گلوبال برای غیرفعال کردن جستجوی زنده تعریف کن
         if (isAndroidApp()) {
             window.IS_ANDROID_APP = true;
             console.log("در حال اجرا در اپلیکیشن اندروید. ناوبری AJAX غیرفعال خواهد شد.");
@@ -551,26 +559,21 @@
     
     <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // پیدا کردن دکمه و عنصری که شماره را در خود دارد
     const copyButton = document.getElementById('copy-button');
     const numberToCopyElement = document.getElementById('devnumber');
 
     if (copyButton && numberToCopyElement) {
         copyButton.addEventListener('click', () => {
-            // ۱. شماره تلفن را از عنصر مربوطه بخوان
             const phoneNumber = numberToCopyElement.innerText;
 
-            // ۲. استفاده از Clipboard API برای کپی کردن متن
             navigator.clipboard.writeText(phoneNumber).then(() => {
-                // ۳. در صورت موفقیت، به کاربر بازخورد بده
                 const buttonText = copyButton.querySelector('.copy-text');
-                const originalText = buttonText.innerText; // متن اصلی را ذخیره کن
+                const originalText = buttonText.innerText;
 
-                buttonText.innerText = 'کپی شد!'; // تغییر متن دکمه
+                buttonText.innerText = 'کپی شد!';
                 copyButton.classList.remove('btn-primary');
-                copyButton.classList.add('btn-success'); // تغییر رنگ دکمه به سبز
+                copyButton.classList.add('btn-success');
 
-                // ۴. پس از ۲ ثانیه، دکمه را به حالت اولیه برگردان
                 setTimeout(() => {
                     buttonText.innerText = originalText;
                     copyButton.classList.remove('btn-success');
@@ -578,7 +581,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 2000);
 
             }).catch(err => {
-                // در صورت بروز خطا (مثلا در مرورگرهای قدیمی یا حالت ناامن)
                 console.error('خطا در کپی کردن: ', err);
                 alert('کپی کردن با خطا مواجه شد. لطفاً شماره را به صورت دستی کپی کنید.');
             });
@@ -615,22 +617,16 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.addEventListener('click', closeSheet);
         }
 
-        // جلوگیری از بسته شدن پنل با کلیک روی محتوای داخلی آن
         sheetBody.addEventListener('click', function(event) {
             event.stopPropagation();
         });
 });
-    // --- منطق یکپارچه و نهایی برای لودر و رفرش ---
 
-    // بخش ۱: مخفی کردن لودر پس از بارگذاری ساختار اصلی صفحه (سریع‌تر)
-    // 'load' به 'DOMContentLoaded' تغییر کرد
     document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('is-loading');
     });
 
 
-    // بخش ۲: منطق "کشیدن برای رفرش" (Pull to Refresh)
-    // این بخش برای جلوگیری از تداخل، در یک تابع جداگانه قرار گرفت
     (function() {
         let startY = 0;
         let isPulling = false;
@@ -642,7 +638,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.scrollY === 0) {
                     startY = e.touches[0].clientY;
                     isPulling = true;
-                    // غیرفعال کردن انیمیشن در هر دو عنصر برای حرکت چسبیده به انگشت
                     pullLoader.style.transition = 'none';
                     body.style.transition = 'none';
                 }
@@ -654,15 +649,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 let diffY = e.touches[0].clientY - startY;
 
                 if (diffY > 0) {
-                    // محاسبه موقعیت جدید top برای لودر
                     const newTop = Math.min(diffY - 55, 15);
                     pullLoader.style.top = `${newTop}px`;
 
-                    // محاسبه و اعمال همزمان padding به body
                     const newPadding = Math.max(0, 55 + newTop);
                     body.style.paddingTop = `${newPadding}px`;
 
-                    // تغییر متن هنگام کشیدن به اندازه کافی
                     const span = pullLoader.querySelector('span');
                     if (span) {
                         if (diffY >= 130) {
@@ -677,20 +669,17 @@ document.addEventListener('DOMContentLoaded', () => {
             window.addEventListener("touchend", (e) => {
                 if (!isPulling) return;
                 isPulling = false;
-                // فعال کردن دوباره انیمیشن‌ها برای بازگشت نرم
                 pullLoader.style.transition = 'top 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
                 body.style.transition = 'padding-top 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
 
                 let diffY = e.changedTouches[0].clientY - startY;
 
                 if (diffY >= 130) {
-                    // اگر رفرش انجام شد، body به خاطر کلاس is-loading خودش padding می‌گیرد
                     pullLoader.style.top = '0';
                     const span = pullLoader.querySelector('span');
                     if (span) span.textContent = 'در حال بارگذاری...';
                     location.reload();
                 } else {
-                    // در غیر این صورت، هر دو عنصر با انیمیشن به حالت اولیه برمی‌گردند
                     pullLoader.style.top = `-55px`;
                     body.style.paddingTop = '0px';
                     const span = pullLoader.querySelector('span');
@@ -701,10 +690,8 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 </script>
     <script>
-    // اسکریپت مربوط به انیمیشن رفرش کشویی
    
 
-    // اسکریپت مربوط به کپی شماره واتس‌اپ
     document.addEventListener('DOMContentLoaded', function () {
         const copyButton = document.getElementById('copy-whatsapp-number');
         if (copyButton) {
@@ -729,7 +716,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // اسکریپت مربوط به پاپ‌آپ پشتیبانی
     document.addEventListener('DOMContentLoaded', function () {
         const trigger = document.getElementById('custom-popup-trigger');
         const popup = document.getElementById('custom-popup');
@@ -751,7 +737,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // اسکریپت مربوط به pull-to-refresh در موبایل
     let startY = 0;
     let isPulling = false;
     let spinner = document.getElementById("pull-spinner");
@@ -792,7 +777,6 @@ document.addEventListener('DOMContentLoaded', () => {
         spinner.dataset.loading = "";
     });
         
-    // اسکریپت‌های دیگر
     document.querySelectorAll('.img-clickable').forEach(img => {
         img.addEventListener('click', function () {
             const modalImage = document.getElementById('modalImage');

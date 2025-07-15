@@ -43,11 +43,9 @@
         const timerContainer = document.getElementById("timer-container");
         const resendContainer = document.getElementById("resend-container");
 
-        // دریافت زمان باقی‌مانده از قالب Flask
         let timeLeft = {{ time_left|default(0) }};
 
         if (timeLeft > 0) {
-            // اگر زمان باقی بود، تایمر را نمایش بده
             timerContainer.style.display = 'block';
             timerElement.textContent = timeLeft;
             
@@ -55,25 +53,21 @@
                 timeLeft--;
                 timerElement.textContent = timeLeft;
                 if (timeLeft <= 0) {
-                    // پس از اتمام زمان، تایمر را متوقف و مخفی کن
                     clearInterval(countdown);
                     timerContainer.style.display = 'none';
                     resendContainer.style.display = 'block';
-                    // فرم را غیرفعال کن
                     submitButton.disabled = true;
                     submitButton.innerHTML = 'کد منقضی شده است';
                     inputs.forEach(input => input.disabled = true);
                 }
             }, 1000);
         } else {
-            // اگر از ابتدا زمانی باقی نبود، لینک ارسال مجدد را نشان بده
             resendContainer.style.display = 'block';
             submitButton.disabled = true;
             submitButton.innerHTML = 'کد منقضی شده است';
             inputs.forEach(input => input.disabled = true);
         }
 
-        // منطق قبلی برای مدیریت اینپوت‌های OTP
         inputs.forEach((input, index) => {
             input.addEventListener("input", () => {
                 input.value = input.value.replace(/[^0-9]/g, "");
@@ -85,7 +79,6 @@
                 const code = Array.from(inputs).map(i => i.value).join('');
                 if (code.length === 4) {
                     hiddenInput.value = code;
-                    // فقط در صورتی فرم را ارسال کن که دکمه فعال باشد
                     if (!submitButton.disabled) {
                         submitButton.disabled = true;
                         submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال بررسی...';
@@ -101,7 +94,6 @@
             });
         });
         
-        // اگر فرم فعال بود، روی اولین اینپوت فوکوس کن
         if (!submitButton.disabled) {
             inputs[0].focus();
         }

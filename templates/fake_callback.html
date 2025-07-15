@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
     <script>
-        // استخراج پارامترها از URL
         const params = new URLSearchParams(window.location.search);
-        // ایجاد لینک جدید برای لوکال‌هاست
         const newUrl = "http://localhost:5000/payment/callback?" + params.toString();
-        // هدایت کاربر به لوکال‌هاست بعد از 2 ثانیه
         setTimeout(() => {
             window.location.href = newUrl;
         }, 2000);

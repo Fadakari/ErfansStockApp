@@ -32,7 +32,7 @@
     }
 
     .chat-list-item:hover {
-        background-color: #9c0b2396; /* یک هایلایت ملایم */
+        background-color: #9c0b2396;
     }
 
     .unread-dot {
@@ -40,10 +40,10 @@
         height: 12px;
         background-color: #9B1B30;
         border-radius: 50%;
-        border: 2px solid var(--black-color); /* برای ایجاد فاصله و زیبایی */
+        border: 2px solid var(--black-color);
         position: absolute;
         top: 1rem;
-        right: calc(1rem + 55px + 5px); /* موقعیت دهی کنار آواتار */
+        right: calc(1rem + 55px + 5px);
     }
 
     .chat-avatar {
@@ -57,13 +57,13 @@
         justify-content: center;
         font-size: 1.5rem;
         font-weight: 500;
-        margin-left: 1rem; /* فاصله از متن در حالت RTL */
-        flex-shrink: 0; /* جلوگیری از کوچک شدن آواتار */
+        margin-left: 1rem;
+        flex-shrink: 0;
     }
 
     .chat-content {
         flex-grow: 1;
-        min-width: 0; /* برای درست کار کردن text-truncate */
+        min-width: 0;
     }
 
     .chat-header {
@@ -88,7 +88,7 @@
         color: var(--text-muted-color);
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis; /* نمایش ... برای پیام‌های طولانی */
+        text-overflow: ellipsis;
     }
 </style>
 
@@ -96,7 +96,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="m-0 txt-black">گفتگوها</h2>
         <button class="btn header-tabs py-2 px-3 float-end">
-            <a href="{{ url_for('main.index') }}">
+            <a href="{{ url_for('main.dashboard') }}">
                 <i class="bi bi-arrow-left fs-3 txt-black"></i>
             </a>
         </button>

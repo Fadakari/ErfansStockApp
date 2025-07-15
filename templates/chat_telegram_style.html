@@ -24,7 +24,6 @@
             --tg-secondary-text-color: #6c757d;
         }
 
-        /* 1. ساختار اصلی صفحه */
         html, body {
             height: 100%;
             width: 100%;
@@ -37,10 +36,9 @@
         .chat-container {
             display: flex;
             flex-direction: column;
-            height: 100vh; /* ارتفاع کامل صفحه نمایش */
+            height: 100vh;
         }
 
-        /* 2. هدر صفحه */
         .chat-header {
             flex-shrink: 0;
             display: flex;
@@ -66,7 +64,6 @@
             font-weight: 600;
         }
 
-        /* 3. بخش پیام‌ها */
         .chat-messages {
             flex-grow: 1;
             overflow-y: auto;
@@ -79,7 +76,6 @@
             gap: 12px;
         }
 
-        /* 4. حباب‌های پیام */
         .message-bubble {
             max-width: 75%;
             padding: 8px 12px;
@@ -112,7 +108,6 @@
             cursor: pointer;
         }
 
-        /* 5. فرم ارسال پیام */
         .chat-form-container {
             flex-shrink: 0;
             padding: 8px 12px;
@@ -228,10 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentUserId = {{ current_user.id }};
     let lastMessageId = {{ messages[-1].id if messages else 0 }};
 
-    // --- توابع اصلی ---
 
     function scrollToBottom(force = false) {
-        // فقط اگر کاربر نزدیک به پایین صفحه باشد، به صورت خودکار اسکرول می‌کند
         const isScrolledToBottom = chatArea.scrollHeight - chatArea.clientHeight <= chatArea.scrollTop + 100;
         if (force || isScrolledToBottom) {
             chatArea.scrollTop = chatArea.scrollHeight;
@@ -279,7 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
 
-    // ارسال فرم با AJAX
     messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!messageInput.value.trim() && !fileInput.files.length) return;
@@ -310,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // دریافت پیام‌های جدید به صورت دوره‌ای
     setInterval(async () => {
         try {
             const response = await fetch(`/get_new_messages?conversation_id=${conversationId}&after_id=${lastMessageId}`);
@@ -324,10 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.warn('Could not fetch new messages.', error);
         }
-    }, 5000); // هر ۵ ثانیه
+    }, 5000);
 
-    // اجرای اولیه
-    scrollToBottom(true); // اسکرول به پایین در اولین بارگذاری
+    scrollToBottom(true);
 });
 </script>
 

@@ -39,15 +39,13 @@
 form.myform {
     border: 3px solid orange !important;
 } */
-/* برای اینکه پیش‌نمایش داخل label و بالای آیکون باشه */
 .custom-file-upload {
-    position: relative; /* مهم برای position:absolute پیش‌نمایش */
+    position: relative;
 }
 .chat{height: 100%;}
 
-/* تنظیم موقعیت باکس پیش‌نمایش */
 .preview-tooltip {
-    bottom: 100%;  /* دقیقا بالای آیکون */
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
     margin-bottom: 8px;
@@ -60,7 +58,6 @@ form.myform {
     z-index: 1000;
 }
 
-/* مثل بالون کوچک: */
 .preview-tooltip::after {
     content: "";
     position: absolute;
@@ -73,7 +70,6 @@ form.myform {
     filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
 }
 
-/* تصویر داخل پیش‌نمایش */
 #simple-preview-img {
     width: 100%;
     border-radius: 6px;
@@ -99,7 +95,6 @@ form.myform {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         } */
-/* دکمه ضربدر حذف */
 .preview-close-btn {
     position: absolute;
     top: 2px;
@@ -114,23 +109,22 @@ form.myform {
 .preview-close-btn:hover {
     opacity: 1;
 }
-/* این کد را به انتهای تگ <style> اضافه کنید */
 
 .message-meta {
     display: block;
-    text-align: left; /* چینش از چپ برای زمان و تیک */
+    text-align: left;
     font-size: 0.75rem;
     color: #888;
     margin-top: 5px;
 }
 
 .message.sent .message-meta .status-icon {
-    margin-left: 5px; /* کمی فاصله بین زمان و تیک */
+    margin-left: 5px;
 }
 .chat-header {  background-color: var(--black-color);}
 
 .message.sent .message-meta {
-    direction: ltr; /* برای نمایش صحیح زمان و تیک در پیام‌های ارسالی */
+    direction: ltr;
 }
     </style>
 </head>
@@ -320,7 +314,6 @@ form.myform {
     <div class="ccp"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
 <script>
-    // --- بخش اول: متغیرهای سراسری و اولیه ---
     const shownMessageIds = new Set();
     const fileInput = document.getElementById("file-upload");
     const previewContainer = document.getElementById("simple-preview");
@@ -328,10 +321,8 @@ form.myform {
     const removePreviewBtn = document.getElementById("remove-preview");
     let lastMessageId = {{ messages[-1].id if messages else 0 }};
 
-    // --- بخش دوم: توابع کاربردی اصلی ---
 
     function enableEdit(msgId, encodedContent) {
-        // برای جلوگیری از خطا، اطمینان حاصل می‌کنیم که msgId یک عدد است
         const id = parseInt(msgId, 10);
         const content = decodeURIComponent(encodedContent);
         document.querySelector(`#edit-form-${id} textarea`).value = content;
@@ -357,7 +348,6 @@ form.myform {
 
     
 
-    // --- بخش سوم: ساخت و مدیریت حباب‌های پیام در DOM ---
 
     function createMessageBubble(msg) {
         const chat = document.querySelector(".chat");
@@ -428,7 +418,7 @@ form.myform {
     function addMessageToDOM(msg) {
         const domId = msg.isTemp ? msg.id : `message-${msg.id}`;
         if (document.getElementById(domId) || (!msg.isTemp && shownMessageIds.has(msg.id))) {
-            return; // از افزودن پیام تکراری جلوگیری کن
+            return;
         }
 
         const chat = document.querySelector(".chat");
@@ -441,9 +431,7 @@ form.myform {
     }
 
 
-    // --- بخش چهارم: Event Listeners و اجرای توابع ---
 
-    // Event listener برای پیش‌نمایش فایل
     fileInput.addEventListener("change", function (e) {
         const file = e.target.files[0];
         if (!file || !file.type.startsWith("image/")) {
@@ -459,14 +447,12 @@ form.myform {
         reader.readAsDataURL(file);
     });
 
-    // Event listener برای حذف پیش‌نمایش
     removePreviewBtn.addEventListener("click", function () {
         fileInput.value = "";
         previewImage.src = "";
         previewContainer.classList.add("d-none");
     });
 
-    // Event listener برای ارسال فرم (با قابلیت نمایش پیشرفت آپلود)
     document.querySelector("form.myform").addEventListener("submit", function (e) {
         e.preventDefault();
         const form = e.target;
@@ -540,9 +526,7 @@ form.myform {
         xhr.send(formData);
     });
 
-    // --- بخش پنجم: اجرای اولیه و دریافت پیام‌های جدید ---
 
-    // پر کردن Set با پیام‌هایی که از قبل در صفحه بوده‌اند
     document.querySelectorAll(".message").forEach(div => {
         if (div.id && div.id.startsWith("message-")) {
             const id = parseInt(div.id.replace("message-", ""), 10);
@@ -552,20 +536,15 @@ form.myform {
         }
     });
 
-    // اسکرول به پایین در زمان بارگذاری صفحه
-    // تمام کدهای مربوط به scrollToBottom و window.onload قبلی را پاک کرده و این کد را جایگزین کنید
 
 function scrollToBottom() {
-    // این دستور کل پنجره مرورگر را به انتهای صفحه اسکرول می‌کند
     window.scrollTo(0, document.body.scrollHeight);
 }
 
-// پس از بارگذاری کامل صفحه، تابع اسکرول را با یک تأخیر کوتاه اجرا می‌کنیم
 window.onload = function() {
     setTimeout(scrollToBottom, 100);
 };
 
-    // دریافت دوره‌ای پیام‌های جدید
     setInterval(async () => {
         try {
             const res = await fetch(`/get_new_messages?conversation_id={{ conversation.id }}&after_id=${lastMessageId}`);
@@ -584,7 +563,7 @@ window.onload = function() {
         } catch (error) {
             console.error("خطا در دریافت پیام‌های جدید:", error);
         }
-    }, 3000); // زمان را به ۳ ثانیه کاهش دادم برای پاسخگویی بهتر
+    }, 3000);
 
 </script>
     <!-- <script>
@@ -592,7 +571,7 @@ window.onload = function() {
         const innerHeight = window.innerHeight;
         const chatBox = document.querySelector('.chat-box');
         if (chatBox) {
-            chatBox.style.height = (innerHeight - 100) + 'px'; // مقدار 100 قابل تنظیمه (مثلاً ارتفاع هدر یا دکمه‌ها)
+            chatBox.style.height = (innerHeight - 100) + 'px';
             chatBox.style.overflowY = 'auto';
         }
     }
@@ -638,32 +617,29 @@ if (window.visualViewport) {
             let diffY = currentY - startY;
         
             if (diffY > 30 && diffY < 130) {
-                spinner.style.top = `${diffY - 60}px`; // اسپینر پایین‌تر نمایش داده می‌شود
+                spinner.style.top = `${diffY - 60}px`;
             }
         
             if (diffY >= 130) {
-                spinner.style.top = `150px`; // اسپینر در پایین نمایان می‌ماند
-                if (!spinner.dataset.loading) {  // جلوگیری از چندبار اجرا شدن رفرش
+                spinner.style.top = `150px`;
+                if (!spinner.dataset.loading) {
                     spinner.dataset.loading = "true";
-                    location.reload(); // رفرش صفحه
+                    location.reload();
                 }
                 isPulling = false;
             }
         });
         
         window.addEventListener("touchend", function () {
-            // اگر رفرش کامل نشده بود اسپینر رو پنهان کن
             if (!spinner.dataset.loading) {
                 spinner.style.top = `-60px`; 
             }
             isPulling = false;
         });
         
-        // رویداد بارگذاری کامل صفحه
         window.addEventListener("load", function () {
-            // وقتی صفحه کاملا لود شد، اسپینر رو پنهان کن بالا
             spinner.style.top = `-60px`; 
-            spinner.dataset.loading = ""; // ریست کردن وضعیت لودینگ
+            spinner.dataset.loading = "";
         });
         </script> -->
         

@@ -1,0 +1,39 @@
+<aside class="category-sidebar">
+    <h4 class="mb-3 txt-black">دسته‌بندی‌ها</h4>
+
+    <div class="accordion" id="categoryAccordion">
+        <div class="accordion-item border-0">
+            <a href="{{ url_for('main.index') }}" class="accordion-button txt-black text-decoration-none {% if not selected_category %}active text-white{% else %}collapsed{% endif %}">
+                <span class="ms-2">همه محصولات</span>
+            </a>
+        </div>
+
+        {% for parent_cat in parent_categories %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading-{{ parent_cat.id }}">
+                <button class="accordion-button txt-black d-flex justify-content-between {% if not selected_category or (selected_category.parent_id != parent_cat.id and selected_category.id != parent_cat.id) %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ parent_cat.id }}">
+                    <span class="ms-2">{{ parent_cat.name }}</span>
+                </button>
+            </h2>
+            <div id="collapse-{{ parent_cat.id }}" class="accordion-collapse collapse {% if selected_category and (selected_category.parent_id == parent_cat.id or selected_category.id == parent_cat.id) %}show{% endif %}" data-bs-parent="#categoryAccordion">
+                <div class="accordion-body">
+                    <ul class="list-unstyled">
+                        <li>
+                            <a href="{{ url_for('main.index', category=parent_cat.id) }}" class="subcategory-link {% if selected_category and selected_category.id == parent_cat.id %}active{% endif %}">
+                               همه موارد {{ parent_cat.name }}
+                            </a>
+                        </li>
+                        {% for sub_cat in parent_cat.subcategories %}
+                        <li>
+                            <a href="{{ url_for('main.index', category=sub_cat.id) }}" class="subcategory-link {% if selected_category and selected_category.id == sub_cat.id %}active{% endif %}">
+                               {{ sub_cat.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</aside>

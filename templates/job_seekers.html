@@ -6,7 +6,6 @@
       border-radius: 10rem;
       transition: all 0.5s ease;
     }
-
     .rounder.stuck {
       border-radius: 0 0 2rem 2rem !important;
     }
@@ -21,12 +20,21 @@
         flex-direction: row;
     }
     #containerFluid{
-        transition: all 0.5s ease-out !important;
+        transition: max-height 0.5s ease-out !important;
     }
     .filter-section{
-        scale: 0;
         opacity: 0;
-        position: absolute;
+        max-height: 0 ;
+        overflow: scroll ;
+        transition: max-height 0.5s ease-out, opacity 0.5s ease-out, scale 0.5s ease-out;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .filter-section.show-filters {
+        opacity: 1;
+        max-height: 50rem;
     }
     .gradshadow::before{
         content:"";
@@ -34,15 +42,26 @@
         inset: -5px;
         transform: translate(0,0);
         z-index: -1;
-        background: conic-gradient(from 90deg at 40% -25%, #ffd700, #f79d03, #ee6907, #e6390a, #de0d0d, #d61039, #cf1261, #c71585, #cf1261, #d61039, #de0d0d, #ee6907, #f79d03, #ffd700, #ffd700, #ffd700);
+        background: conic-gradient(from 90deg at 40% -25%, #ffd700, #d2f703, #4cf100, #e68e0a, #de0d0d, #d61073, #cf1261, #c715c7, #7412cf, #2e10d6, #0d8bde, #07dfee, #d2f703, #00ff22, #ffd000, #ff0000);
         filter: blur(10px);
     }
+    .suggest{
+        scale: 0;
+        opacity: 0;
+        max-height: 0;
+        transition: all 0.5s ease-out !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
 </style>
+
 <nav id="antoRound" class="navbar animationshow rounder d-lg-none d-md-none d-sm-flex sticky-top py-0" style="backdrop-filter: blur(15px); width: 100% !important;">
     <div class="container-fluid d-flex ps-0" style="width: 100% !important;" id="containerFluid">
         <div class="d-flex flex-wrap w-75 align-items-center">
                 <div class="input-group flex-grow-1">
-                    <input id="search-input-mobile" class="inputs searcher txt-black rounder px-3 py-1" type="search" placeholder="جستجوی عنوان شغلی..." name="search" value="{{ request.args.get('search', '') }}">
+                    <input id="search-input-mobile" class="inputs searcher txt-black rounder px-3 py-1" type="search" placeholder="جستجوی تخصص یا عنوان شغلی..." name="search" value="{{ request.args.get('search', '') }}">
                 </div>
         </div>
         <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg rounded-2 w-25 pt-2" id="floatingChatButton" title="چت با هوش مصنوعی">
@@ -58,10 +77,11 @@
           </svg>
         </a>
         <div class="container filter-section mb-5" id="filterSection">
+            <h4 class="txt-black mb-4">فیلتر کارجویان</h4>
             <div class="row g-3">
                 <p class="text-warning" style="font-size: 0.75rem;">فیلتر های مورد نظر خودتون رو انتخاب کنید و فیلد رو ببندید تا نتایج جستجو رو ببینید.</p>
                 <div class="col-md-6 col-lg-4">
-                    <label for="education-level-filter " class="form-label txt-black text-nowrap mt-2 ms-2">آخرین مدرک تحصیلی:</label>
+                    <label for="education-level-filter" class="form-label txt-black text-nowrap mt-2 ms-2">آخرین مدرک تحصیلی:</label>
                     <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="education-level-filter">
                         <option value="">همه</option>
                         {% for level in EducationLevel %}
@@ -70,7 +90,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-lg-4">
-                    <label for="education-status-filter " class="form-label txt-black text-nowrap mt-2 ms-2">وضعیت تحصیلی:</label>
+                    <label for="education-status-filter" class="form-label txt-black text-nowrap mt-2 ms-2">وضعیت تحصیلی:</label>
                     <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="education-status-filter">
                         <option value="">همه</option>
                         <option value="در حال تحصیل">در حال تحصیل</option>
@@ -78,7 +98,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-lg-4">
-                    <label for="marital-status-filter " class="form-label txt-black text-nowrap mt-2 ms-2">وضعیت تاهل:</label>
+                    <label for="marital-status-filter" class="form-label txt-black text-nowrap mt-2 ms-2">وضعیت تاهل:</label>
                     <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="marital-status-filter">
                         <option value="">همه</option>
                         {% for status in MaritalStatus %}
@@ -87,7 +107,7 @@
                     </select>
                 </div>
                 <div class="col-md-6 col-lg-4">
-                    <label for="military-status-filter " class="form-label txt-black text-nowrap mt-2 ms-2">وضعیت سربازی:</label>
+                    <label for="military-status-filter" class="form-label txt-black text-nowrap mt-2 ms-2">وضعیت سربازی:</label>
                     <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="military-status-filter">
                         <option value="">همه</option>
                         {% for status in MilitaryStatus %}
@@ -96,32 +116,12 @@
                     </select>
                 </div>
             </div>
-
-            <button type="button" id="clear-all-filters-button" class="btn btn-outline-secondary ms-2 mt-2">بستن</button>
+            <button type="button" id="clear-all-filters-button" class="btn btn-outline-secondary ms-2 mt-2 mb-4">بستن</button>
         </div>
-
+        <p class="suggest text-warning pe-4" id="myElement">برای جستجوی پیشرفته نگه دارید.</p>
     </div>
 </nav>
 
-<script>
-    const searchIn = document.getElementById('search-input-mobile');
-    const category = document.getElementById('categories-scroll-container-id');
-    
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  const nav = document.querySelector('nav.rounder');
-
-  function checkStickiness() {
-    const isStuck = nav.getBoundingClientRect().top <= 0;
-    nav.classList.toggle('stuck', isStuck);
-  }
-
-  window.addEventListener('scroll', checkStickiness);
-  checkStickiness();
-});
-
-</script>
 <div class="container-fluid px-3 mt-3 text-center">
     <div class="btn-group" role="group" aria-label="Navigation Buttons">
         <a href="{{ url_for('main.index') }}" class="btn btn-outline-danger rounding px-2" style="font-size: .75rem;">محصولات</a>
@@ -131,37 +131,90 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 <h2 class="mb-3 mt-5 txt-black">لیست کارجویان</h2>
-<hr class="w-100 mb-5">
+<hr class="w-100 mb-2">
 
+<div class="d-none d-lg-block card p-3 mb-4 shadow-sm" style="background-color: var(--dark-green-transparent);">
+    <div class="row g-3 align-items-center">
+        <div class="col-auto">
+            <h6 class="mb-0 txt-black"><i class="bi bi-funnel-fill me-2"></i>فیلترهای پیشرفته:</h6>
+        </div>
+        <div class="col">
+            <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="education-level-filter-desktop">
+                <option value="">آخرین مدرک تحصیلی (همه)</option>
+                {% for level in EducationLevel %}
+                <option value="{{ level.name }}">{{ level.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col">
+            <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="education-status-filter-desktop">
+                <option value="">وضعیت تحصیلی (همه)</option>
+                <option value="در حال تحصیل">در حال تحصیل</option>
+                <option value="فارغ التحصیل">فارغ التحصیل</option>
+            </select>
+        </div>
+        <div class="col">
+             <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="marital-status-filter-desktop">
+                <option value="">وضعیت تاهل (همه)</option>
+                {% for status in MaritalStatus %}
+                <option value="{{ status.name }}">{{ status.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col">
+            <select class="form-select inputs txt-black" style="background-color: var(--dark-green);" id="military-status-filter-desktop">
+                <option value="">وضعیت سربازی (همه)</option>
+                {% for status in MilitaryStatus %}
+                <option value="{{ status.name }}">{{ status.value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="button" id="clear-desktop-filters-button" class="btn btn-outline-secondary">پاک کردن</button>
+        </div>
+    </div>
+</div>
 <div id="job-seekers-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-3 g-3 mt-3 mb-5">
-        {% include '_job_profile_list.html' with context %}
-    
+    {% include '_job_profile_list.html' with context %}
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- Element References ---
+    // Mobile controls
+    const searchInputMobile = document.getElementById('search-input-mobile');
+    const educationLevelFilterMobile = document.getElementById('education-level-filter');
+    const educationStatusFilterMobile = document.getElementById('education-status-filter');
+    const maritalStatusFilterMobile = document.getElementById('marital-status-filter');
+    const militaryStatusFilterMobile = document.getElementById('military-status-filter');
 
-    const searchInput = document.getElementById('search-input-mobile');
-    const educationLevelFilter = document.getElementById('education-level-filter');
-    const educationStatusFilter = document.getElementById('education-status-filter');
-    const maritalStatusFilter = document.getElementById('marital-status-filter');
-    const militaryStatusFilter = document.getElementById('military-status-filter');
+    // Desktop controls
+    const searchInputDesktop = document.getElementById('search-input-desktop');
+    const educationLevelFilterDesktop = document.getElementById('education-level-filter-desktop');
+    const educationStatusFilterDesktop = document.getElementById('education-status-filter-desktop');
+    const maritalStatusFilterDesktop = document.getElementById('marital-status-filter-desktop');
+    const militaryStatusFilterDesktop = document.getElementById('military-status-filter-desktop');
+    const clearDesktopFiltersButton = document.getElementById('clear-desktop-filters-button');
+    
     const resultsContainer = document.getElementById('job-seekers-container');
     let debounceTimeout;
 
+    // --- Core Search Function ---
     function performLiveSearch() {
         if (!resultsContainer) return;
         resultsContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">در حال جستجو...</span></div></div>';
         
-        const searchTerm = searchInput.value;
-        const educationLevel = educationLevelFilter.value;
-        const educationStatus = educationStatusFilter.value;
-        const maritalStatus = maritalStatusFilter.value;
-        const militaryStatus = militaryStatusFilter.value;
+        const isMobileView = window.innerWidth < 992;
+        
+        const searchTerm = isMobileView ? searchInputMobile.value : searchInputDesktop.value;
+        const educationLevel = isMobileView ? educationLevelFilterMobile.value : educationLevelFilterDesktop.value;
+        const educationStatus = isMobileView ? educationStatusFilterMobile.value : educationStatusFilterDesktop.value;
+        const maritalStatus = isMobileView ? maritalStatusFilterMobile.value : maritalStatusFilterDesktop.value;
+        const militaryStatus = isMobileView ? militaryStatusFilterMobile.value : militaryStatusFilterDesktop.value;
 
         const queryParams = new URLSearchParams({
             search: searchTerm,
-            active_tab: 'seekers', // مشخص کردن تب فعال برای روت live_search_jobs
+            active_tab: 'seekers',
             education_level_filter: educationLevel,
             education_status_filter: educationStatus,
             marital_status_filter: maritalStatus,
@@ -179,180 +232,125 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    // --- Utility Functions ---
     function debounce(func, delay) {
-        let timeout;
         return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), delay);
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => func.apply(this, args), delay);
         };
     }
+    const debouncedSearch = debounce(performLiveSearch, 400);
 
-    // افزودن Event Listenerها برای جستجو و فیلتر
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(performLiveSearch, 400));
-    }
-    if (educationLevelFilter) {
-        educationLevelFilter.addEventListener('change', performLiveSearch);
-    }
-    if (educationStatusFilter) {
-        educationStatusFilter.addEventListener('change', performLiveSearch);
-    }
-    if (maritalStatusFilter) {
-        maritalStatusFilter.addEventListener('change', performLiveSearch);
-    }
-    if (militaryStatusFilter) {
-        militaryStatusFilter.addEventListener('change', performLiveSearch);
-    }
+    // --- Event Listeners ---
+    if (searchInputMobile) searchInputMobile.addEventListener('input', debouncedSearch);
+    if (searchInputDesktop) searchInputDesktop.addEventListener('input', debouncedSearch);
 
-    // اجرای جستجو در بارگذاری اولیه صفحه
-    performLiveSearch();
-});
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // اسکریپت برای چسبیدن نوار جستجو
-    const nav = document.querySelector('nav.rounder');
-    if (nav) {
-        function checkStickiness() {
-            const isStuck = nav.getBoundingClientRect().top <= 0;
-            nav.classList.toggle('stuck', isStuck);
-        }
-        window.addEventListener('scroll', checkStickiness);
-        checkStickiness();
-    }
+    if (educationLevelFilterMobile) educationLevelFilterMobile.addEventListener('change', performLiveSearch);
+    if (educationStatusFilterMobile) educationStatusFilterMobile.addEventListener('change', performLiveSearch);
+    if (maritalStatusFilterMobile) maritalStatusFilterMobile.addEventListener('change', performLiveSearch);
+    if (militaryStatusFilterMobile) militaryStatusFilterMobile.addEventListener('change', performLiveSearch);
 
-    // --- منطق جستجوی زنده ---
+    if (educationLevelFilterDesktop) educationLevelFilterDesktop.addEventListener('change', performLiveSearch);
+    if (educationStatusFilterDesktop) educationStatusFilterDesktop.addEventListener('change', performLiveSearch);
+    if (maritalStatusFilterDesktop) maritalStatusFilterDesktop.addEventListener('change', performLiveSearch);
+    if (militaryStatusFilterDesktop) militaryStatusFilterDesktop.addEventListener('change', performLiveSearch);
     
-});
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const animatables = document.querySelectorAll(".animationshow");
-  
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("show");
-          } else {
-            entry.target.classList.remove("show");
-          }
-        });
-      }, {
-        threshold: 0.1
-      });
-  
-      animatables.forEach(el => {
-        observer.observe(el);
-      });
-    });
-  </script>
-
-<script>
-    // تابع را تعریف می‌کنیم تا قابل استفاده مجدد باشد
-    function initializeAnimations() {
-        const animatables = document.querySelectorAll(".animationshow");
-        
-        if (animatables.length === 0) return; // اگر عنصری برای انیمیشن نبود، خارج شو
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add("show");
-                } else {
-                    // اگر می‌خواهید انیمیشن با اسکرول به بالا برگردد این خط را نگه دارید
-                    // entry.target.classList.remove("show"); 
-                }
-            });
-        }, {
-            threshold: 0.1 
-        });
-
-        animatables.forEach(el => {
-            observer.observe(el);
+    if (clearDesktopFiltersButton) {
+        clearDesktopFiltersButton.addEventListener('click', () => {
+             if(educationLevelFilterDesktop) educationLevelFilterDesktop.value = '';
+             if(educationStatusFilterDesktop) educationStatusFilterDesktop.value = '';
+             if(maritalStatusFilterDesktop) maritalStatusFilterDesktop.value = '';
+             if(militaryStatusFilterDesktop) militaryStatusFilterDesktop.value = '';
+             if(searchInputDesktop) searchInputDesktop.value = '';
+             performLiveSearch();
         });
     }
 
-    // این تابع را یک بار در زمان بارگذاری اولیه صفحه صدا می‌زنیم
-    document.addEventListener("DOMContentLoaded", () => {
-        initializeAnimations();
-    });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const elements = document.querySelectorAll('.animationshow');
-        elements.forEach((el, index) => {
-            setTimeout(() => {
-                el.classList.add('show');
-            }, index * 1300); // تاخیر پله‌ای برای نمایش آیتم‌ها
-        });
-    });
-</script>
 
+    function clearEverything() {
+        if(educationLevelFilterDesktop) educationLevelFilterDesktop.value = '';
+        if(educationStatusFilterDesktop) educationStatusFilterDesktop.value = '';
+        if(maritalStatusFilterDesktop) maritalStatusFilterDesktop.value = '';
+        if(militaryStatusFilterDesktop) militaryStatusFilterDesktop.value = '';
+        if(searchInputDesktop) searchInputDesktop.value = '';
+        performLiveSearch();
+    }
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const clearAllFiltersButton = document.getElementById('clear-all-filters-button');
-        const searchInput = document.getElementById('search-input-mobile');
-        const containerFluid = document.getElementById('containerFluid');
-        const antoRound = document.getElementById('antoRound');
-        const filterSection = document.getElementById('filterSection');
-        let longPressTimer;
-        const longPressDuration = 700; // 1000 میلی‌ثانیه = 1 ثانیه
+    // --- Initial Load ---
+    performLiveSearch();
 
-        // تابع برای اجرای رویداد پس از Long Press
-        function handleLongPress() {
-            console.log('رویداد Long Press اتفاق افتاد!');
-            // containerFluid.style.height = "10rem";
-            antoRound.style.borderRadius = "1rem";
+    // --- Mobile Long Press for Filters ---
+    const antoRound = document.getElementById('antoRound');
+    const containerFluid = document.getElementById('containerFluid');
+    const filterSection = document.getElementById('filterSection');
+    const clearMobileFiltersButton = document.getElementById('clear-all-filters-button');
+    let longPressTimer;
+
+    if (searchInputMobile) {
+        const longPressDuration = 700;
+        const showFilters = () => {
             antoRound.classList.add('gradshadow');
-            containerFluid.style.borderRadius = "1rem";
-            containerFluid.classList.add('rounder');
-            containerFluid.style.backgroundColor = "var(--black-color)";
-            filterSection.style.scale = "1";
-            filterSection.style.opacity = "1";
-            filterSection.style.position = "static";
-        }
-        function clearAllFilters() {
-            antoRound.style.borderRadius = "10rem";
+            containerFluid.style.borderRadius = '1rem';
+            containerFluid.style.backgroundColor = 'var(--black-color)';
+            filterSection.classList.add('show-filters');
+        };
+        const hideFilters = () => {
             antoRound.classList.remove('gradshadow');
-            containerFluid.classList.remove('rounder');
-            containerFluid.style.backgroundColor = "#f8f8f800";
-            filterSection.style.scale = "0";
-            filterSection.style.opacity = "0";
-            filterSection.style.position = "absolute";
+            containerFluid.style.borderRadius = '0';
+            containerFluid.style.backgroundColor = '#f8f9fa00';
+            filterSection.classList.remove('show-filters');
             performLiveSearch();
+        };
+
+        searchInputMobile.addEventListener('mousedown', () => { longPressTimer = setTimeout(showFilters, longPressDuration); });
+        searchInputMobile.addEventListener('mouseup', () => { clearTimeout(longPressTimer); });
+        searchInputMobile.addEventListener('mouseleave', () => { clearTimeout(longPressTimer); });
+        searchInputMobile.addEventListener('touchstart', () => { longPressTimer = setTimeout(showFilters, longPressDuration); }, { passive: true });
+        searchInputMobile.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+        searchInputMobile.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
+
+        if(clearMobileFiltersButton) clearMobileFiltersButton.addEventListener('click', hideFilters);
+    }
+});
+</script>
+<script>
+    // Other page-specific scripts for animations etc.
+    document.addEventListener('DOMContentLoaded', function() {
+        const nav = document.querySelector('nav.rounder');
+        if(nav) {
+            const checkStickiness = () => nav.classList.toggle('stuck', nav.getBoundingClientRect().top <= 0);
+            window.addEventListener('scroll', checkStickiness);
+            checkStickiness();
         }
-         clearAllFiltersButton.addEventListener('click', clearAllFilters);
 
-        // هنگام فشردن ماوس (یا لمس)، تایمر رو شروع کن
-        searchInput.addEventListener('mousedown', function() {
-            longPressTimer = setTimeout(handleLongPress, longPressDuration);
-        });
+        const animatables = document.querySelectorAll(".animationshow");
+        if(animatables.length > 0) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) entry.target.classList.add("show");
+                });
+            }, { threshold: 0.1 });
+            animatables.forEach(el => observer.observe(el));
+        }
+        
+        const myElement = document.getElementById('myElement');
+        if(myElement) {
+            setTimeout(() => {
+                myElement.style.scale = '1';
+                myElement.style.opacity = '1';
+                myElement.style.maxHeight = '2rem';
+                document.getElementById('containerFluid').style.paddingBottom = '1rem';
+                document.getElementById('antoRound').style.borderRadius = "1rem";
 
-        // هنگام رها کردن ماوس، تایمر رو پاک کن
-        searchInput.addEventListener('mouseup', function() {
-            clearTimeout(longPressTimer);
-        });
-
-        // هنگام حرکت ماوس از روی اینپوت، تایمر رو پاک کن
-        // این برای مواقعی است که کاربر ماوس رو فشار داده و از روی اینپوت می‌کشه
-        searchInput.addEventListener('mouseleave', function() {
-            clearTimeout(longPressTimer);
-        });
-
-        // برای دستگاه‌های لمسی:
-        searchInput.addEventListener('touchstart', function() {
-            longPressTimer = setTimeout(handleLongPress, longPressDuration);
-        });
-
-        searchInput.addEventListener('touchend', function() {
-            clearTimeout(longPressTimer);
-        });
-
-        // اگر کاربر دستش رو روی صفحه کشید (اسکرول یا حرکت) قبل از Long Press
-        searchInput.addEventListener('touchmove', function() {
-            clearTimeout(longPressTimer);
-        });
+                setTimeout(() => {
+                    myElement.style.scale = '0';
+                    myElement.style.opacity = '0';
+                    myElement.style.maxHeight = '0';
+                    document.getElementById('containerFluid').style.paddingBottom = '0';
+                    document.getElementById('antoRound').style.borderRadius = "10rem";
+                }, 3000);
+            }, 500);
+        }
     });
 </script>
 {% endblock %}

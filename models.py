@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta  # فقط یک بار وارد شد
+from datetime import datetime, timedelta
 from aplication import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -43,13 +43,11 @@ class User(UserMixin, db.Model):
     bazaar_account_id = db.Column(db.String(128), unique=True, nullable=True)
     bazaar_access_token = db.Column(db.Text)
     bazaar_refresh_token = db.Column(db.Text, nullable=True)
-    # back_populates برای هماهنگ کردن با مدل Product
     products = db.relationship('Product', back_populates='owner', lazy=True)
     is_admin = db.Column(db.Boolean, default=False)
     fcm_token = db.Column(db.String(255), nullable=True, unique=True)
     is_banned = db.Column(db.Boolean, default=False, nullable=False)
     ban_reason = db.Column(db.String(255), nullable=True)
-    # اضافه کردن overlaps
 
     blocked = db.relationship(
         'User', secondary=blocked_users,
@@ -94,7 +92,7 @@ class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     icon = db.Column(db.String(50), nullable=True)
-    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)  # اضافه کردن ارتباط والد و فرزند
+    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
     subcategories = db.relationship('Category', backref=db.backref('parent', remote_side=[id]), lazy=True)
     products = db.relationship('Product', backref='category', lazy=True)
 
@@ -123,7 +121,7 @@ class Product(db.Model):
     address = db.Column(db.String(1000), nullable=False)
     postal_code = db.Column(db.String(20), nullable=True)
     product_type = db.Column(db.Enum(ProductType), nullable=False)
-    views = db.Column(db.Integer, default=0)  # تعداد بازدید، مقدار اولیه صفر
+    views = db.Column(db.Integer, default=0)
     owner = db.relationship('User', back_populates='products', lazy=True)
     status = db.Column(db.String(20), default='pending')
     expires_at = db.Column(db.DateTime, nullable=True)
@@ -140,22 +138,21 @@ class Product(db.Model):
         self.address = address
         self.postal_code = postal_code
         self.product_type = product_type
-        self.views = views  # مقدار تعداد بازدید را به ویژگی اضافه کنید
+        self.views = views
         self.status = status
         self.expires_at = expires_at if expires_at else datetime.utcnow() + timedelta(days=30)
         self.brand = brand
 
 
-    # تبدیل مقدار متنی به مقدار Enum
         if product_type:
-            print(f"Raw Product Type Before Enum Conversion: {product_type}")  # مقدار قبل از تبدیل
+            print(f"Raw Product Type Before Enum Conversion: {product_type}")
             if isinstance(product_type, str) and product_type in ProductType.__members__:
                 self.product_type = ProductType[product_type]
-            elif isinstance(product_type, ProductType):  # شاید مقدار از قبل به Enum تبدیل شده باشه
+            elif isinstance(product_type, ProductType):
                 self.product_type = product_type
             else:
                 self.product_type = None
-            print(f"Final Product Type in __init__: {self.product_type}")  # مقدار نهایی
+            print(f"Final Product Type in __init__: {self.product_type}")
         else:
             self.product_type = None
 
@@ -179,7 +176,7 @@ class ProductForm(FlaskForm):
         choices=[(product_type.name, product_type.value) for product_type in ProductType], 
         coerce=str
     )
-    category_id = SelectField('Category', choices=[], coerce=int)  # برای نمایش دسته‌بندی‌ها باید آن‌ها را به صورت داینامیک وارد کنید
+    category_id = SelectField('Category', choices=[], coerce=int)
     brand = SelectField('Brand', choices=[
         ('bosch', 'Bosch'), 
         ('makita', 'Makita'), 
@@ -215,7 +212,6 @@ class EditProfileForm(FlaskForm):
     submit = SubmitField('ذخیره تغییرات')
 
 
-# models.py
 class Conversation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user1_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -224,7 +220,6 @@ class Conversation(db.Model):
     user1 = db.relationship('User', foreign_keys=[user1_id])
     user2 = db.relationship('User', foreign_keys=[user2_id])
 
-    # تغییر backref به back_populates
     messages = db.relationship('Message', back_populates='conversation', lazy=True)
 
 
@@ -241,7 +236,6 @@ class Message(db.Model):
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
     is_read = db.Column(db.Boolean, default=False, nullable=False, index=True)
-    # تغییر backref به back_populates
     conversation = db.relationship('Conversation', back_populates='messages')
     
     replied_to = db.relationship('Message', remote_side=[id], backref=db.backref('replies', lazy=True), uselist=False)
@@ -282,9 +276,7 @@ class ChatBotInteraction(db.Model):
 
 
 
-# ... (کدهای قبلی شما در models.py)
 
-# ENUMs برای فیلدهای انتخابی جهت ثبات داده‌ها
 class CooperationType(Enum):
     FULL_TIME = 'تمام وقت'
     PART_TIME = 'پاره وقت'
@@ -318,7 +310,7 @@ class EducationLevel(Enum):
     PHD = 'دکترا'
 
 
-# مدل برای آگهی‌های استخدام (توسط کارفرما)
+
 class JobListing(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -328,11 +320,11 @@ class JobListing(db.Model):
     benefits = db.Column(db.Text, nullable=True)
     cooperation_type = db.Column(db.Enum(CooperationType), nullable=False)
     salary_type = db.Column(db.Enum(SalaryType), nullable=False)
-    salary_amount = db.Column(db.String(100), nullable=True) # به صورت رشته برای انعطاف‌پذیری (مثلا "بین ۱۰ تا ۱۵ میلیون")
+    salary_amount = db.Column(db.String(100), nullable=True)
     has_insurance = db.Column(db.Boolean, default=False)
-    military_status_required = db.Column(db.Enum(MilitaryStatus), nullable=True) # الزامی بودن وضعیت سربازی
+    military_status_required = db.Column(db.Enum(MilitaryStatus), nullable=True)
     is_remote_possible = db.Column(db.Boolean, default=False)
-    working_hours = db.Column(db.String(100), nullable=True) # مثلا "۹ صبح تا ۵ عصر"
+    working_hours = db.Column(db.String(100), nullable=True)
     location = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -347,16 +339,14 @@ class JobListing(db.Model):
     )
 
 
-# مدل برای پروفایل کارجویان (هر کاربر فقط یک پروفایل)
 class JobProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # با uselist=False اطمینان حاصل می‌کنیم که هر کاربر فقط یک پروفایل کاریابی دارد
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
     profile_picture = db.Column(db.String(100), nullable=True, default='default.jpg')
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    portfolio_links = db.Column(db.Text, nullable=True) # لینک‌ها با کاما جدا می‌شوند
-    resume_path = db.Column(db.String(255), nullable=True) # مسیر فایل رزومه
+    portfolio_links = db.Column(db.Text, nullable=True)
+    resume_path = db.Column(db.String(255), nullable=True)
     contact_phone = db.Column(db.String(15), nullable=False)
     contact_email = db.Column(db.String(120), nullable=True)
     marital_status = db.Column(db.Enum(MaritalStatus), nullable=True)
@@ -365,14 +355,12 @@ class JobProfile(db.Model):
     birth_date = db.Column(db.Date, nullable=True)
     requested_salary_min = db.Column(db.Integer, nullable=True)
     requested_salary_max = db.Column(db.Integer, nullable=True)
-    education_status = db.Column(db.String(50), nullable=True) # "در حال تحصیل" یا "فارغ التحصیل"
+    education_status = db.Column(db.String(50), nullable=True)
     highest_education_level = db.Column(db.Enum(EducationLevel), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # ارتباط یک به یک با کاربر
     owner = db.relationship('User', backref=db.backref('job_profile', uselist=False))
-    # ارتباط یک به چند با سوابق شغلی
     work_experiences = db.relationship('WorkExperience', backref='profile', lazy='dynamic', cascade="all, delete-orphan")
 
     applied_to_listings = db.relationship(
@@ -383,14 +371,13 @@ class JobProfile(db.Model):
     )
 
 
-# مدل برای سوابق شغلی (قابل تکرار برای هر پروفایل)
 class WorkExperience(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     profile_id = db.Column(db.Integer, db.ForeignKey('job_profile.id'), nullable=False)
     company_name = db.Column(db.String(100), nullable=False)
     job_title = db.Column(db.String(100), nullable=False)
-    start_date = db.Column(db.String(20), nullable=True) # رشته برای سادگی، مثلا "فروردین ۱۴۰۱"
-    end_date = db.Column(db.String(20), nullable=True) # یا "تاکنون"
+    start_date = db.Column(db.String(20), nullable=True)
+    end_date = db.Column(db.String(20), nullable=True)
     description = db.Column(db.Text, nullable=True)
 
 
@@ -404,7 +391,6 @@ class JobListingReport(db.Model):
     job_listing = db.relationship('JobListing', backref='reports')
     reporter = db.relationship('User', foreign_keys=[reporter_id])
 
-# مدل جدید برای گزارش پروفایل کاریابی
 class JobProfileReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     job_profile_id = db.Column(db.Integer, db.ForeignKey('job_profile.id'), nullable=False)

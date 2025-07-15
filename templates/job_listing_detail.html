@@ -35,19 +35,18 @@
 {# ### پایان بخش جدید: تعریف ماکرو ### #}
 
 <style>
-    /* استایل برای نوار چسبان پایین صفحه در موبایل */
     .mobile-apply-bar {
         background: var(--card-bg);
         border-top: 1px solid var(--border-color);
         padding: 0.75rem 1rem;
         box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
-        z-index: 1040; /* برای نمایش روی سایر محتوا */
+        z-index: 1040;
     }
     html[data-theme="dark"] .mobile-apply-bar {
         box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
     }
 </style>
-<div class="detail-header d-flex flex-nowrap fixed-top" style="background-color: var(--dark-green);">
+<div class="detail-header d-flex flex-nowrap" style="background-color: var(--dark-green);">
         <h2 class="txt-black mt-2 me-2">آگهی استخدام</h2>
         <button class="btn me-auto" onclick="history.back()">
             <i class="bi bi-arrow-left fs-3 txt-black"></i>

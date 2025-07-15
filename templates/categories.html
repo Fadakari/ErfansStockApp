@@ -4,7 +4,6 @@
 
 {% block content %}
 <style>
-    /* --- استایل‌های اصلی صفحه --- */
     .category-page-container {
         padding-top: 1.5rem;
     }
@@ -19,7 +18,6 @@
         top: 100px;
     }
 
-    /* <<<<<<< شروع تغییر ۱: استایل‌های جدید برای منوی آکاردئونی >>>>>>> */
     .accordion-item {
         background-color: transparent;
         border: none;
@@ -31,7 +29,7 @@
         color: var(--text-color);
         font-weight: 700;
         font-size: 1.1rem;
-        border-radius: 0.5rem !important; /* برای غلبه بر استایل بوت‌استرپ */
+        border-radius: 0.5rem !important;
         padding: 0.75rem 1rem;
         transition: background-color 0.2s ease;
     }
@@ -46,7 +44,6 @@
         box-shadow: 0 0 0 0.25rem rgba(var(--primary-accent-rgb), 0.5);
     }
     
-    /* تغییر رنگ آیکون فلش آکاردئون */
     .accordion-button::after {
         filter: brightness(0) invert(1);
     }
@@ -62,7 +59,7 @@
 
     .subcategory-list a {
         display: block;
-        padding: 0.6rem 1.5rem; /* تورفتگی بیشتر برای زیردسته‌ها */
+        padding: 0.6rem 1.5rem;
         color: var(--text-muted-color);
         text-decoration: none;
         border-radius: 0.5rem;
@@ -80,10 +77,8 @@
         color: white;
         font-weight: bold;
     }
-    /* <<<<<<< پایان تغییر ۱ >>>>>>> */
 
 
-    /* <<<<<<< شروع تغییر ۲: استایل‌های جدید برای کارت‌های محصول افقی >>>>>>> */
     .divar-card-horizontal-link {
         display: flex;
         text-decoration: none;
@@ -97,7 +92,7 @@
         object-fit: cover;
         border-radius: 0.5rem;
         background-color: var(--border-color);
-        flex-shrink: 0; /* جلوگیری از کوچک شدن عکس */
+        flex-shrink: 0;
     }
 
     .divar-card-body {
@@ -112,7 +107,6 @@
         font-size: 1.1rem;
         font-weight: 600;
         margin: 0;
-        /* برای نام‌های طولانی */
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;  
@@ -122,7 +116,7 @@
     .divar-card-meta {
         font-size: 0.85rem;
         color: var(--text-muted-color);
-        margin-top: auto; /* متا را به پایین هل می‌دهد */
+        margin-top: auto;
         padding-top: 0.5rem;
     }
     
@@ -137,7 +131,6 @@
         border-top: 1px solid var(--border-color);
         margin: 1rem 0;
     }
-    /* <<<<<<< پایان تغییر ۲ >>>>>>> */
 
 </style>
 

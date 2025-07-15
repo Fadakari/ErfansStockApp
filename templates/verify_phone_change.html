@@ -26,7 +26,7 @@
             input.value = input.value.replace(/[^0-9]/g, "");
 
             if (input.value && index > 0) {
-                inputs[index - 1].focus();  // چون چپ به راست چیدیم
+                inputs[index - 1].focus();
             }
 
             const code = Array.from(inputs).reverse().map(i => i.value).join('');

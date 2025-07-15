@@ -4,8 +4,8 @@
 {% block page_styles %}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
     <style>
-    /* همان استایل‌های فایل hiring_form.html */
-    .image-preview-container img { max-width: 200px; max-height: 200px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; padding: 5px; }
+    .image-preview-container img { width: 5rem; height: 5rem; object-fit: cover; border: 4px solid var(--primary-accent); }
+    .img-thumbnail{max-width: 10rem !important;}
     .progress { height: 25px; background-color: #333; border-radius: 10px; overflow: hidden; margin-top: 15px; }
     .progress-bar { line-height: 25px; font-size: 14px; color: white; transition: width 0.4s ease; }
     .jalali-datepicker-container { z-index: 10000 !important; }
@@ -20,7 +20,7 @@
         <div class="card signuper mb-4">
             <div class="card-header" style="background: var(--dark-green);">
                 <a href="{{ url_for('main.dashboard') }}" class="btn header-tabs py-2 px-3 float-start">
-                    <i class="bi bi-arrow-right fs-3 txt-black"></i>
+                    <i class="bi bi-arrow-left fs-3 txt-black"></i>
                 </a>
                 <h5 class="mb-0 txt-black mt-2">{% if profile %}ویرایش پروفایل کاریابی{% else %}ایجاد پروفایل کاریابی{% endif %}</h5>
             </div>
@@ -231,11 +231,8 @@
 
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
-        // فعال‌سازی تقویم شمسی جدید
         jalaliDatepicker.startWatch({
-            // تنظیمات برای فیلد تاریخ تولد
             selector: "#birthdate-picker-display",
-            // وقتی کاربر تاریخی را انتخاب کرد، تاریخ میلادی معادل آن در فیلد مخفی قرار می‌گیرد
             onSelect: function(selectedDate) {
                 const date = new Date(selectedDate * 1000);
                 const year = date.getFullYear();
@@ -245,16 +242,12 @@
             }
         });
 
-        // تنظیم مقدار اولیه برای حالت ویرایش
         const initialGregorianDate = document.getElementById('birthdate-gregorian-alt').value;
         if(initialGregorianDate) {
-            // اگر تاریخ میلادی وجود داشت، معادل شمسی آن را در فیلد نمایشی قرار بده
             jalaliDatepicker.updateOptions({
                 time: false,
-                // تاریخ را از روی فیلد مخفی می‌خواند و در تقویم انتخاب می‌کند
                 date: new Date(initialGregorianDate)
             });
-            // به‌روزرسانی مقدار فیلد نمایشی
             document.getElementById("birthdate-picker-display").value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
         }
     });
@@ -350,12 +343,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('work-experience-container');
     const template = document.getElementById('experience-template');
     
-    // ** شروع شمارنده از تعداد آیتم‌های موجود برای جلوگیری از تداخل نام **
     let experienceIndex = {{ profile.work_experiences.count() if profile else 0 }};
 
     addExperienceBtn.addEventListener('click', function() {
         const clone = template.content.cloneNode(true);
-        // جایگزینی INDEX با شماره منحصر به فرد
         const html = clone.firstElementChild.outerHTML.replace(/INDEX/g, experienceIndex);
         container.insertAdjacentHTML('beforeend', html);
         experienceIndex++;

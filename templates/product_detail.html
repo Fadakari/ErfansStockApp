@@ -28,8 +28,8 @@
     /* --- Image Carousel --- */
     .product-gallery .carousel-item img,
     .product-gallery .single-image {
-        aspect-ratio: 1 / 1; /* نسبت تصویر ۱ در ۱ */
-        object-fit: cover;   /* جلوگیری از دفورمه شدن عکس */
+        aspect-ratio: 1 / 1;
+        object-fit: cover;
         border-radius: 1rem;
         background-color: var(--border-color);
     }
@@ -148,7 +148,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 20rem; /* 40 درصد ارتفاع صفحه */
+    height: 20rem;
     backdrop-filter: blur(15px);
     border-top-left-radius: 1.5rem;
     border-top-right-radius: 1.5rem;
@@ -196,20 +196,14 @@
 }
 
     @media (min-width: 768px) {
-    /* این کد فقط برای صفحه‌هایی با عرض بیشتر از ۷۶۸ پیکسل (دسکتاپ و تبلت) اعمال می‌شود.
-      کانتینر عکس را به یک فلکس‌باکس تبدیل می‌کنیم تا عکس در آن وسط‌چین شود.
-    */
     .product-gallery {
         display: flex;
         justify-content: center;
     }
 
-    /* برای عکس تکی، حداکثر عرض را به ۶۰ درصد محدود می‌کنیم تا خیلی بزرگ نباشد.
-      همچنین w-100 را حذف می‌کنیم تا بوت‌استرپ آن را تمام‌عرض نکند.
-    */
     .product-gallery .single-image {
         max-width: 60%;
-        width: auto !important; /* برای غلبه بر کلاس w-100 بوت‌استرپ */
+        width: auto !important;
     }
 }
 
@@ -226,7 +220,7 @@
     .similar-product-card {
         display: block;
         text-decoration: none;
-        background-color: var(--dark-green); /* یک پس‌زمینه ملایم */
+        background-color: var(--dark-green);
         border-radius: 0.75rem;
         overflow: hidden;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -253,7 +247,7 @@
         color: var(--text-color);
         white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis; /* برای نام‌های طولانی، سه نقطه نمایش می‌دهد */
+        text-overflow: ellipsis;
     }
     .similar-product-price {
         font-size: 0.85rem;
@@ -475,12 +469,10 @@
                 
                 document.body.appendChild(toast);
 
-                // نمایش پیام
                 setTimeout(() => {
                     toast.classList.add("show");
                 }, 10);
 
-                // حذف پیام بعد از 2 ثانیه
                 setTimeout(() => {
                     toast.classList.remove("show");
                     setTimeout(() => {
@@ -530,12 +522,10 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', closeSheet);
     }
 
-    // جلوگیری از بسته شدن پنل با کلیک روی محتوای داخلی آن
     sheetBody.addEventListener('click', function(event) {
         event.stopPropagation();
     });
     
-    // کپی کردن شماره و نمایش پیام موقت
     const copyButton = sheet.querySelector('.btn-primary');
     copyButton.addEventListener('click', function() {
         const contactNumber = "{{ user.phone }}";
@@ -557,13 +547,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const shareButton = document.getElementById('share-btn');
 
     if (shareButton) {
-        // اطلاعات محصول را از Jinja2 به جاوا اسکریپت منتقل می‌کنیم
+
         const productTitle = "{{ product.name | e }}";
         const productUrl = "{{ url_for('main.product_detail', product_id=product.id, _external=True) }}";
         const shareText = "این محصول رو در استوک دیوار ببین!";
 
         shareButton.addEventListener('click', async function(event) {
-            event.preventDefault(); // جلوگیری از رفتار پیش‌فرض لینک
+            event.preventDefault();
 
             const shareData = {
                 title: productTitle,
@@ -571,30 +561,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 url: productUrl
             };
 
-            // ---- بررسی پشتیبانی مرورگر از Web Share API ----
             if (navigator.share) {
                 try {
-                    // باز کردن منوی اشتراک‌گذاری نیتیو سیستم‌عامل
                     await navigator.share(shareData);
                     console.log('محصول با موفقیت به اشتراک گذاشته شد.');
                 } catch (err) {
                     console.error('خطا در اشتراک‌گذاری:', err);
                 }
             } else {
-                // ---- راه حل جایگزین برای دسکتاپ (کپی کردن لینک) ----
                 try {
                     await navigator.clipboard.writeText(productUrl);
                     
-                    // نمایش بازخورد به کاربر
                     const icon = shareButton.querySelector('i');
                     if (icon) {
                         icon.classList.remove('bi-share');
-                        icon.classList.add('bi-check-lg'); // تغییر آیکون به تیک
+                        icon.classList.add('bi-check-lg');
                         
                         setTimeout(() => {
                             icon.classList.remove('bi-check-lg');
-                            icon.classList.add('bi-share'); // بازگرداندن آیکون به حالت اولیه
-                        }, 2000); // بعد از ۲ ثانیه
+                            icon.classList.add('bi-share');
+                        }, 2000);
                     }
                     
                 } catch (err) {
@@ -609,7 +595,6 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
     document.addEventListener('DOMContentLoaded', function() {
     document.body.addEventListener('click', function(event) {
-        // تنها در صورتی اجرا شو که روی دکمه بوکمارک کلیک شده باشد
         if (event.target.closest('.bookmark-toggle')) {
             event.preventDefault();
 
@@ -627,24 +612,19 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.status === 'success') {
                     if (data.action === 'added') {
-                        // تغییر آیکون به حالت "ذخیره شده"
                         icon.classList.remove('bi-bookmark');
                         icon.classList.add('bi-bookmark-fill');
                     } else {
-                        // تغییر آیکون به حالت "ذخیره نشده"
                         icon.classList.remove('bi-bookmark-fill');
                         icon.classList.add('bi-bookmark');
 
-                        // اگر در صفحه داشبورد بودیم، کارت محصول را حذف کن
                         const cardToRemove = document.querySelector(`.product-card-saved-${productId}`);
                         if (cardToRemove) {
                             cardToRemove.remove();
                         }
                     }
                 } else {
-                    // در صورت بروز خطا (مثلا کاربر لاگین نکرده)
-                    // می‌توانید کاربر را به صفحه لاگین هدایت کنید
-                    window.location.href = '/login';
+                    window.location.href = '/login-with-phone';
                 }
             })
             .catch(error => console.error('Error:', error));

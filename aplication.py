@@ -9,48 +9,44 @@ from flask_migrate import Migrate
 from sqlalchemy.orm import DeclarativeBase
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_apscheduler import APScheduler  # ✅ اضافه شده
+from flask_apscheduler import APScheduler
 import redis
 from flask_cors import CORS
 import jdatetime
 from datetime import datetime
 from flask_jwt_extended import JWTManager
+from datetime import date
 
 
 
 
 
-# بارگذاری متغیرهای محیطی از .env
 load_dotenv()
 print("loaded DB URL:", os.environ.get("DATABASE_URL"))
 
-# اتصال به Redis
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-# مقداردهی به Limiter
 limiter = Limiter(
     key_func=get_remote_address,
     storage_uri="redis://localhost:6379/0"
 )
 
-# مقداردهی به افزونه‌ها
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
-scheduler = APScheduler()  # ✅ اضافه شده
+scheduler = APScheduler()
 
 
-# تعریف کلاس پایه برای ORM
 class Base(DeclarativeBase):
     pass
 
 
 logging.basicConfig(
-    level=logging.DEBUG,  # یا logging.INFO برای لاگ کمتر
+    level=logging.DEBUG,
     format='%(asctime)s %(levelname)s %(message)s',
     handlers=[
-        logging.StreamHandler(),              # نمایش در ترمینال
-        logging.FileHandler("error.log", encoding='utf-8')  # ذخیره در فایل error.log
+        logging.StreamHandler(),
+        logging.FileHandler("error.log", encoding='utf-8')
     ]
 )
 
@@ -91,13 +87,10 @@ def create_app():
     app.config["UPLOAD_FOLDER"] = os.path.join(app.root_path, "static", "uploads")
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB
 
-    # استفاده از Redis برای Limiter بدون استفاده از storage
     limiter.init_app(app)
 
-    # ساخت پوشه آپلود در صورت نبود
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-    # مقداردهی به افزونه‌ها
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
@@ -106,7 +99,6 @@ def create_app():
     if os.environ.get("FLASK_RUN_FROM_CLI") == "true":
         scheduler.init_app(app)
 
-    # ثبت بلوپرینت‌ها
     from routes import bp as html_routes
     from all_in_one_routes import bp as api_routes
     app.register_blueprint(html_routes)
@@ -129,7 +121,6 @@ def create_app():
                 '/payment/callback', '/test/expire-soon', '/get_new_messages',
                 '/ionicApp-server', '/sitemap.xml', '/my_store', '/chatbot', '/bazaar-login', '/bazaar-callback', '/bazaar-auth', '/verify-phone-change'
             ]
-            # حذف APIها و مسیرهای دارای پارامتر
             if "GET" in rule.methods and len(rule.arguments) == 0 and not rule.rule.startswith("/api") and rule.rule not in excluded_routes:
                 try:
                     url = url_for(rule.endpoint, _external=True)
@@ -157,7 +148,6 @@ def create_app():
 
         return Response(sitemap_xml, mimetype='application/xml')
 
-    # ایجاد جداول دیتابیس در صورت نیاز
     with app.app_context():
         try:
             db.create_all()
@@ -190,7 +180,6 @@ def create_app():
 app = create_app()
 
 
-# اجرای اپلیکیشن
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     app.run(debug=True)
