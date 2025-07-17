@@ -4,6 +4,9 @@
 {% block content %}
 
 <style>
+    body{
+        /* background-color: var(--dashboard-bg); */
+    }
     .rounder {
       border-radius: 10rem;
       transition: all 0.5s ease;
@@ -20,30 +23,90 @@
     .rounding{
         border-radius: 4rem !important;
     }
+    
+    /* جدید: استایل‌های بخش فیلتر موبایل */
+    #containerFluid{
+        transition: all 0.5s ease-out !important;
+    }
+    .filter-section{
+        opacity: 0;
+        max-height: 0 ;
+        overflow: hidden;
+        transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .filter-section.show-filters {
+        opacity: 1;
+        max-height: 50rem; /* ارتفاع کافی برای نمایش محتوا */
+    }
+    .gradshadow::before{
+        content:"";
+        position: absolute;
+        inset: -5px;
+        transform: translate(0,0);
+        z-index: -1;
+        background: conic-gradient(from 90deg at 40% -25%, #ffd700, #d2f703, #4cf100, #e68e0a, #de0d0d, #d61073, #cf1261, #c715c7, #7412cf, #2e10d6, #0d8bde, #07dfee, #d2f703, #00ff22, #ffd000, #ff0000);
+        filter: blur(10px);
+    }
+    .suggest{
+        scale: 0;
+        opacity: 0;
+        max-height: 0;
+        transition: all 0.5s ease-out !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    .animationshow.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
 </style>
 
 
-<nav class="navbar animationshow rounder d-lg-none d-md-none d-sm-flex sticky-top py-0" style="backdrop-filter: blur(15px); width: 100% !important;">
-    <div class="container-fluid d-flex flex-nowrap ps-0" style="width: 100% !important;">
-      <div class="d-flex flex-wrap w-75 align-items-center">
+<nav id="antoRound" class="navbar animationshow rounder d-lg-none d-md-none d-sm-flex sticky-top py-0" style="backdrop-filter: blur(15px); width: 100% !important;">
+    <div class="container-fluid d-flex flex-column ps-0" tyle="width: 100% !important;" id="containerFluid">
+      <div class="d-flex w-100 align-items-center">
               <div class="input-group flex-grow-1">
                   <input id="search-input-mobile" class="inputs searcher txt-black rounder px-3 py-1" type="search" placeholder="جستجو..." name="search" value="{{ request.args.get('search', '') }}">
               </div>
+        
+          <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg rounded-2 w-25 pt-2" id="floatingChatButton" title="چت با هوش مصنوعی">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="sparkleGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#4facfe"/>
+                  <stop offset="100%" stop-color="#8e2de2"/>
+                </linearGradient>
+              </defs>
+              <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"
+                    fill="url(#sparkleGrad)"/>
+            </svg>
+          </a>
       </div>
-      <a href="{{ url_for('main.chatbot_page_render') }}" class="btn btn-lg rounded-2 w-25 pt-2" id="floatingChatButton" title="چت با هوش مصنوعی">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="sparkleGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#4facfe"/>
-              <stop offset="100%" stop-color="#8e2de2"/>
-            </linearGradient>
-          </defs>
-          <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"
-                fill="url(#sparkleGrad)"/>
-        </svg>
-      </a>
+
+      <div class="container filter-section mt-3" id="priceFilterSectionMobile">
+        <p class="text-warning" style="font-size: 0.75rem;">محدوده قیمت را انتخاب کنید و فیلد را ببندید تا نتایج را به صورت زنده ببینید.</p>
+        <h6 class="txt-black mb-3">فیلتر قیمت (تومان)</h6>
+        <div class="row g-2">
+            <div class="col txt-black">
+                <input type="number" id="min-price-mobile" class="inputs txt-black" placeholder="حداقل قیمت">
+            </div>
+            <div class="col txt-black">
+                <input type="number" id="max-price-mobile" class="inputs txt-black" placeholder="حداکثر قیمت">
+            </div>
+        </div>
+        <button type="button" id="close-filters-button" class="btn btn-sm btn-outline-secondary mt-3 mb-3">بستن فیلتر</button>
+      </div>
+      <p class="suggest text-warning" id="myElement">برای فیلتر قیمت نگه دارید.</p>
     </div>
 </nav>
+
+
 <script>
     const searchIn = document.getElementById('search-input-mobile');
     const category = document.getElementById('categories-scroll-container-id');
@@ -51,17 +114,17 @@
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  // این اسکریپت برای چسبناک شدن نوار جستجو است
   const nav = document.querySelector('nav.rounder');
-
-  function checkStickiness() {
-    const isStuck = nav.getBoundingClientRect().top <= 0;
-    nav.classList.toggle('stuck', isStuck);
+  if (nav) {
+    function checkStickiness() {
+        const isStuck = nav.getBoundingClientRect().top <= 0;
+        nav.classList.toggle('stuck', isStuck);
+    }
+    window.addEventListener('scroll', checkStickiness);
+    checkStickiness();
   }
-
-  window.addEventListener('scroll', checkStickiness);
-  checkStickiness();
 });
-
 </script>
 
 
@@ -187,6 +250,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+{% if recommended_products %}
+<div class="container-fluid px-3">
+    <h2 class="mb-3 mt-5 txt-black">شاید بپسندید</h2>
+    <hr class="w-100 mb-5">
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-3 g-3 mb-5">
+        {# روش پیشنهادی و تمیزتر #}
+        {% with products=recommended_products %}
+            {% include '_product_list.html' %}
+        {% endwith %}
+    </div>
+</div>
+{% endif %}
+
 
 <h2 class="mb-3 mt-5 txt-black">محصولات</h2>
 <hr class="w-100 mb-5">
@@ -230,6 +307,123 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     </footer>
 
+
+
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Element References ---
+    // Mobile controls
+    const searchInputMobile = document.getElementById('search-input-mobile');
+    const minPriceMobile = document.getElementById('min-price-mobile');
+    const maxPriceMobile = document.getElementById('max-price-mobile');
+
+    // Desktop controls
+    const searchInputDesktop = document.getElementById('search-input-desktop');
+    const minPriceDesktop = document.getElementById('min-price-desktop');
+    const maxPriceDesktop = document.getElementById('max-price-desktop');
+    
+    const resultsContainer = document.getElementById('product-results-container');
+    let debounceTimeout;
+
+    // --- Core Search Function ---
+    function performLiveSearch() {
+        if (!resultsContainer) return;
+        resultsContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">در حال جستجو...</span></div></div>';
+        
+        const isMobileView = window.innerWidth < 992;
+        
+        // تعیین مقادیر بر اساس اندازه صفحه
+        const searchTerm = isMobileView ? searchInputMobile.value : searchInputDesktop.value;
+        const minPrice = isMobileView ? minPriceMobile.value : minPriceDesktop.value;
+        const maxPrice = isMobileView ? maxPriceMobile.value : maxPriceDesktop.value;
+
+        const queryParams = new URLSearchParams({
+            search: searchTerm,
+            min_price: minPrice,
+            max_price: maxPrice
+        });
+
+        fetch(`/live_search?${queryParams.toString()}`)
+            .then(response => response.text())
+            .then(html => {
+                resultsContainer.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('خطا در جستجوی زنده:', error);
+                resultsContainer.innerHTML = '<p class="text-center text-danger">خطایی در هنگام جستجو رخ داد.</p>';
+            });
+    }
+
+    // --- Utility Functions ---
+    function debounce(func, delay) {
+        return function(...args) {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+    const debouncedSearch = debounce(performLiveSearch, 500); // 500 میلی‌ثانیه تاخیر
+
+    // --- Event Listeners ---
+    [searchInputMobile, minPriceMobile, maxPriceMobile, searchInputDesktop, minPriceDesktop, maxPriceDesktop].forEach(element => {
+        if (element) {
+            element.addEventListener('input', debouncedSearch);
+        }
+    });
+
+    // --- Mobile Long Press for Filters ---
+    const antoRound = document.getElementById('antoRound');
+    const containerFluid = document.getElementById('containerFluid');
+    const priceFilterSection = document.getElementById('priceFilterSectionMobile');
+    const closeFiltersButton = document.getElementById('close-filters-button');
+    let longPressTimer;
+
+    if (searchInputMobile) {
+        const longPressDuration = 700;
+        const showFilters = () => {
+            antoRound.classList.add('gradshadow');
+            containerFluid.style.borderRadius = '1rem';
+            containerFluid.style.backgroundColor = 'var(--black-color)';
+            priceFilterSection.classList.add('show-filters');
+        };
+
+        const hideFilters = () => {
+            antoRound.classList.remove('gradshadow');
+            containerFluid.style.borderRadius = '0';
+            containerFluid.style.backgroundColor = 'transparent';
+            priceFilterSection.classList.remove('show-filters');
+        };
+
+        searchInputMobile.addEventListener('mousedown', () => { longPressTimer = setTimeout(showFilters, longPressDuration); });
+        searchInputMobile.addEventListener('mouseup', () => { clearTimeout(longPressTimer); });
+        searchInputMobile.addEventListener('mouseleave', () => { clearTimeout(longPressTimer); });
+        searchInputMobile.addEventListener('touchstart', () => { longPressTimer = setTimeout(showFilters, longPressDuration); }, { passive: true });
+        searchInputMobile.addEventListener('touchend', () => { clearTimeout(longPressTimer); });
+        searchInputMobile.addEventListener('touchmove', () => { clearTimeout(longPressTimer); });
+
+        if(closeFiltersButton) closeFiltersButton.addEventListener('click', hideFilters);
+    }
+    
+    // نمایش و پنهان کردن پیام "برای فیلتر نگه دارید"
+    const myElement = document.getElementById('myElement');
+    if(myElement) {
+        setTimeout(() => {
+            myElement.style.scale = '1';
+            myElement.style.opacity = '1';
+            myElement.style.maxHeight = '2rem';
+            document.getElementById('containerFluid').style.paddingBottom = '1rem';
+            document.getElementById('antoRound').style.borderRadius = "1rem";
+            
+            setTimeout(() => {
+                myElement.style.scale = '0';
+                myElement.style.opacity = '0';
+                myElement.style.maxHeight = '0';
+                document.getElementById('containerFluid').style.paddingBottom = '0';
+                document.getElementById('antoRound').style.borderRadius = "10rem";
+            }, 3000);
+        }, 1000);
+    }
+});
+</script>
 <script>
     function copyText(element) {
             const text = element.innerText || element.textContent;
@@ -305,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function () {
         initializeAnimations();
     });
 </script>
-<script>
+<!-- <script>
     document.addEventListener("DOMContentLoaded", function() {
         const elements = document.querySelectorAll('.animationshow');
         elements.forEach((el, index) => {
@@ -314,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }, index * 1300);
         });
     });
-</script>
+</script> -->
 <script>
             var citiesByProvince = {
                 "آذربایجان شرقی": ["تبریز","اسکو","اهر","بستان‌آباد","بناب","جلفا","چاراویماق","خداآفرین","سراب","شبستر","عجب‌شیر","کلیبر","مراغه","مرند","ملکان","میانه","ورزقان","هریس","هشترود"],
@@ -537,88 +731,95 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    // شناسایی تمام عناصر ورودی در ابتدای کار
     const searchInputDesktop = document.getElementById('search-input-desktop');
     const searchInputMobile = document.getElementById('search-input-mobile');
-    const provinceInputDesktop = document.getElementById('provinceInput');
-    const cityInputDesktop = document.getElementById('cityInput');
+    const minPriceDesktop = document.getElementById('min-price-desktop');
+    const maxPriceDesktop = document.getElementById('max-price-desktop');
+    const minPriceMobile = document.getElementById('min-price-mobile');
+    const maxPriceMobile = document.getElementById('max-price-mobile');
     const provinceInputMobile = document.getElementById('provinceInputMobile');
     const cityInputMobile = document.getElementById('cityInputMobile');
     const resultsContainer = document.getElementById('product-results-container');
     let debounceTimeout;
 
+    // تعریف تابع اصلی جستجو
     function performLiveSearch() {
-    if (!resultsContainer) return;
+        if (!resultsContainer) return;
+        resultsContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">در حال جستجو...</span></div></div>';
 
-    resultsContainer.innerHTML = `
-        <div class="col-12 text-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">در حال جستجو...</span>
-            </div>
-        </div>
-    `;
+        // اصلاح شد: از یک متغیر واحد برای تشخیص موبایل استفاده می‌کنیم
+        const isMobile = window.innerWidth < 992; 
 
-    const isMobile = window.innerWidth <= 768;
+        // خواندن مقادیر از فیلدهای مربوطه
+        const searchTerm = (isMobile ? searchInputMobile?.value : searchInputDesktop?.value) || '';
+        const minPrice = (isMobile ? minPriceMobile?.value : minPriceDesktop?.value) || '';
+        const maxPrice = (isMobile ? maxPriceMobile?.value : maxPriceDesktop?.value) || '';
+        const province = provinceInputMobile?.value || ''; // فرض شده فیلتر استان فقط برای موبایل است
+        const city = cityInputMobile?.value || '';       // فرض شده فیلتر شهر فقط برای موبایل است
 
-    const searchTerm = (isMobile ? searchInputMobile?.value : searchInputDesktop?.value || '').trim();
-    const province = (isMobile ? provinceInputMobile?.value : provinceInputDesktop?.value || '').trim();
-    const city = (isMobile ? cityInputMobile?.value : cityInputDesktop?.value || '').trim();
-
-    const queryParams = new URLSearchParams({
-        search: searchTerm,
-        province_search: province,
-        city_search: city
-    });
-
-    fetch(`/live_search?${queryParams.toString()}`)
-        .then(response => {
-            if (!response.ok) throw new Error('پاسخ نامعتبر از سرور');
-            return response.text();
-        })
-        .then(html => {
-            resultsContainer.innerHTML = html;
-            if (typeof initializeAnimations === 'function') {
-                initializeAnimations();
-            }
-        })
-        .catch(error => {
-            console.error('خطا در جستجوی زنده:', error);
-            resultsContainer.innerHTML = `
-                <div class="col-12 text-center text-danger">
-                    خطایی در هنگام جستجو رخ داد. لطفاً دوباره تلاش کنید.
-                </div>
-            `;
+        const queryParams = new URLSearchParams({
+            search: searchTerm,
+            min_price: minPrice,
+            max_price: maxPrice,
+            province_search: province,
+            city_search: city,
         });
-}
 
+        fetch(`/live_search?${queryParams.toString()}`)
+            .then(response => {
+                if (!response.ok) throw new Error('پاسخ از سرور نامعتبر بود');
+                return response.text();
+            })
+            .then(html => {
+                resultsContainer.innerHTML = html;
+                // فراخوانی انیمیشن برای عناصر جدید
+                if (typeof initializeAnimations === 'function') {
+                    initializeAnimations();
+                }
+            })
+            .catch(error => {
+                console.error('خطا در جستجوی زنده:', error);
+                resultsContainer.innerHTML = '<p class="text-center text-danger">خطایی در هنگام جستجو رخ داد.</p>';
+            });
+    }
 
+    // تابع debounce برای جلوگیری از درخواست‌های مکرر
     function debounce(func, delay) {
-        let timeout;
-        return function() {
-            const context = this;
-            const args = arguments;
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(context, args), delay);
+        return function(...args) {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => func.apply(this, args), delay);
         };
     }
 
     const debouncedSearch = debounce(performLiveSearch, 400);
 
-    if (searchInputDesktop) {
-        searchInputDesktop.addEventListener('input', debouncedSearch);
-    }
-    if (searchInputMobile) {
-        searchInputMobile.addEventListener('input', debouncedSearch);
-    }
+    // اتصال Event Listener به تمام فیلدهای ورودی
+    const allInputs = [
+        searchInputDesktop, searchInputMobile,
+        minPriceDesktop, maxPriceDesktop,
+        minPriceMobile, maxPriceMobile
+    ];
+    allInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', debouncedSearch);
+        }
+    });
 
+    // بازنویسی توابع انتخاب استان و شهر برای فراخوانی جستجوی زنده
     const originalSelectProvince = window.selectProvince;
     window.selectProvince = function(formType, province) {
-        originalSelectProvince(formType, province);
+        if(typeof originalSelectProvince === 'function') {
+            originalSelectProvince(formType, province);
+        }
         performLiveSearch();
     };
 
     const originalSelectCity = window.selectCity;
     window.selectCity = function(formType, city) {
-        originalSelectCity(formType, city);
+        if(typeof originalSelectCity === 'function') {
+            originalSelectCity(formType, city);
+        }
         performLiveSearch();
     };
 });

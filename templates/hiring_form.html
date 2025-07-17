@@ -108,9 +108,17 @@
 
                     <hr class="txt-black w-100">
 
-                    <div class="mb-3">
-                        <label for="salary_amount" class="form-label txt-black">میزان حقوق (اختیاری)</label>
-                        <input type="text" class="inputs txt-black" placeholder="مثال: ماهانه بین ۱۵ تا ۲۰ میلیون تومان" id="salary_amount" name="salary_amount" value="{{ job.salary_amount if job else '' }}">
+                    <div id="salary-inputs-container">
+                        <div class="row g-3">
+                            <div class="col-md-6 mb-3">
+                                <label for="salary_min" class="form-label txt-black">از مبلغ (تومان)</label>
+                                <input type="number" class="inputs txt-black" placeholder="مثال: 10000000" id="salary_min" name="salary_min" value="{{ job.salary_min if job and job.salary_min is not none else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="salary_max" class="form-label txt-black">تا مبلغ (تومان)</label>
+                                <input type="number" class="inputs txt-black" placeholder="مثال: 15000000" id="salary_max" name="salary_max" value="{{ job.salary_max if job and job.salary_max is not none else '' }}">
+                            </div>
+                        </div>
                     </div>
 
                     <hr class="txt-black w-100">
@@ -259,6 +267,26 @@ document.addEventListener('DOMContentLoaded', function () {
         xhr.open("POST", "{{ url_for('main.upload_image') }}", true);
         xhr.send(formData);
     }
+
+
+    const salaryTypeSelect = document.getElementById('salary_type');
+    const salaryMinInput = document.getElementById('salary_min');
+    const salaryMaxInput = document.getElementById('salary_max');
+    
+    function toggleSalaryFields() {
+        const isNegotiable = salaryTypeSelect.value === 'NEGOTIABLE';
+        salaryMinInput.disabled = isNegotiable;
+        salaryMaxInput.disabled = isNegotiable;
+        
+        if (isNegotiable) {
+            salaryMinInput.value = '';
+            salaryMaxInput.value = '';
+        }
+    }
+    
+    salaryTypeSelect.addEventListener('change', toggleSalaryFields);
+    
+    toggleSalaryFields();
 });
 </script>
 {% endblock %}

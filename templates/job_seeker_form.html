@@ -60,17 +60,27 @@
                         <label for="description" class="form-label txt-black">توضیحات مهارت‌ها</label>
                         <textarea class="inputs txt-black" placeholder="درباره مهارت‌ها، توانایی‌ها و تجربیات خود بنویسید..." id="description" name="description" rows="4" required>{{ profile.description if profile else '' }}</textarea>
                     </div>
+
                     <div class="mb-3">
-                        <label for="portfolio_links" class="form-label txt-black">لینک نمونه کارها (اختیاری)</label>
-                        <textarea class="inputs txt-black" dir="ltr" placeholder="لینک‌ها را با کاما (,) جدا کنید" id="portfolio_links" name="portfolio_links" rows="2">{{ profile.portfolio_links if profile else '' }}</textarea>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label txt-black mb-0">لینک نمونه کارها (اختیاری)</label>
+                            <button type="button" id="add-link-btn" class="btn btn-sm btn-success header-tabs">
+                                <i class="bi bi-plus-circle me-1"></i> افزودن لینک
+                            </button>
+                        </div>
+                        <div id="portfolio-links-container">
+                            {% if profile and profile.portfolio_links %}
+                                {% for link in profile.portfolio_links.split(',') %}
+                                    {% if link.strip() %}
+                                    <div class="input-group mb-2 portfolio-link-item">
+                                        <input type="url" name="portfolio_link" class="form-control inputs txt-black" dir="ltr" value="{{ link.strip() }}" placeholder="https://example.com">
+                                        <button class="btn btn-outline-danger remove-link-btn" type="button"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
                     </div>
-                    <!-- <div class="mb-3">
-                        <label for="resume_file" class="form-label txt-black">فایل رزومه (PDF - اختیاری)</label>
-                        <input type="file" class="form-control" id="resume_file" name="resume_file" accept=".pdf,application/pdf">
-                        {% if profile and profile.resume_path %}
-                        <small class="form-text txt-black mt-2">فایل فعلی: <a href="{{ url_for('static', filename='resumes/' + profile.resume_path) }}" target="_blank">{{ profile.resume_path }}</a> (برای تغییر، فایل جدید انتخاب کنید)</small>
-                        {% endif %}
-                    </div> -->
 
                     <h5 class="txt-black border-bottom pb-2 mt-4 mb-3">اطلاعات فردی و تماس</h5>
                      <div class="row g-3">
@@ -214,6 +224,14 @@
     </div>
 </template>
 
+<template id="portfolio-link-template">
+    <div class="input-group mb-2 portfolio-link-item">
+        <input type="url" name="portfolio_link" class="form-control inputs txt-black" dir="ltr" placeholder="https://example.com">
+        <button class="btn btn-outline-danger remove-link-btn" type="button"><i class="bi bi-trash"></i></button>
+    </div>
+</template>
+
+
 <div id="cropper-modal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
     <div style="background-color: #1e1e1e; color: white; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; text-align: center;">
         <h4 style="margin-bottom: 20px;">برش تصویر (نسبت 1x1)</h4>
@@ -225,7 +243,6 @@
     </div>
 </div>
 
-{% block page_scripts %}
 <script type="text/javascript" src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
@@ -253,7 +270,6 @@
     });
 </script>
 
-{% endblock %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
 <script>
@@ -339,17 +355,37 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // --- مدیریت سوابق شغلی ---
     const addExperienceBtn = document.getElementById('add-experience-btn');
-    const container = document.getElementById('work-experience-container');
-    const template = document.getElementById('experience-template');
+    const experienceContainer = document.getElementById('work-experience-container');
+    const experienceTemplate = document.getElementById('experience-template');
     
     let experienceIndex = {{ profile.work_experiences.count() if profile else 0 }};
 
     addExperienceBtn.addEventListener('click', function() {
-        const clone = template.content.cloneNode(true);
+        const clone = experienceTemplate.content.cloneNode(true);
         const html = clone.firstElementChild.outerHTML.replace(/INDEX/g, experienceIndex);
-        container.insertAdjacentHTML('beforeend', html);
+        experienceContainer.insertAdjacentHTML('beforeend', html);
         experienceIndex++;
+    });
+
+    // --- مدیریت لینک‌های نمونه کار (جدید) ---
+    const addLinkBtn = document.getElementById('add-link-btn');
+    const linksContainer = document.getElementById('portfolio-links-container');
+    const linkTemplate = document.getElementById('portfolio-link-template');
+
+    addLinkBtn.addEventListener('click', function() {
+        const clone = linkTemplate.content.cloneNode(true);
+        linksContainer.appendChild(clone);
+    });
+
+    // استفاده از Event Delegation برای دکمه‌های حذف که داینامیک اضافه می‌شوند
+    linksContainer.addEventListener('click', function(event) {
+        // بررسی می‌کند که آیا روی دکمه حذف یا آیکون داخل آن کلیک شده است
+        if (event.target.closest('.remove-link-btn')) {
+            // نزدیک‌ترین والد با کلاس .portfolio-link-item را پیدا کرده و حذف می‌کند
+            event.target.closest('.portfolio-link-item').remove();
+        }
     });
 });
 </script>

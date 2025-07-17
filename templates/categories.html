@@ -182,8 +182,8 @@
                         <div class="col">
                             <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="divar-card-horizontal-link">
                                 
-                                {% if product.images and product.images[0].image_path %}
-                                    {% set image_url = url_for('static', filename='uploads/' + product.images[0].image_path) %}
+                                {% if product.images and product.images.first() %}
+                                    {% set image_url = url_for('static', filename='uploads/' + product.images.first()) %}
                                 {% elif product.image_path %}
                                     {% set image_url = url_for('static', filename='uploads/' + product.image_path) %}
                                 {% else %}

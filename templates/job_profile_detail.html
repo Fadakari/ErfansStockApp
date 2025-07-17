@@ -1,11 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+  .truncate-link {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+</style>
 <div class="container my-4 my-md-5">
     <div class="row">
         <div class="col-lg-8 col-md-10 mx-auto">
           <div class="detail-header d-flex flex-nowrap w-100" style="background-color: var(--dark-green);">
-              <h2 class="txt-black mt-2 me-2">آگهی کاریابی</h2>
+              <h2 class="txt-black mt-2 me-2">پروفایل کاریابی</h2>
               <button class="btn me-auto" onclick="history.back()">
                   <i class="bi bi-arrow-left fs-3 txt-black"></i>
               </button>
@@ -14,7 +24,7 @@
                 <div class="card-body p-lg-5 p-4 mb-5">
                     <div class="text-center mb-5">
                         {% if profile.profile_picture and profile.profile_picture != 'default.jpg' %}
-                          <img src="{{ url_for('static', filename='uploads/' + profile.profile_picture) if profile.profile_picture and profile.profile_picture != 'default.jpg' else url_for('static', filename='images/placeholder.png') }}" alt="تصویر پروفایل" class="rounded-circle mb-3" style="width: 140px; height: 140px; object-fit: cover; border: 4px solid var(--primary-accent);">
+                          <img src="{{ url_for('static', filename='uploads/' + profile.profile_picture) }}" alt="تصویر پروفایل" class="rounded-circle mb-3" style="width: 140px; height: 140px; object-fit: cover; border: 4px solid var(--primary-accent);">
                         {% else %}
                           <img src="{{ url_for('static', filename='images/my_splash_logo(1).png') }}" class="divar-card-img" loading="lazy" style="width: 100px; height: 100px; object-fit: cover; border-radius: 0.75rem; margin-left: 10px;">
                         {% endif %}
@@ -42,28 +52,56 @@
                         <p class="lh-lg txt-black" style="white-space: pre-wrap;">{{ profile.description or 'توضیحات ثبت نشده است.' }}</p>
                     </div>
 
-                    {% if profile.work_experiences.all() %}
+                    {% if profile.portfolio_links %}
                     <div class="mb-5">
-                        <h4 class="d-inline-block border-bottom border-2 border-success pb-2 mb-4 txt-black"><i class="bi bi-briefcase-fill me-2"></i>سوابق شغلی</h4>
-                        {% for exp in profile.work_experiences.order_by(WorkExperience.start_date.desc()) %}
-                            <div class="position-relative ps-4 mb-4">
-                                <span class="position-absolute top-0 start-0 translate-middle p-1 bg-success border border-light rounded-circle" style="margin-top: 0.5rem;"></span>
-                                <h5 class="mb-1 txt-black">{{ exp.job_title }}</h5>
-                                <p class="mb-1 fw-bold txt-black">{{ exp.company_name }}</p>
-                                <small class="txt-black">{{ exp.start_date }} - {{ exp.end_date or 'تاکنون' }}</small>
-                            </div>
-                        {% endfor %}
+                        <h4 class="d-inline-block border-bottom border-2 border-warning pb-2 mb-3 txt-black"><i class="bi bi-link-45deg me-2"></i>نمونه کارها</h4>
+                        <ul class="list-unstyled">
+                            {% for link in profile.portfolio_links.split(',') %}
+                                {% if link.strip() %}
+                                <li class="mb-2 text-start">
+                                    <a href="{{ link.strip() }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none truncate-link" dir="ltr">{{ link.strip() }}</a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
                     </div>
+                    {% endif %}
+
+                    {% if work_experiences %}
+                      <div class="mb-5">
+                          <h4 class="d-inline-block border-bottom border-2 border-success pb-2 mb-4 txt-black"><i class="bi bi-briefcase-fill me-2"></i>سوابق شغلی</h4>
+                          
+                          {% for exp in work_experiences %}
+                              <div class="position-relative ps-4 mb-4">
+                                  <span class="position-absolute top-0 start-0 translate-middle p-1 bg-success border border-light rounded-circle" style="margin-top: 0.5rem;"></span>
+                                  <h5 class="mb-1 txt-black">{{ exp.job_title }}</h5>
+                                  <p class="mb-1 fw-bold txt-black">{{ exp.company_name }}</p>
+                                  <small class="txt-black">{{ exp.start_date }} - {{ exp.end_date or 'تاکنون' }}</small>
+                              </div>
+                          {% endfor %}
+                      </div>
                     {% endif %}
 
                     <div class="mb-5">
                          <h4 class="d-inline-block border-bottom border-2 border-info pb-2 mb-4 txt-black"><i class="bi bi-info-circle-fill me-2"></i>اطلاعات تکمیلی</h4>
                          <div class="row g-3">
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-telephone-fill ms-2 txt-black"></i>شماره تماس: <br><strong class="txt-black">{{ profile.contact_phone or 'ثبت نشده' }}</strong></div>
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-envelope-fill ms-2 txt-black"></i>ایمیل: <br><strong class="txt-black">{{ profile.contact_email or 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-mortarboard-fill ms-2 txt-black"></i>آخرین مدرک: <br><strong class="txt-black">{{ profile.highest_education_level.value if profile.highest_education_level else 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-person-video3 ms-2 txt-black"></i>وضعیت تحصیلی: <br><strong class="txt-black">{{ profile.education_status or 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-person-hearts ms-2 txt-black"></i>وضعیت تاهل: <br><strong class="txt-black">{{ profile.marital_status.value if profile.marital_status else 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-file-person-fill ms-2 txt-black"></i>وضعیت سربازی: <br><strong class="txt-black">{{ profile.military_status.value if profile.military_status else 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-calendar-event-fill ms-2 txt-black"></i>تاریخ تولد: <br><strong class="txt-black">{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else 'ثبت نشده' }}</strong></div>
+                            
+                            {% if profile.requested_salary_min or profile.requested_salary_max %}
+                                <div class="col-md-6 txt-black mt-4"><i class="bi bi-cash-stack ms-2 txt-black"></i>حقوق درخواستی (تومان):
+                                    <br>
+                                    <strong class="txt-black">
+                                        {% if profile.requested_salary_min %}از {{ "{:,.0f}".format(profile.requested_salary_min) }}{% endif %}
+                                        {% if profile.requested_salary_max %} تا {{ "{:,.0f}".format(profile.requested_salary_max) }}{% endif %}
+                                    </strong>
+                                </div>
+                            {% endif %}
                          </div>
                     </div>
 

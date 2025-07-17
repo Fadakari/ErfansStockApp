@@ -52,18 +52,16 @@
   </script>
 
 <script>
-    // تابع را تعریف می‌کنیم تا قابل استفاده مجدد باشد
     function initializeAnimations() {
         const animatables = document.querySelectorAll(".animationshow");
         
-        if (animatables.length === 0) return; // اگر عنصری برای انیمیشن نبود، خارج شو
+        if (animatables.length === 0) return;
 
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add("show");
                 } else {
-                    // اگر می‌خواهید انیمیشن با اسکرول به بالا برگردد این خط را نگه دارید
                     // entry.target.classList.remove("show"); 
                 }
             });
@@ -76,7 +74,6 @@
         });
     }
 
-    // این تابع را یک بار در زمان بارگذاری اولیه صفحه صدا می‌زنیم
     document.addEventListener("DOMContentLoaded", () => {
         initializeAnimations();
     });
@@ -87,7 +84,7 @@
         elements.forEach((el, index) => {
             setTimeout(() => {
                 el.classList.add('show');
-            }, index * 1300); // تاخیر پله‌ای برای نمایش آیتم‌ها
+            }, index * 1300);
         });
     });
 </script>

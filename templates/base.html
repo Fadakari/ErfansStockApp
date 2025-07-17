@@ -239,6 +239,12 @@
 
                 <form class="d-lg-flex d-md-none d-sm-none w-100" action="{{ url_for('main.index') }}" method="GET">
                     <div class="d-flex w-75 m-auto gap-2 align-items-center">
+                        <div class="">
+                            <input id="min-price-desktop" type="number" class="inputs" placeholder="حداقل قیمت" name="min_price" value="{{ request.args.get('min_price', '') }}">
+                        </div>
+                        <div class="">
+                            <input id="max-price-desktop" type="number" class="inputs" placeholder="حداکثر قیمت" name="max_price" value="{{ request.args.get('max_price', '') }}">
+                        </div>
                         <!-- <div class="dropdown w-25">
                             <button class="btn dropdown-toggle w-100 p-2 txt-black chooser" type="button"
                                     id="provinceDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -538,7 +544,6 @@
     <!-- <script src="{{ url_for('static', filename='bootstrap/bootstrap.bundle.min.js') }}"></script> -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='bootstrap/select2.min.css') }}"></script>
     <script src="{{ url_for('static', filename='bootstrap/select2.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='bootst/js/bootstrap.bundle.min.js') }}"></script>

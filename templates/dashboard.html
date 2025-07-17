@@ -594,7 +594,9 @@
                     {% for product in saved_products %}
                     <div class="col-md-6 col-lg-4 product-card-saved-{{ product.id }}">
                         <div class="card h-100 d-flex flex-column position-relative">
-                            {% set image_url = 'images/placeholder.png' %}
+
+                            {#--- START OF FINAL CORRECTION ---#}
+                            {% set image_url = 'images/placeholder.png' %} {# پیش‌فرض #}
                             {% if product.images %}
                                 {% set image_url = 'uploads/' + product.images[0].image_path %}
                             {% elif product.image_path %}
@@ -602,6 +604,7 @@
                             {% endif %}
 
                             <img src="{{ url_for('static', filename=image_url) }}" class="card-img-top" alt="{{ product.name }}" style="aspect-ratio: 16/10; object-fit: cover;">
+                            {#--- END OF FINAL CORRECTION ---#}
 
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title" style="color: var(--text-color);">
@@ -679,7 +682,7 @@
                                     <div class="d-flex align-items-start">
                                         <div class="position-relative">
                                             <img id="profile-picture-display" src="{{ url_for('static', filename='uploads/' + user_job_profile.profile_picture) }}" alt="تصویر پروفایل" class="rounded-circle me-4" style="width: 90px; height: 90px; object-fit: cover;">
-                                            <button class="btn btn-light btn-sm rounded-circle position-absolute bottom-0 start-0 ms-4" style="transform: translateY(25%);" data-bs-toggle="modal" data-bs-target="#editPictureModal" title="ویرایش عکس پروفایل">
+                                            <button class="btn btn-light btn-sm rounded-circle position-absolute bottom-0 start-0 ms-4" style="transform: translateY(25%);" data-bs-target="#editPictureModal" title="ویرایش عکس پروفایل">
                                                 <i class="bi bi-camera-fill"></i>
                                             </button>
                                         </div>
@@ -693,7 +696,7 @@
                                     <hr>
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <h6 class="mb-0">درباره من</h6>
-                                        <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="modal" data-bs-target="#editAboutModal">
+                                        <button class="btn btn-sm btn-link text-decoration-none" data-bs-target="#editAboutModal">
                                             <i class="bi bi-pencil-square me-1"></i> ویرایش
                                         </button>
                                     </div>
@@ -728,7 +731,7 @@
                             <div class="card mb-4">
                                  <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
                                     <h5 class="mb-0" style="color: var(--text-color);">اطلاعات فردی و تماس</h5>
-                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="modal" data-bs-target="#editContactModal">
+                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-target="#editContactModal">
                                         <i class="bi bi-pencil-square me-1"></i> ویرایش
                                     </button>
                                 </div>
@@ -748,7 +751,7 @@
                             <div class="card mb-4">
                                  <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
                                     <h5 class="mb-0" style="color: var(--text-color);">تحصیلات</h5>
-                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-toggle="modal" data-bs-target="#editEducationModal">
+                                    <button class="btn btn-sm btn-link text-decoration-none" data-bs-target="#editEducationModal">
                                         <i class="bi bi-pencil-square me-1"></i> ویرایش
                                     </button>
                                 </div>
@@ -762,7 +765,7 @@
                                  <div class="card-header bg-transparent"><h5 class="mb-0" style="color: var(--text-color);">تنظیمات</h5></div>
                                  <div class="card-body">
                                     <a href="{{ url_for('main.edit_job_profile') }}" class="btn btn-outline-secondary w-100 mb-2">ویرایش کامل پروفایل</a>
-                                    <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteProfileModal">
+                                    <button type="button" class="btn btn-outline-danger w-100" data-bs-target="#deleteProfileModal">
                                         <i class="bi bi-trash-fill me-2"></i> حذف کامل پروفایل کاریابی
                                     </button>
                                  </div>
@@ -940,7 +943,6 @@
                 <div class="col-12"><label class="form-label">محل سکونت</label><input type="text" class="form-control inputs" name="location" value="{{ user_job_profile.location }}"></div>
                 <div class="col-md-4 mb-3">
                     <label for="birthdate-picker-display-modal" class="form-label txt-black">تاریخ تولد</label>
-                                
                     <input type="text" class="form-control inputs" id="birthdate-picker-display-modal" autocomplete="off" style="background-color: var(--card-bg) !important;" placeholder="انتخاب تاریخ...">
                                 
                     <input type="hidden" id="birthdate-gregorian-alt-modal" name="birth_date" 
@@ -1075,7 +1077,7 @@ function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
 }
 </script>
 
-<script type="text/javascript">
+<!-- <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function() {
         jalaliDatepicker.startWatch({
             selector: "#birthdate-picker-display",
@@ -1097,7 +1099,7 @@ function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
             document.getElementById("birthdate-picker-display").value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
         }
     });
-</script>
+</script> -->
 
 {% endblock %}
     
@@ -1105,27 +1107,22 @@ function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
         document.addEventListener('DOMContentLoaded', function() {
             initJalaliDatepicker('birthdate-picker-display-modal', 'birthdate-gregorian-alt-modal');
 
-            function displayInitialShamsiDate() {
-                const initialDateElem = document.getElementById('initial-gregorian-date');
-                if (initialDateElem && initialDateElem.innerText) {
-                    const gregorianDate = initialDateElem.innerText;
-                    const shamsiDate = new Date(gregorianDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
-                    document.getElementById('profile-birthdate-display').innerText = shamsiDate;
-                }
-            }
-            displayInitialShamsiDate();
+            // function displayInitialShamsiDate() {
+            //     const initialDateElem = document.getElementById('initial-gregorian-date');
+            //     if (initialDateElem && initialDateElem.innerText) {
+            //         const gregorianDate = initialDateElem.innerText;
+            //         const shamsiDate = new Date(gregorianDate).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
+            //         document.getElementById('profile-birthdate-display').innerText = shamsiDate;
+            //     }
+            // }
+            // displayInitialShamsiDate();
 
-            const contactModal = document.getElementById('editContactModal');
-            if(contactModal) {
-                contactModal.addEventListener('show.bs.modal', function () {
-                    const initialGregorianDate = document.getElementById('birthdate-gregorian-alt-modal').value;
-                    const displayInput = document.getElementById('birthdate-picker-modal');
-                    if(initialGregorianDate) {
-                        const shamsiDate = new Date(initialGregorianDate).toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '/');
-                        displayInput.value = shamsiDate;
-                    } else {
-                        displayInput.value = '';
-                    }
+            const editContactModal = document.getElementById('editContactModal');
+            if (editContactModal) {
+                // رویداد 'shown.bs.modal' تضمین می‌کند که مودال کاملاً نمایش داده شده
+                editContactModal.addEventListener('shown.bs.modal', function () {
+                    // فراخوانی تابع استاندارد برای مقداردهی تقویم داخل مودال
+                    initJalaliDatepicker('birthdate-picker-display-modal', 'birthdate-gregorian-alt-modal');
                 });
             }
             // --- Tab Switching Logic ---
@@ -1274,6 +1271,73 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 
 document.addEventListener('DOMContentLoaded', function() {
+
+    function forceCloseAllModals() {
+        const openModalEl = document.querySelector('.modal.show');
+        if (openModalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(openModalEl);
+            if (modalInstance) {
+                // این دستور مودال را به طور کامل از حافظه پاک می‌کند
+                modalInstance.dispose(); 
+            }
+        }
+
+        // پاک‌سازی دستی و فوری برای حذف بقایای بصری
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.querySelectorAll('.modal').forEach(modal => {
+             modal.classList.remove('show');
+             modal.setAttribute('aria-hidden', 'true');
+             modal.style.display = 'none';
+        });
+    }
+
+     document.body.addEventListener('click', function(event) {
+        // پیدا کردن دکمه‌ای که کلیک شده و ویژگی data-bs-target دارد اما data-bs-toggle ندارد
+        const trigger = event.target.closest('[data-bs-target]');
+        if (trigger && !trigger.hasAttribute('data-bs-toggle')) {
+            event.preventDefault();
+            const targetId = trigger.getAttribute('data-bs-target');
+            const modalEl = document.querySelector(targetId);
+            if (modalEl) {
+                // هر بار یک نمونه کاملاً جدید از مودال ایجاد و نمایش داده می‌شود
+                const myModal = new bootstrap.Modal(modalEl);
+                myModal.show();
+            }
+        }
+    });
+
+    function toPersianDate(gregorianDateString) {
+        if (!gregorianDateString || gregorianDateString === 'ثبت نشده') {
+            return 'ثبت نشده';
+        }
+        try {
+            return new Date(gregorianDateString).toLocaleDateString('fa-IR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (e) {
+            console.error("Invalid date for toPersianDate:", gregorianDateString);
+            return 'تاریخ نامعتبر';
+        }
+    }
+
+    const toastLiveExample = document.getElementById('liveToast');
+    const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastLiveExample);
+    const toastBody = toastLiveExample.querySelector('.toast-body');
+
+    function showToast(message, isError = false) {
+        toastBody.innerText = message;
+        if (isError) {
+            toastLiveExample.classList.add('text-bg-danger');
+        } else {
+            toastLiveExample.classList.remove('text-bg-danger');
+        }
+        toastBootstrap.show();
+    }
     // Helper function to send form data via fetch
     function sendAjaxForm(formId, url, successCallback) {
         const form = document.getElementById(formId);
@@ -1289,41 +1353,30 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .then(response => response.json())
         .then(result => {
-            if (result.success) {
+            const modalEl = form.closest('.modal');
+            const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+
+           if (result.success) {
+                forceCloseAllModals(); // تابع پاک‌سازی و تخریب کامل را صدا می‌زنیم
                 if (successCallback) successCallback(result);
-                const modalEl = form.closest('.modal');
-                if (modalEl) {
-                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
-
-                    modalEl.addEventListener('hidden.bs.modal', function () {
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                        document.body.style.paddingRight = '';
-                    }, { once: true });
-
-                    modalInstance.hide();
-                }
-
-                alert(result.message);
+                showToast(result.message || 'تغییرات با موفقیت ذخیره شد.');
             } else {
-                alert('خطا: ' + result.message);
+                // در صورت خطا نیز پیام را با Toast نمایش بده
+                showToast('خطا: ' + (result.message || 'مشکلی در ذخیره تغییرات رخ داد.'), true);
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('یک خطای غیرمنتظره در ارتباط با سرور رخ داد.', true);
+        });
     }
 
     // Listener for "About Me" modal
-    document.getElementById('save-contact-changes')?.addEventListener('click', function() {
-        sendAjaxForm('edit-contact-form', "{{ url_for('main.edit_job_profile_contact') }}", (result) => {
-            const data = result.new_data;
-            document.getElementById('profile-phone-display').innerText = data.phone;
-            document.getElementById('profile-email-display').innerText = data.email;
-            document.getElementById('profile-location-display').innerText = data.location;
-        
-            document.getElementById('profile-birthdate-display').innerText = toPersianDate(data.birth_date);
-        
-            document.getElementById('profile-marital-display').innerText = data.marital_status;
-            document.getElementById('profile-military-display').innerText = data.military_status;
+    document.getElementById('save-about-changes')?.addEventListener('click', function() {
+        sendAjaxForm('edit-about-form', "{{ url_for('main.edit_job_profile_summary') }}", (result) => {
+            // آپدیت کردن متن در صفحه اصلی بعد از ذخیره موفق
+            document.getElementById('profile-title-display').innerText = result.new_title;
+            document.getElementById('profile-description-display').innerText = result.new_description;
         });
     });
 
@@ -1332,11 +1385,11 @@ document.addEventListener('DOMContentLoaded', function() {
         sendAjaxForm('edit-contact-form', "{{ url_for('main.edit_job_profile_contact') }}", (result) => {
             const data = result.new_data;
             document.getElementById('profile-phone-display').innerText = data.phone;
-            document.getElementById('profile-email-display').innerText = data.email;
-            document.getElementById('profile-location-display').innerText = data.location;
-            document.getElementById('profile-birthdate-display').innerText = data.birth_date;
-            document.getElementById('profile-marital-display').innerText = data.marital_status;
-            document.getElementById('profile-military-display').innerText = data.military_status;
+            document.getElementById('profile-email-display').innerText = data.email || 'ثبت نشده';
+            document.getElementById('profile-location-display').innerText = data.location || 'موقعیت ثبت نشده';
+            document.getElementById('profile-birthdate-display').innerText = toPersianDate(data.birth_date);
+            document.getElementById('profile-marital-display').innerText = data.marital_status || 'ثبت نشده';
+            document.getElementById('profile-military-display').innerText = data.military_status || 'ثبت نشده';
         });
     });
 
@@ -1402,15 +1455,17 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(result => {
                 if (result.success) {
                     document.getElementById('profile-picture-display').src = result.new_path;
-                    bootstrap.Modal.getInstance(document.getElementById('editPictureModal')).hide();
-                    alert(result.message);
+                    forceCloseAllModals();
+                    showToast(result.message); // استفاده از Toast به جای alert
+                } else {
+                    showToast(result.message, true); // استفاده از Toast برای خطا
                 }
             });
         });
     }
 });
 </script>
-<script>
+<!-- <script>
     function toPersianDate(gregorianDateString) {
         if (!gregorianDateString || gregorianDateString === 'ثبت نشده') {
             return 'ثبت نشده';
@@ -1421,5 +1476,17 @@ document.addEventListener('DOMContentLoaded', function() {
             day: 'numeric'
         });
     }
-</script>
+</script> -->
+<div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header">
+      <i class="bi bi-bell-fill me-2"></i>
+      <strong class="me-auto">پیام سیستم</strong>
+      <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body">
+      </div>
+  </div>
+</div>
+
 {% endblock %}

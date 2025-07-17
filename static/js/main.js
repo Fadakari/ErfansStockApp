@@ -8,7 +8,9 @@ const installBtn = document.getElementById('installBtn');
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    installBtn.classList.remove('d-none');
+    if (installBtn) {
+        installBtn.classList.remove('d-none');
+    }
     
     installBtn.addEventListener('click', async () => {
         if (deferredPrompt !== null) {

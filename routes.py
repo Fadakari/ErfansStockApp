@@ -1,11 +1,11 @@
 import os
-from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify, session, url_for, current_app, abort, send_from_directory, request
+from flask import render_template, redirect, url_for, flash, request, Blueprint, jsonify, session, url_for, current_app, abort, send_from_directory, request, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 import secrets
 import traceback
 from urllib.parse import urlparse
 from aplication import db
-from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks, UserReport, CooperationType, SalaryType, MilitaryStatus, MaritalStatus, EducationLevel, JobListing, JobProfile, WorkExperience, job_applications, JobListingReport, JobProfileReport
+from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks, UserReport, CooperationType, SalaryType, MilitaryStatus, MaritalStatus, EducationLevel, JobListing, JobProfile, WorkExperience, job_applications, JobListingReport, JobProfileReport, CategoryView, SearchHistory
 from utils import save_image
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -43,8 +43,8 @@ def inject_enums_into_templates():
         SalaryType=SalaryType,
         MilitaryStatus=MilitaryStatus,
         MaritalStatus=MaritalStatus,
-        EducationLevel=EducationLevel,
-        WorkExperience=WorkExperience
+        EducationLevel=EducationLevel
+        #WorkExperience=WorkExperience
     )
 
 
@@ -57,30 +57,12 @@ def index():
     category_id = request.args.get('category', '').strip()
     address_search = request.args.get('address_search', '').strip()
     
-
+    min_price = request.args.get('min_price', type=float, default=None)
+    max_price = request.args.get('max_price', type=float, default=None)
 
     query = Product.query.filter(Product.status == 'published')
 
-    if search:
-        search_keywords = search.lower().split()
-        
-        name_desc_filters = []
-        brand_filters = []
 
-        for keyword in search_keywords:
-            name_desc_filters.append(Product.name.ilike(f'%{keyword}%'))
-            name_desc_filters.append(Product.description.ilike(f'%{keyword}%'))
-            brand_filters.append(Product.brand.ilike(f'%{keyword}%'))
-
-        search_filter = db.or_(
-            Product.name.ilike(f'%{search}%'),
-            Product.description.ilike(f'%{search}%'),
-            *brand_filters
-        )
-        # search_filter = db.or_(*name_desc_filters, *brand_filters)
-        
-        query = query.filter(search_filter)
-    
     selected_category = None
     if category_id:
         category = Category.query.get(category_id)
@@ -103,6 +85,105 @@ def index():
 
     if category_id:
         query = query.filter(Product.category_id == category_id)
+
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+
+
+
+
+    relevance_score_expr = None
+    if search:
+        keywords = search.lower().split()
+        relevance_score_expr = db.literal(0)
+        search_filters = []
+
+        for keyword in keywords:
+            # امتیازدهی به هر کلمه کلیدی بر اساس محل تطابق
+            keyword_score = case(
+                (Product.name.ilike(keyword), 20),          # تطابق کامل نام (بیشترین امتیاز)
+                (Product.name.ilike(f'{keyword}%'), 10),    # شروع نام با کلمه
+                (Product.brand.ilike(f'%{keyword}%'), 8),   # وجود کلمه در برند
+                (Product.name.ilike(f'%{keyword}%'), 5),     # وجود کلمه در نام
+                (Product.description.ilike(f'%{keyword}%'), 1), # وجود کلمه در توضیحات (کمترین امتیاز)
+                else_=0
+            )
+            relevance_score_expr += keyword_score
+
+            # اطمینان از اینکه کلمه کلیدی حداقل در یکی از فیلدها وجود دارد
+            search_filters.append(or_(
+                Product.name.ilike(f'%{keyword}%'),
+                Product.description.ilike(f'%{keyword}%'),
+                Product.brand.ilike(f'%{keyword}%')
+            ))
+        
+        query = query.filter(and_(*search_filters))
+        query = query.add_columns(relevance_score_expr.label('relevance_score'))
+        query = query.having(relevance_score_expr > 0)
+
+    # مرتب‌سازی نهایی
+    order_logic = [db.case((Product.promoted_until > datetime.utcnow(), 1), else_=0).desc()]
+    if relevance_score_expr is not None:
+        order_logic.append(relevance_score_expr.desc()) # مرتب‌سازی بر اساس امتیاز
+    order_logic.append(Product.created_at.desc())
+    
+    query = query.order_by(*order_logic)
+    
+    results = query.all()
+    
+    # استخراج محصول از تاپل (محصول, امتیاز)
+    products = [res[0] if isinstance(res, tuple) else res for res in results]
+
+
+
+    recommended_products = []
+    if current_user.is_authenticated:
+        # ۱. پیدا کردن دسته‌بندی‌های محبوب (مثل قبل)
+        favorite_categories_query = db.session.query(CategoryView.category_id)\
+            .filter_by(user_id=current_user.id)\
+            .group_by(CategoryView.category_id)\
+            .order_by(func.count(CategoryView.category_id).desc())\
+            .limit(3).all()
+        favorite_category_ids = [cat[0] for cat in favorite_categories_query]
+
+        # ۲. پیدا کردن آخرین جستجوهای کاربر (کلمات کلیدی و شهرها)
+        recent_searches_query = db.session.query(SearchHistory)\
+            .filter_by(user_id=current_user.id)\
+            .order_by(SearchHistory.timestamp.desc())\
+            .limit(5).all()
+        
+        # ساخت لیستی از شروط برای کوئری
+        recommendation_conditions = []
+        
+        # اضافه کردن شرط برای دسته‌بندی‌های محبوب
+        if favorite_category_ids:
+            recommendation_conditions.append(Product.category_id.in_(favorite_category_ids))
+
+        # اضافه کردن شروط برای جستجوهای اخیر
+        for history in recent_searches_query:
+            if history.search_term:
+                recommendation_conditions.append(Product.name.ilike(f'%{history.search_term}%'))
+            if history.city:
+                recommendation_conditions.append(Product.address.ilike(f'%{history.city}%'))
+
+        # اگر شرطی برای پیشنهاد وجود داشت، کوئری را اجرا کن
+        if recommendation_conditions:
+            recommendation_query = Product.query.filter(
+                Product.status == 'published',
+                or_(*recommendation_conditions) # ترکیب همه شروط با "یا"
+            ).order_by(Product.created_at.desc()).limit(8) # افزایش محدودیت به ۸
+            
+            recommended_products = recommendation_query.all()
+
+    # حالت جایگزین: اگر هیچ پیشنهادی یافت نشد، پربازدیدترین‌ها را نمایش بده
+    if not recommended_products:
+        top_products_query = Product.query.order_by(Product.views.desc()).limit(8)
+        recommended_products = top_products_query.all()
+
+
+    
 
     provinces = [
         "آذربایجان شرقی", "آذربایجان غربی", "اردبیل", "اصفهان", "البرز", "ایلام", 
@@ -148,16 +229,8 @@ def index():
         top_products = top_products[:1]
     
 
-
-    products = query.order_by(
-        db.case(
-            (Product.promoted_until > datetime.utcnow(), 1),
-            else_=0
-        ).desc(),
-        Product.created_at.desc()
-    ).all()
     categories = Category.query.filter_by(parent_id=None).all()
-    return render_template('products.html', products=products, categories=categories, selected_category=selected_category, provinces=provinces,cities=cities_with_products, datetime=datetime, citiesByProvince=citiesByProvince, top_products=top_products)
+    return render_template('products.html', products=products, categories=categories, recommended_products=recommended_products, selected_category=selected_category, provinces=provinces,cities=cities_with_products, datetime=datetime, citiesByProvince=citiesByProvince, top_products=top_products)
 
 
 
@@ -169,62 +242,111 @@ def file_exists(image_path):
 
 
 
+# در فایل routes.py
+
+# در فایل routes.py
+
+# در فایل routes.py
+
+# routes.py (فقط تابع live_search را جایگزین کنید)
+
+# routes.py (فقط این تابع را جایگزین کنید)
+
 @bp.route('/live_search')
 def live_search():
+    # دریافت تمام پارامترهای ارسالی از فرانت‌اند
     search = request.args.get('search', '').strip()
-    # province_search = request.args.get('province_search', '').strip()
-    # city_search = request.args.get('city_search', '').strip()
+    city_search = request.args.get('city_search', '').strip() # FIX: این خط اضافه شد
     address_search = request.args.get('address_search', '').strip()
     category_id = request.args.get('category', '').strip()
+    min_price_str = request.args.get('min_price', '').strip()
+    max_price_str = request.args.get('max_price', '').strip()
+
+    # ذخیره سابقه جستجو
+    if current_user.is_authenticated and (search or city_search):
+        history_entry = SearchHistory(
+            user_id=current_user.id,
+            search_term=search,
+            city=city_search
+        )
+        db.session.add(history_entry)
+        db.session.commit()
 
     query = Product.query.filter(Product.status == 'published')
 
-    if search:
-        search_keywords = search.lower().split()
-        keyword_filters = []
-    
-        for keyword in search_keywords:
-            keyword_filters.append(
-                db.or_(
-                    Product.name.ilike(f'%{keyword}%'),
-                    Product.description.ilike(f'%{keyword}%'),
-                    Product.address.ilike(f'%{keyword}%'),
-                    Product.brand.ilike(f'%{keyword}%')
-                )
-            )
-    
-        query = query.filter(db.and_(*keyword_filters))
-
-
-
-
+    # اعمال سایر فیلترها
+    # نکته: ما از address_search و city_search به صورت جداگانه استفاده می‌کنیم
+    # اگر می‌خواهید هر دو اعمال شوند، می‌توانید منطق را ترکیب کنید.
+    # در حال حاضر، address_search کلی‌تر است.
     if address_search:
         query = query.filter(Product.address.ilike(f'%{address_search}%'))
+    elif city_search: # از elif استفاده می‌کنیم تا با address_search تداخل نکند
+         query = query.filter(Product.address.ilike(f'%{city_search}%'))
 
     if category_id:
         query = query.filter(Product.category_id == category_id)
+    try:
+        if min_price_str:
+            query = query.filter(Product.price >= float(min_price_str))
+        if max_price_str:
+            query = query.filter(Product.price <= float(max_price_str))
+    except ValueError:
+        pass
 
-    products = query.order_by(
-        db.case(
-            (Product.promoted_until > datetime.utcnow(), 1),
-            else_=0
-        ).desc(),
-        Product.created_at.desc()
-    ).all()
+    # === شروع منطق جستجوی امتیازی با CASE (بدون تغییر) ===
+    relevance_score_expr = None
+    if search:
+        keywords = search.lower().split()
+        relevance_score_expr = db.literal(0)
+        search_filters = []
+        for keyword in keywords:
+            keyword_score = case(
+                (Product.name.ilike(keyword), 20),
+                (Product.name.ilike(f'{keyword}%'), 10),
+                (Product.brand.ilike(f'%{keyword}%'), 8),
+                (Product.name.ilike(f'%{keyword}%'), 5),
+                (Product.address.ilike(f'%{keyword}%'), 2),
+                (Product.description.ilike(f'%{keyword}%'), 1),
+                else_=0
+            )
+            relevance_score_expr += keyword_score
+            search_filters.append(or_(
+                Product.name.ilike(f'%{keyword}%'),
+                Product.description.ilike(f'%{keyword}%'),
+                Product.brand.ilike(f'%{keyword}%'),
+                Product.address.ilike(f'%{keyword}%')
+            ))
+        query = query.filter(and_(*search_filters))
+        query = query.add_columns(relevance_score_expr.label('relevance_score'))
+        query = query.having(relevance_score_expr > 0)
 
-    for p in products:
+    # مرتب‌سازی نهایی (بدون تغییر)
+    order_logic = [db.case((Product.promoted_until > datetime.utcnow(), 1), else_=0).desc()]
+    if relevance_score_expr is not None:
+        order_logic.append(relevance_score_expr.desc())
+    order_logic.append(Product.created_at.desc())
+    
+    query = query.order_by(*order_logic)
+    
+    results = query.all()
+    
+    # پردازش نتایج برای نمایش (بدون تغییر)
+    products_to_render = []
+    for res in results:
+        p = res[0] if hasattr(res, '_fields') else res
         if p.images and len(p.images) > 0:
             p.first_image_path = p.images[0].image_path if file_exists(p.images[0].image_path) else None
         elif p.image_path and file_exists(p.image_path):
             p.first_image_path = p.image_path
         else:
             p.first_image_path = None
+        products_to_render.append(p)
 
-    logging.warning(f"Found {len(products)} products")
-    return render_template('_product_list.html', products=products, datetime=datetime)
+    logging.warning(f"Found {len(products_to_render)} products")
+    return render_template('_product_list.html', products=products_to_render, datetime=datetime)
 
 
-
+    
 
 @bp.route('/bazaar-login')
 def bazaar_login():
@@ -1027,8 +1149,15 @@ def edit_product(id):
     product_city = product.address.split('-')[1] if '-' in product.address else ''
 
     categories = Category.query.all()
-    return render_template('product_form.html', product=product, categories=categories, provinces=provinces, citiesByProvince=citiesByProvince, product_province=product_province, product_city=product_city)
 
+    response = make_response(render_template('product_form.html', product=product, categories=categories, provinces=provinces, citiesByProvince=citiesByProvince, product_province=product_province, product_city=product_city))
+    
+    # اضافه کردن هدرهای ضد کش فقط به این پاسخ
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
 
 
 
@@ -1076,6 +1205,22 @@ def delete_product(id):
 @bp.route('/product/<int:product_id>')
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
+
+
+    if current_user.is_authenticated:
+        five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
+        last_view = CategoryView.query.filter(
+            CategoryView.user_id == current_user.id,
+            CategoryView.category_id == product.category_id,
+            CategoryView.timestamp > five_minutes_ago
+        ).first()
+        
+        if not last_view:
+            view = CategoryView(user_id=current_user.id, category_id=product.category_id)
+            db.session.add(view)
+            db.session.commit()
+
+
     similar_products = Product.query.filter(
         Product.category_id == product.category_id,
         Product.id != product.id,
@@ -1111,6 +1256,7 @@ def init_categories():
         {'name': 'ابزار برقی', 'icon': 'bi-lightning-charge', 'subcategories': []},
         {'name': 'ابزار شارژی', 'icon': 'bi-battery-full', 'subcategories': []},
         {'name': 'ابزار دستی', 'icon': 'bi-battery-full', 'subcategories': []},
+        {'name': 'متفرقه', 'icon': 'bi-battery-full', 'subcategories': []},
     ]
     
     for cat in categories:
@@ -1745,6 +1891,14 @@ def delete_user(user_id):
         return redirect(url_for('main.admin_dashboard'))
 
     user = User.query.get_or_404(user_id)
+
+    # لیست شماره تلفن‌های محافظت شده
+    protected_phones = ['09228192173', '09910689541', '09352499191', '09122719204', '09059124214']
+
+    # بررسی اینکه آیا کاربر مورد نظر در لیست محافظت شده قرار دارد یا خیر
+    if user.phone in protected_phones:
+        flash(f"کاربر '{user.username}' محافظت شده است و قابل حذف نیست.", "danger")
+        return redirect(url_for('main.admin_dashboard'))
 
     if user.is_admin and user.id == current_user.id:
         flash("نمی‌توانید ادمین اصلی را حذف کنید!")
@@ -3468,6 +3622,11 @@ def new_hiring_ad():
     """
     if request.method == 'POST':
         try:
+            salary_min_str = request.form.get('salary_min')
+            salary_max_str = request.form.get('salary_max')
+
+            salary_min_int = int(salary_min_str) if salary_min_str and salary_min_str.isdigit() else None
+            salary_max_int = int(salary_max_str) if salary_max_str and salary_max_str.isdigit() else None
             new_listing = JobListing(
                 user_id=current_user.id,
                 title=request.form.get('title'),
@@ -3475,7 +3634,8 @@ def new_hiring_ad():
                 benefits=request.form.get('benefits'),
                 cooperation_type=CooperationType[request.form.get('cooperation_type')],
                 salary_type=SalaryType[request.form.get('salary_type')],
-                salary_amount=request.form.get('salary_amount'),
+                salary_min=salary_min_int,
+                salary_max=salary_max_int,
                 has_insurance='has_insurance' in request.form,
                 is_remote_possible='is_remote_possible' in request.form,
                 working_hours=request.form.get('working_hours'),
@@ -3511,7 +3671,10 @@ def edit_job_listing(id):
             job.benefits = request.form.get('benefits')
             job.cooperation_type = CooperationType[request.form.get('cooperation_type')]
             job.salary_type = SalaryType[request.form.get('salary_type')]
-            job.salary_amount = request.form.get('salary_amount')
+            salary_min_str = request.form.get('salary_min')
+            salary_max_str = request.form.get('salary_max')
+            job.salary_min = int(salary_min_str) if salary_min_str and salary_min_str.isdigit() else None
+            job.salary_max = int(salary_max_str) if salary_max_str and salary_max_str.isdigit() else None
             job.has_insurance = 'has_insurance' in request.form
             job.is_remote_possible = 'is_remote_possible' in request.form
             job.working_hours = request.form.get('working_hours')
@@ -3538,6 +3701,8 @@ def delete_job_listing(id):
     job = JobListing.query.get_or_404(id)
     if job.owner != current_user and not current_user.is_admin:
         abort(403)
+
+    JobListingReport.query.filter_by(job_listing_id=job.id).delete()
     
     if job.profile_picture and job.profile_picture != 'default.jpg':
         try:
@@ -3601,12 +3766,16 @@ def new_job_profile():
 
             salary_max_str = request.form.get('requested_salary_max')
             salary_max_int = int(salary_max_str) if salary_max_str and salary_max_str.isdigit() else None
+
+            portfolio_links_list = [link.strip() for link in request.form.getlist('portfolio_link') if link.strip()]
+            portfolio_links_str = ','.join(portfolio_links_list)
+
             
             new_profile = JobProfile(
                 user_id=current_user.id,
                 title=request.form.get('title'),
                 description=request.form.get('description'),
-                portfolio_links=request.form.get('portfolio_links'),
+                portfolio_links=portfolio_links_str,
                 contact_phone=request.form.get('contact_phone'),
                 contact_email=request.form.get('contact_email'),
                 location=request.form.get('location'),
@@ -3671,7 +3840,8 @@ def edit_job_profile():
         try:
             profile.title = request.form.get('title')
             profile.description = request.form.get('description')
-            profile.portfolio_links = request.form.get('portfolio_links')
+            portfolio_links_list = [link.strip() for link in request.form.getlist('portfolio_link') if link.strip()]
+            profile.portfolio_links = ','.join(portfolio_links_list)
             profile.contact_phone = request.form.get('contact_phone')
             profile.contact_email = request.form.get('contact_email')
             profile.location = request.form.get('location')
@@ -3820,7 +3990,8 @@ def job_profile_detail(profile_id):
     نمایش جزئیات یک پروفایل کاریابی خاص.
     """
     profile = JobProfile.query.get_or_404(profile_id)
-    return render_template('job_profile_detail.html', profile=profile)
+    work_experiences = profile.work_experiences.order_by(WorkExperience.start_date.desc()).all()
+    return render_template('job_profile_detail.html', profile=profile, work_experiences=work_experiences)
 
 
 
@@ -3860,6 +4031,7 @@ def edit_job_profile_contact():
         profile.contact_email = data.get('contact_email')
         profile.location = data.get('location')
         birth_date_str = data.get('birth_date')
+        logging.debug(f"Received birth_date: {birth_date_str}")
         profile.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
         profile.marital_status = MaritalStatus[data.get('marital_status')] if data.get('marital_status') else None
         profile.military_status = MilitaryStatus[data.get('military_status')] if data.get('military_status') else None

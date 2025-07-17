@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-{# ### شروع بخش جدید: تعریف ماکرو ### #}
-{# این ماکرو حاوی منطق دکمه‌های ارسال رزومه است #}
 {% macro render_apply_box() %}
+    {# این ماکرو حاوی منطق دکمه‌های ارسال رزومه است #}
     {% if current_user.is_authenticated %}
         {% if current_user.job_profile %}
             {% if already_applied %}
@@ -12,7 +11,7 @@
                     شما قبلا برای این آگهی رزومه ارسال کرده‌اید.
                 </div>
             {% else %}
-                <p class="text-center">پروفایل کاریابی خود را برای این موقعیت شغلی ارسال کنید.</p>
+                <p class="text-center txt-black">پروفایل کاریابی خود را برای این موقعیت شغلی ارسال کنید.</p>
                 <form action="{{ url_for('main.apply_to_job', job_listing_id=job.id) }}" method="POST">
                     <button type="submit" class="btn btn-primary w-100 btn-lg">
                         <i class="bi bi-send-fill me-2"></i> ارسال رزومه
@@ -32,7 +31,6 @@
         </div>
     {% endif %}
 {% endmacro %}
-{# ### پایان بخش جدید: تعریف ماکرو ### #}
 
 <style>
     .mobile-apply-bar {
@@ -45,14 +43,33 @@
     html[data-theme="dark"] .mobile-apply-bar {
         box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
     }
+    .info-box {
+        background-color: var(--black-color);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        height: 100%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .info-box:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px var(--dark-green);
+    }
+    html[data-theme="dark"] .info-box {
+        background-color: var(--very-black-bg); /* یا هر رنگ مناسب دیگری در تم تیره */
+    }
+    html[data-theme="dark"] .info-box:hover {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
 </style>
+
 <div class="detail-header d-flex flex-nowrap" style="background-color: var(--dark-green);">
-        <h2 class="txt-black mt-2 me-2">آگهی استخدام</h2>
-        <button class="btn me-auto" onclick="history.back()">
-            <i class="bi bi-arrow-left fs-3 txt-black"></i>
-        </button>
-    </div>
-<div class="container my-4 my-md-5" style="margin-bottom: 100px !important; margin-top: 5rem !important;">
+    <h2 class="txt-black mt-2 me-2">آگهی استخدام</h2>
+    <button class="btn me-auto" onclick="history.back()">
+        <i class="bi bi-arrow-left fs-3 txt-black"></i>
+    </button>
+</div>
+
+<div class="container my-4 my-md-5" style="margin-bottom: 100px !important;">
     <div class="row">
         <div class="col-lg-8">
             <div class="card bg-transparent border-0">
@@ -65,76 +82,99 @@
                                 <i class="bi bi-building"></i>
                             </div>
                         {% endif %}
-                        
-                        <button class="btn btn-primary me-auto" data-bs-toggle="modal" data-bs-target="#applyModalMobile">ارسال رزومه</button>
-                        
+                        <div>
+                            <h1 class="card-title h2 mb-1 txt-black" style="font-size: 1.5rem;">{{ job.title }}</h1>
+                            <p class="card-subtitle fs-6 txt-black" style="color: var(--text-muted-color);">{{ job.owner.username }}</p>
+                        </div>
                     </div>
-                    <div>
-                            <h1 class="card-title h2 mb-1 txt-black" style="font-size: 1.25rem;">{{ job.title }}</h1>
-                            <p class="card-subtitle text-muted fs-6 txt-black">{{ job.owner.username }}</p>
-                        </div><br>
-                    <p class="txt-black">{{ job.location if job.location else 'آدرس شرکت نامشخص' }}</p>
+                    <p class="txt-black"><i class="bi bi-geo-alt-fill me-1"></i> {{ job.location if job.location else 'آدرس شرکت نامشخص' }}</p>
 
-                    <hr class="txt-black w-100">
+                    <hr class="my-4">
 
-                    <div class="row g-2 text-center my-4">
-                        <div class="col-6 col-sm-3 mb-2">
-                            <div class="p-3 bg-very-black rounded-3 h-100">
-                                <i class="bi bi-stack fs-4 text-primary"></i>
+                    <h5 class="mb-3 txt-black">مشخصات کلی موقعیت شغلی</h5>
+                    <div class="row g-3 text-center mb-4">
+                        <div class="col-6 col-sm-4 col-md-3 mb-3">
+                            <div class="info-box">
+                                <i class="bi bi-briefcase-fill fs-4 text-primary"></i>
                                 <p class="mb-0 mt-2 small txt-black">نوع همکاری</p>
                                 <p class="mb-0 fw-bold txt-black">{{ job.cooperation_type.value }}</p>
                             </div>
                         </div>
-                        <div class="col-6 col-sm-3 mb-2">
-                            <div class="p-3 bg-very-black rounded-3 h-100">
+                        <div class="col-6 col-sm-4 col-md-3 mb-3">
+                            <div class="info-box">
                                 <i class="bi bi-cash-coin fs-4 text-success"></i>
-                                <p class="mb-0 mt-2 small txt-black">حقوق</p>
-                                <p class="mb-0 fw-bold txt-black">{{ job.salary_amount if job.salary_amount else job.salary_type.value }}</p>
+                                <p class="mb-0 mt-2 small txt-black">حقوق (تومان)</p>
+                                <p class="mb-0 fw-bold txt-black">
+                                    {% if job.salary_type.name == 'NEGOTIABLE' %}
+                                        توافقی
+                                    {% elif job.salary_min and job.salary_max %}
+                                        از {{ "{:,.0f}".format(job.salary_min) }} تا {{ "{:,.0f}".format(job.salary_max) }}
+                                    {% elif job.salary_min %}
+                                        از {{ "{:,.0f}".format(job.salary_min) }}
+                                    {% elif job.salary_max %}
+                                        تا {{ "{:,.0f}".format(job.salary_max) }}
+                                    {% else %}
+                                        {{ job.salary_type.value }}
+                                    {% endif %}
+                                </p>
                             </div>
                         </div>
-                        <div class="col-6 col-sm-3 mb-2">
-                            <div class="p-3 bg-very-black rounded-3 h-100">
+                        <div class="col-6 col-sm-4 col-md-3 mb-3">
+                            <div class="info-box">
                                 <i class="bi bi-clock-history fs-4 text-info"></i>
                                 <p class="mb-0 mt-2 small txt-black">ساعات کاری</p>
                                 <p class="mb-0 fw-bold txt-black">{{ job.working_hours or 'توافقی' }}</p>
                             </div>
                         </div>
-                         <div class="col-6 col-sm-3 mb-2">
-                            <div class="p-3 bg-very-black rounded-3 h-100">
+                        <div class="col-6 col-sm-4 col-md-3 mb-3">
+                            <div class="info-box">
                                 <i class="bi bi-shield-check fs-4 text-warning"></i>
                                 <p class="mb-0 mt-2 small txt-black">بیمه</p>
                                 <p class="mb-0 fw-bold txt-black">{% if job.has_insurance %}دارد{% else %}ندارد{% endif %}</p>
                             </div>
                         </div>
+                         <div class="col-6 col-sm-4 col-md-3 mb-3">
+                            <div class="info-box">
+                                <i class="bi bi-laptop fs-4" style="color: #6f42c1;"></i>
+                                <p class="mb-0 mt-2 small txt-black">امکان دورکاری</p>
+                                <p class="mb-0 fw-bold txt-black">{% if job.is_remote_possible %}دارد{% else %}ندارد{% endif %}</p>
+                            </div>
+                        </div>
+                         <div class="col-6 col-sm-4 col-md-3 mb-3">
+                            <div class="info-box">
+                                <i class="bi bi-file-person fs-4 text-danger"></i>
+                                <p class="mb-0 mt-2 small txt-black">وضعیت سربازی</p>
+                                <p class="mb-0 fw-bold txt-black">{{ job.military_status_required.value if job.military_status_required else 'مهم نیست' }}</p>
+                            </div>
+                        </div>
                     </div>
                     
-                    <hr class="txt-black w-100">
+                    <hr class="my-4">
 
                     <h5 class="mb-3 txt-black">شرح شغل و وظایف</h5>
-                    <p class="lh-lg txt-black">{{ job.description }}</p>
+                    <p class="lh-lg txt-black" style="white-space: pre-wrap;">{{ job.description }}</p>
                     
                     {% if job.benefits %}
-                        <h5 class="mt-4 mb-3 txt-black">مزایا</h5>
-                        <p class="lh-lg txt-black">{{ job.benefits }}</p>
+                        <h5 class="mt-4 mb-3 txt-black">مزایا و تسهیلات</h5>
+                        <p class="lh-lg txt-black" style="white-space: pre-wrap;">{{ job.benefits }}</p>
                     {% endif %}
 
-                     <p class="mt-4 txt-black small">تاریخ انتشار: {{ job.created_at.strftime('%Y-%m-%d') }}</p>
+                     <p class="mt-4 txt-black small">تاریخ انتشار: {{ job.created_at | jalali }}</p>
 
                     {% if current_user.is_authenticated and current_user.id != job.owner.id %}
                         <button type="button" class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#reportJobListingModal">
-                            <i class="bi bi-flag-fill me-1"></i> گزارش
+                            <i class="bi bi-flag-fill me-1"></i> گزارش تخلف
                         </button>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-4 d-none d-lg-block">
-            <div class="card sticky-top" style="top: 20px; background-color: var(--card-bg);">
+        <div class="col-lg-4 d-none d-lg-block" style="z-index: 1;">
+            <div class="card sticky-top" style="top: 20px; background-color: var(--dark-green);">
                 <div class="card-body p-4">
-                    <h5 class="card-title text-center" style="color: var(--text-color);">ارسال درخواست</h5>
+                    <h5 class="card-title text-center txt-black">ارسال درخواست</h5>
                     <hr>
-                    {# ### تغییر: فراخوانی ماکرو به جای include ### #}
                     {{ render_apply_box() }}
                 </div>
             </div>
@@ -142,17 +182,17 @@
     </div>
 </div>
 
-<!-- <div class="fixed-bottom d-lg-none mobile-apply-bar">
+<div class="fixed-bottom d-lg-none mobile-apply-bar">
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <p class="mb-0 small" style="color: var(--text-color);">برای این موقعیت آماده‌اید؟</p>
+            <h6 class="mb-0" style="color: var(--text-color);">{{ job.title }}</h6>
         </div>
         <div>
-            {# دکمه اصلی مودال را باز می‌کند #}
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#applyModalMobile">ارسال رزومه</button>
         </div>
     </div>
-</div> -->
+</div>
 
 <div class="modal fade" id="applyModalMobile" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -162,7 +202,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
-        {# ### تغییر: فراخوانی ماکرو به جای include ### #}
         {{ render_apply_box() }}
       </div>
     </div>

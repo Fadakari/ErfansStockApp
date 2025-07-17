@@ -1,5 +1,5 @@
 {% for product in products %}
-<div class="col animationshow">
+<div class="col">
     <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="divar-card-horizontal-link header-tabs">
         
         {% if product.images and product.images[0].image_path %}

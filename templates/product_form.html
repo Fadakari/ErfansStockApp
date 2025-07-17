@@ -27,6 +27,9 @@
     overflow-y: scroll;
     box-shadow: 0 0 1rem var(--light-green);
 }
+.transer{
+    transition: all 0.25s ease !important;
+}
 </style>
 
 <div class="row justify-content-center mt-5 mb-5" id="page-content" class="page-transition">
@@ -63,7 +66,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="category_id" class="form-label txt-black">دسته‌بندی</label>
-                        <select class="form-select txt-black" id="category_id" name="category_id" required>
+                        <select class="form-select txt-black bg-secondary transer" id="category_id" name="category_id" required>
                             <option value="" class="txt-black">انتخاب دسته‌بندی</option>
                             {% for category in categories %}
                             <option class="txt-black" value="{{ category.id }}" {% if product and product.category_id == category.id %}selected{% endif %}>
@@ -74,7 +77,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="province" class="form-label txt-black">استان</label>
-                        <select class="form-select txt-black" id="province" name="province" required>
+                        <select class="form-select txt-black bg-secondary transer" id="province" name="province" required>
                             <option class="txt-black" value="">انتخاب استان</option>
                             {% for province in provinces %}
                             <option class="txt-black" value="{{ province }}" {% if product and product.address.split('-')[0] == province %}selected{% endif %}>
@@ -86,7 +89,7 @@
                     
                     <div class="mb-3">
                         <label for="city" class="form-label txt-black">شهر</label>
-                        <select class="form-select txt-black" id="city" name="city" required>
+                        <select class="form-select txt-black bg-secondary transer" id="city" name="city" required>
                             <option class="txt-black" value="">انتخاب شهر</option>
                             {% if product %}
                                 {% for city in citiesByProvince[product.address.split('-')[0]] %}
@@ -109,6 +112,7 @@
                         <label for="brand" class="form-label txt-black">برند</label>
                         <select class="form-select txt-black" id="brand-select" name="brand" required>
                             <option class="txt-black" value="" disabled {% if not product %}selected{% endif %}>انتخاب برند</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/no-image.png') }}" value="unknown" {% if product and product.brand == "unknown" %}selected{% endif %}>متفرقه</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/bosch.png') }}" value="bosch" {% if product and product.brand == "bosch" %}selected{% endif %}>Bosch/بوش</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/Makita-Logo.png') }}" value="makita" {% if product and product.brand == "makita" %}selected{% endif %}>Makita/ماکیتا</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/dewalt.png') }}" value="dewalt" {% if product and product.brand == "dewalt" %}selected{% endif %}>DeWalt/دیوالت</option>
@@ -132,13 +136,14 @@
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/aeg.png') }}" value="AEG" {% if product and product.brand == "AEG" %}selected{% endif %}>AEG/آاگ</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/wurth.png') }}" value="wurth" {% if product and product.brand == "wurth" %}selected{% endif %}>wurth/وورث</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/new_1000-removebg-preview.png') }}" value="wiha" {% if product and product.brand == "wiha" %}selected{% endif %}>wiha/ویها</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Unconfirmed_466698-removebg-preview.png') }}" value="genius" {% if product and product.brand == "genius" %}selected{% endif %}>genius/جنیوس</option>
                         </select>
                     </div>
 
 
                     <div class="mb-3">
                         <label for="product_type" class="form-label txt-black">نوع محصول</label>
-                        <select class="form-select txt-black" id="product_type" name="product_type" required>
+                        <select class="form-select txt-black bg-secondary transer" id="product_type" name="product_type" required>
                             <option class="txt-black" value="NEW" {% if product and product.product_type.name == "NEW" %}selected{% endif %}>نو</option>
                             <option class="txt-black" value="STOCK" {% if product and product.product_type.name == "STOCK" %}selected{% endif %}>استوک</option>
                             <option class="txt-black" value="USED" {% if product and product.product_type.name == "USED" %}selected{% endif %}>دست دوم</option>
@@ -159,25 +164,10 @@
         </div>
     </div>
 
-    <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths"
-        value="{% if product %}{% for img in product.images %}{{ img.image_path }}{% if not loop.last %},{% endif %}{% else %}{{ product.image_path or '' }}{% endfor %}{% endif %}">
+    <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths" 
+        value="{% if product %}{% if product.images %}{{ product.images|map(attribute='image_path')|join(',') }}{% else %}{{ product.image_path or '' }}{% endif %}{% endif %}">
 
     <div id="image-previews" class="d-flex flex-wrap mt-2">
-        {% if product %}
-            {% if product.images %}
-                {% for img in product.images %}
-                    <div class="m-1 position-relative" data-filename="{{ img.image_path }}">
-                        <img src="{{ url_for('static', filename='uploads/' + img.image_path) }}" class="img-thumbnail" style="height: 150px; width: auto;">
-                        <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removePreview(this)">&times;</button>
-                    </div>
-                {% endfor %}
-            {% elif product.image_path %}
-                <div class="m-1 position-relative" data-filename="{{ product.image_path }}">
-                    <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="img-thumbnail" style="height: 150px; width: auto;">
-                    <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0" onclick="removePreview(this)">&times;</button>
-                </div>
-            {% endif %}
-        {% endif %}
     </div>
 
     <div class="progress mt-2" id="uploadProgress" style="display: none;">
@@ -189,7 +179,7 @@
 
 
                     <div class="d-grid">
-                        <button type="submit" id="submitBtn" class="btn btn-danger header-tabs py-3 txt-black" disabled>
+                        <button type="submit" id="submitBtn" class="btn btn-danger header-tabs py-3 txt-black" {% if not product %}disabled{% endif %}>
                             {% if product %}به‌روزرسانی محصول{% else %}ایجاد محصول{% endif %}
                         </button>
                     </div>

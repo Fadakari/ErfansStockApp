@@ -39,15 +39,29 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(11), unique=True, nullable=True)
     national_id = db.Column(db.String(10), unique=True, nullable=True)
     password_hash = db.Column(db.String(256))
-    saved_products = db.relationship('Product', secondary=bookmarks, lazy='dynamic',backref=db.backref('saved_by_users', lazy=True))
+    saved_products = db.relationship('Product', secondary=bookmarks, lazy='dynamic', backref=db.backref('saved_by_users', lazy=True))
     bazaar_account_id = db.Column(db.String(128), unique=True, nullable=True)
     bazaar_access_token = db.Column(db.Text)
     bazaar_refresh_token = db.Column(db.Text, nullable=True)
-    products = db.relationship('Product', back_populates='owner', lazy=True)
+    products = db.relationship('Product', back_populates='owner', lazy='dynamic', cascade="all, delete-orphan")
     is_admin = db.Column(db.Boolean, default=False)
     fcm_token = db.Column(db.String(255), nullable=True, unique=True)
     is_banned = db.Column(db.Boolean, default=False, nullable=False)
     ban_reason = db.Column(db.String(255), nullable=True)
+
+    # Reports, Messages, Conversations, etc.
+    reports_filed = db.relationship('Report', back_populates='reporter', lazy='dynamic', cascade="all, delete-orphan", foreign_keys='Report.reporter_id')
+    chat_interactions = db.relationship('ChatBotInteraction', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
+    job_listings = db.relationship('JobListing', back_populates='owner', lazy='dynamic', cascade="all, delete-orphan")
+    job_profile = db.relationship('JobProfile', back_populates='owner', uselist=False, cascade="all, delete-orphan")
+    conversations_as_user1 = db.relationship('Conversation', foreign_keys='Conversation.user1_id', back_populates='user1', lazy='dynamic', cascade="all, delete-orphan")
+    conversations_as_user2 = db.relationship('Conversation', foreign_keys='Conversation.user2_id', back_populates='user2', lazy='dynamic', cascade="all, delete-orphan")
+    messages_sent = db.relationship('Message', foreign_keys='Message.sender_id', back_populates='sender', lazy='dynamic', cascade="all, delete-orphan")
+    messages_received = db.relationship('Message', foreign_keys='Message.receiver_id', back_populates='receiver', lazy='dynamic', cascade="all, delete-orphan")
+    sent_user_reports = db.relationship('UserReport', foreign_keys='UserReport.reporter_id', back_populates='reporter', lazy='dynamic', cascade="all, delete-orphan")
+    received_user_reports = db.relationship('UserReport', foreign_keys='UserReport.reported_id', back_populates='reported', lazy='dynamic', cascade="all, delete-orphan")
+    job_listing_reports_filed = db.relationship('JobListingReport', back_populates='reporter', lazy='dynamic', cascade="all, delete-orphan")
+    job_profile_reports_filed = db.relationship('JobProfileReport', back_populates='reporter', lazy='dynamic', cascade="all, delete-orphan")
 
     blocked = db.relationship(
         'User', secondary=blocked_users,
@@ -126,6 +140,7 @@ class Product(db.Model):
     status = db.Column(db.String(20), default='pending')
     expires_at = db.Column(db.DateTime, nullable=True)
     brand = db.Column(db.String(100), nullable=True)
+    reports = db.relationship('Report', backref='product', cascade='all, delete-orphan', lazy=True)
 
     def __init__(self, name, description, price, image_path, user_id, category_id, promoted_until=None, address=None, postal_code=None, product_type=None, views=0, status='pending', expires_at=None, brand=None):
         self.name = name
@@ -200,7 +215,9 @@ class ProductForm(FlaskForm):
         ('skil', 'Skil'),
         ('AEG', 'AEG'),
         ('wurth', 'wurth'),
-        ('wiha', 'wiha')
+        ('wiha', 'wiha'),
+        ('genius', 'genius'),
+        ('unknown', 'unknown')
     ], validators=[DataRequired()])
     submit = SubmitField('Add Product')
 
@@ -217,10 +234,10 @@ class Conversation(db.Model):
     user1_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user2_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
-    user1 = db.relationship('User', foreign_keys=[user1_id])
-    user2 = db.relationship('User', foreign_keys=[user2_id])
+    user1 = db.relationship('User', foreign_keys=[user1_id], back_populates='conversations_as_user1')
+    user2 = db.relationship('User', foreign_keys=[user2_id], back_populates='conversations_as_user2')
 
-    messages = db.relationship('Message', back_populates='conversation', lazy=True)
+    messages = db.relationship('Message', back_populates='conversation', cascade="all, delete-orphan")
 
 
 
@@ -233,8 +250,8 @@ class Message(db.Model):
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'))
     replied_to_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
     file_path = db.Column(db.String(255), nullable=True)
-    sender = db.relationship('User', foreign_keys=[sender_id])
-    receiver = db.relationship('User', foreign_keys=[receiver_id])
+    sender = db.relationship('User', foreign_keys=[sender_id], back_populates='messages_sent')
+    receiver = db.relationship('User', foreign_keys=[receiver_id], back_populates='messages_received')
     is_read = db.Column(db.Boolean, default=False, nullable=False, index=True)
     conversation = db.relationship('Conversation', back_populates='messages')
     
@@ -249,8 +266,7 @@ class Report(db.Model):
     text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    product = db.relationship('Product', backref='reports')
-    reporter = db.relationship('User')
+    reporter = db.relationship('User', back_populates='reports_filed')
 
 
 class UserReport(db.Model):
@@ -261,8 +277,8 @@ class UserReport(db.Model):
     reason = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    reporter = db.relationship('User', foreign_keys=[reporter_id], backref='sent_user_reports')
-    reported = db.relationship('User', foreign_keys=[reported_id], backref='received_user_reports')
+    reporter = db.relationship('User', foreign_keys=[reporter_id], back_populates='sent_user_reports')
+    reported = db.relationship('User', foreign_keys=[reported_id], back_populates='received_user_reports')
     conversation = db.relationship('Conversation', backref='user_reports')
 
 
@@ -273,6 +289,7 @@ class ChatBotInteraction(db.Model):
     bot_response = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     products_related = db.Column(db.String(255))
+    user = db.relationship('User', back_populates='chat_interactions')
 
 
 
@@ -320,7 +337,8 @@ class JobListing(db.Model):
     benefits = db.Column(db.Text, nullable=True)
     cooperation_type = db.Column(db.Enum(CooperationType), nullable=False)
     salary_type = db.Column(db.Enum(SalaryType), nullable=False)
-    salary_amount = db.Column(db.String(100), nullable=True)
+    salary_min = db.Column(db.Integer, nullable=True)
+    salary_max = db.Column(db.Integer, nullable=True)
     has_insurance = db.Column(db.Boolean, default=False)
     military_status_required = db.Column(db.Enum(MilitaryStatus), nullable=True)
     is_remote_possible = db.Column(db.Boolean, default=False)
@@ -329,7 +347,7 @@ class JobListing(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     
-    owner = db.relationship('User', backref='job_listings')
+    owner = db.relationship('User', back_populates='job_listings')
 
     applicants = db.relationship(
         'JobProfile',
@@ -355,12 +373,13 @@ class JobProfile(db.Model):
     birth_date = db.Column(db.Date, nullable=True)
     requested_salary_min = db.Column(db.Integer, nullable=True)
     requested_salary_max = db.Column(db.Integer, nullable=True)
+    reports = db.relationship('JobProfileReport', backref='job_profile', cascade='all, delete-orphan', lazy=True)
     education_status = db.Column(db.String(50), nullable=True)
     highest_education_level = db.Column(db.Enum(EducationLevel), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    owner = db.relationship('User', backref=db.backref('job_profile', uselist=False))
+    owner = db.relationship('User', back_populates='job_profile')
     work_experiences = db.relationship('WorkExperience', backref='profile', lazy='dynamic', cascade="all, delete-orphan")
 
     applied_to_listings = db.relationship(
@@ -388,8 +407,7 @@ class JobListingReport(db.Model):
     reason = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    job_listing = db.relationship('JobListing', backref='reports')
-    reporter = db.relationship('User', foreign_keys=[reporter_id])
+    reporter = db.relationship('User', back_populates='job_listing_reports_filed')
 
 class JobProfileReport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -398,5 +416,27 @@ class JobProfileReport(db.Model):
     reason = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    job_profile = db.relationship('JobProfile', backref='reports')
-    reporter = db.relationship('User', foreign_keys=[reporter_id])
+    reporter = db.relationship('User', back_populates='job_profile_reports_filed')
+
+
+
+
+class CategoryView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('category_views', lazy='dynamic'))
+    category = db.relationship('Category', backref=db.backref('views', lazy='dynamic'))
+
+
+
+class SearchHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    search_term = db.Column(db.String(255), nullable=True)
+    city = db.Column(db.String(100), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('search_history', lazy='dynamic'))
