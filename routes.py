@@ -101,18 +101,16 @@ def index():
         search_filters = []
 
         for keyword in keywords:
-            # امتیازدهی به هر کلمه کلیدی بر اساس محل تطابق
             keyword_score = case(
-                (Product.name.ilike(keyword), 20),          # تطابق کامل نام (بیشترین امتیاز)
-                (Product.name.ilike(f'{keyword}%'), 10),    # شروع نام با کلمه
-                (Product.brand.ilike(f'%{keyword}%'), 8),   # وجود کلمه در برند
-                (Product.name.ilike(f'%{keyword}%'), 5),     # وجود کلمه در نام
-                (Product.description.ilike(f'%{keyword}%'), 1), # وجود کلمه در توضیحات (کمترین امتیاز)
+                (Product.name.ilike(keyword), 20),
+                (Product.name.ilike(f'{keyword}%'), 10),
+                (Product.brand.ilike(f'%{keyword}%'), 8),
+                (Product.name.ilike(f'%{keyword}%'), 5),
+                (Product.description.ilike(f'%{keyword}%'), 1),
                 else_=0
             )
             relevance_score_expr += keyword_score
 
-            # اطمینان از اینکه کلمه کلیدی حداقل در یکی از فیلدها وجود دارد
             search_filters.append(or_(
                 Product.name.ilike(f'%{keyword}%'),
                 Product.description.ilike(f'%{keyword}%'),
@@ -123,24 +121,21 @@ def index():
         query = query.add_columns(relevance_score_expr.label('relevance_score'))
         query = query.having(relevance_score_expr > 0)
 
-    # مرتب‌سازی نهایی
     order_logic = [db.case((Product.promoted_until > datetime.utcnow(), 1), else_=0).desc()]
     if relevance_score_expr is not None:
-        order_logic.append(relevance_score_expr.desc()) # مرتب‌سازی بر اساس امتیاز
+        order_logic.append(relevance_score_expr.desc())
     order_logic.append(Product.created_at.desc())
     
     query = query.order_by(*order_logic)
     
     results = query.all()
     
-    # استخراج محصول از تاپل (محصول, امتیاز)
     products = [res[0] if isinstance(res, tuple) else res for res in results]
 
 
 
     recommended_products = []
     if current_user.is_authenticated:
-        # ۱. پیدا کردن دسته‌بندی‌های محبوب (مثل قبل)
         favorite_categories_query = db.session.query(CategoryView.category_id)\
             .filter_by(user_id=current_user.id)\
             .group_by(CategoryView.category_id)\
@@ -148,36 +143,30 @@ def index():
             .limit(3).all()
         favorite_category_ids = [cat[0] for cat in favorite_categories_query]
 
-        # ۲. پیدا کردن آخرین جستجوهای کاربر (کلمات کلیدی و شهرها)
         recent_searches_query = db.session.query(SearchHistory)\
             .filter_by(user_id=current_user.id)\
             .order_by(SearchHistory.timestamp.desc())\
             .limit(5).all()
         
-        # ساخت لیستی از شروط برای کوئری
         recommendation_conditions = []
         
-        # اضافه کردن شرط برای دسته‌بندی‌های محبوب
         if favorite_category_ids:
             recommendation_conditions.append(Product.category_id.in_(favorite_category_ids))
 
-        # اضافه کردن شروط برای جستجوهای اخیر
         for history in recent_searches_query:
             if history.search_term:
                 recommendation_conditions.append(Product.name.ilike(f'%{history.search_term}%'))
             if history.city:
                 recommendation_conditions.append(Product.address.ilike(f'%{history.city}%'))
 
-        # اگر شرطی برای پیشنهاد وجود داشت، کوئری را اجرا کن
         if recommendation_conditions:
             recommendation_query = Product.query.filter(
                 Product.status == 'published',
-                or_(*recommendation_conditions) # ترکیب همه شروط با "یا"
-            ).order_by(Product.created_at.desc()).limit(8) # افزایش محدودیت به ۸
+                or_(*recommendation_conditions)
+            ).order_by(Product.created_at.desc()).limit(8)
             
             recommended_products = recommendation_query.all()
 
-    # حالت جایگزین: اگر هیچ پیشنهادی یافت نشد، پربازدیدترین‌ها را نمایش بده
     if not recommended_products:
         top_products_query = Product.query.order_by(Product.views.desc()).limit(8)
         recommended_products = top_products_query.all()
@@ -242,27 +231,19 @@ def file_exists(image_path):
 
 
 
-# در فایل routes.py
 
-# در فایل routes.py
 
-# در فایل routes.py
 
-# routes.py (فقط تابع live_search را جایگزین کنید)
-
-# routes.py (فقط این تابع را جایگزین کنید)
 
 @bp.route('/live_search')
 def live_search():
-    # دریافت تمام پارامترهای ارسالی از فرانت‌اند
     search = request.args.get('search', '').strip()
-    city_search = request.args.get('city_search', '').strip() # FIX: این خط اضافه شد
+    city_search = request.args.get('city_search', '').strip()
     address_search = request.args.get('address_search', '').strip()
     category_id = request.args.get('category', '').strip()
     min_price_str = request.args.get('min_price', '').strip()
     max_price_str = request.args.get('max_price', '').strip()
 
-    # ذخیره سابقه جستجو
     if current_user.is_authenticated and (search or city_search):
         history_entry = SearchHistory(
             user_id=current_user.id,
@@ -274,13 +255,10 @@ def live_search():
 
     query = Product.query.filter(Product.status == 'published')
 
-    # اعمال سایر فیلترها
-    # نکته: ما از address_search و city_search به صورت جداگانه استفاده می‌کنیم
-    # اگر می‌خواهید هر دو اعمال شوند، می‌توانید منطق را ترکیب کنید.
-    # در حال حاضر، address_search کلی‌تر است.
+
     if address_search:
         query = query.filter(Product.address.ilike(f'%{address_search}%'))
-    elif city_search: # از elif استفاده می‌کنیم تا با address_search تداخل نکند
+    elif city_search:
          query = query.filter(Product.address.ilike(f'%{city_search}%'))
 
     if category_id:
@@ -293,7 +271,6 @@ def live_search():
     except ValueError:
         pass
 
-    # === شروع منطق جستجوی امتیازی با CASE (بدون تغییر) ===
     relevance_score_expr = None
     if search:
         keywords = search.lower().split()
@@ -320,7 +297,6 @@ def live_search():
         query = query.add_columns(relevance_score_expr.label('relevance_score'))
         query = query.having(relevance_score_expr > 0)
 
-    # مرتب‌سازی نهایی (بدون تغییر)
     order_logic = [db.case((Product.promoted_until > datetime.utcnow(), 1), else_=0).desc()]
     if relevance_score_expr is not None:
         order_logic.append(relevance_score_expr.desc())
@@ -330,7 +306,6 @@ def live_search():
     
     results = query.all()
     
-    # پردازش نتایج برای نمایش (بدون تغییر)
     products_to_render = []
     for res in results:
         p = res[0] if hasattr(res, '_fields') else res
@@ -469,8 +444,8 @@ def login():
             limiter.limit("5 per 2 minutes", key_func=custom_key)(lambda: None)()
         except RateLimitExceeded as e:
             reset_time = int(e.description.split(" ")[-1]) if "seconds" in e.description else 120
-            flash(reset_time, "rate-limit-seconds")  # ارسال ثانیه‌ها برای JS
-            flash(f"تلاش‌های بیش از حد! لطفاً {reset_time} ثانیه صبر کنید.", "rate-limit")  # پیام نمایشی
+            flash(reset_time, "rate-limit-seconds")
+            flash(f"تلاش‌های بیش از حد! لطفاً {reset_time} ثانیه صبر کنید.", "rate-limit")
             return redirect(url_for('main.login'))
 
         password = request.form['password']
@@ -820,7 +795,7 @@ def user_dashboard(user_id):
         return render_template('user_dashboard.html', products=products, user=user)
     
     flash("شما به این داشبورد دسترسی ندارید")
-    return redirect(url_for('main.dashboard'))  # به صفحه اصلی هدایت می‌شود
+    return redirect(url_for('main.dashboard'))
 
 
 
@@ -840,7 +815,7 @@ def moderate_product_content(product_name, product_description, image_url):
         moderation_response = requests.post(
             "https://api.avalai.ir/v1/moderations",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-            json={"input": text_to_check, "model": "omni-moderation-latest"}, # از مدل omni استفاده می‌کنیم که قوی‌تر است
+            json={"input": text_to_check, "model": "omni-moderation-latest"},
             timeout=20
         )
         
@@ -886,7 +861,7 @@ def moderate_product_content(product_name, product_description, image_url):
         }
         
         vision_response = requests.post(
-            "https://api.avalai.ir/v1/chat/completions", # Endpoint مدل‌های چت/بینایی
+            "https://api.avalai.ir/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json=vision_payload,
             timeout=45
@@ -918,7 +893,6 @@ def moderate_product_content(product_name, product_description, image_url):
 def new_product():
     if request.method == 'POST':
         try:
-            # گرفتن داده‌ها از فرم
             name = request.form.get('name')
             description = request.form.get('description')
             price_from_form = request.form.get('price', '0')
@@ -934,10 +908,8 @@ def new_product():
             image_paths = uploaded_image_paths_str.split(',') if uploaded_image_paths_str else []
             main_image_path = image_paths[0] if image_paths else None
 
-            # بررسی و ذخیره تصویر
             image_path = request.form.get('uploaded_image_path')
 
-            # ایجاد و ذخیره محصول جدید در دیتابیس
             product = Product(
                 name=name,
                 description=description,
@@ -1152,7 +1124,6 @@ def edit_product(id):
 
     response = make_response(render_template('product_form.html', product=product, categories=categories, provinces=provinces, citiesByProvince=citiesByProvince, product_province=product_province, product_city=product_city))
     
-    # اضافه کردن هدرهای ضد کش فقط به این پاسخ
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
@@ -1434,7 +1405,7 @@ def verify():
             session.pop('signup_data', None)
 
             flash('.ثبت‌نام با موفقیت انجام شد و وارد شدید. قابلیت محصول گذاری رایگان برای شماره تماس شما فعال شد', 'success')
-            return redirect(url_for('main.index'))  # یا هر صفحه دلخواه
+            return redirect(url_for('main.index'))
 
         else:
             flash('کد وارد شده اشتباه است!', 'danger')
@@ -1892,10 +1863,8 @@ def delete_user(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    # لیست شماره تلفن‌های محافظت شده
     protected_phones = ['09228192173', '09910689541', '09352499191', '09122719204', '09059124214']
 
-    # بررسی اینکه آیا کاربر مورد نظر در لیست محافظت شده قرار دارد یا خیر
     if user.phone in protected_phones:
         flash(f"کاربر '{user.username}' محافظت شده است و قابل حذف نیست.", "danger")
         return redirect(url_for('main.admin_dashboard'))
@@ -2414,7 +2383,6 @@ def intelligent_product_search(
         query = query.add_columns(relevance_score)
 
 
-    # --- بخش مرتب‌سازی (Ordering) ---
     if sort_by == 'relevance' and relevance_score is not None:
         query = query.having(relevance_score >= 5)
         
@@ -2610,7 +2578,7 @@ def chatbot_ajax():
                             args = json.loads(tool_call["function"]["arguments"])
                             current_app.logger.info(f"AI requested product search with args: {args}")
 
-                            related_products_models = intelligent_product_search( #
+                            related_products_models = intelligent_product_search(
                                 keywords=args.get('keywords'),
                                 brand=args.get('brand'),
                                 product_type=args.get('product_type'),
@@ -2674,7 +2642,7 @@ def chatbot_ajax():
                 else:
                     if "message" in choice and "content" in choice["message"]:
                         bot_response_content = choice["message"]["content"].strip()
-                        search_query_for_products = user_query # پیش‌فرض
+                        search_query_for_products = user_query
                         match = re.search(r'\[SEARCH_KEYWORDS: (.*?)\]', bot_response_content)
                         if match:
                             search_query_for_products = match.group(1).strip()
@@ -2778,7 +2746,7 @@ def ban_user(user_id):
         return redirect(url_for('main.admin_dashboard'))
 
     user_to_ban.is_banned = True
-    user_to_ban.ban_reason = "انتشار محتوای نامناسب"  # می‌توانید این دلیل را داینامیک کنید
+    user_to_ban.ban_reason = "انتشار محتوای نامناسب"
     db.session.commit()
     flash(f"کاربر '{user_to_ban.username}' با موفقیت مسدود شد.", "success")
     return redirect(url_for('main.admin_dashboard'))
