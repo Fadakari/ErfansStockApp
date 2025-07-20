@@ -147,6 +147,56 @@
         </tbody>
     </table>
 </div>
+
+<hr class="w-100 txt-black">
+
+{# >>>>> شروع: بخش جدید برای مدیریت تیکت‌های پشتیبانی <<<<< #}
+<h3 class="txt-black">تیکت‌های پشتیبانی</h3>
+<div class="table-responsive">
+    <table class="table bg-black rounded-3 mb-5">
+        <thead>
+            <tr>
+                <th class="text-end">#</th>
+                <th class="text-end">موضوع</th>
+                <th class="text-end">کاربر</th>
+                <th class="text-end">وضعیت</th>
+                <th class="text-end">آخرین بروزرسانی</th>
+                <th class="text-end">عملیات</th>
+            </tr>
+        </thead>
+        <tbody class="bg-very-black">
+            {% for ticket in all_tickets %}
+            <tr>
+                <td>{{ ticket.id }}</td>
+                <td>{{ ticket.subject }}</td>
+                <td>{{ ticket.user.username }}</td>
+                <td>
+                    {% if ticket.status.name == 'USER_REPLIED' %}
+                        <span class="badge bg-warning text-dark">{{ ticket.status.value }}</span>
+                    {% elif ticket.status.name == 'OPEN' %}
+                        <span class="badge bg-primary">{{ ticket.status.value }}</span>
+                    {% elif ticket.status.name == 'ADMIN_REPLIED' %}
+                        <span class="badge bg-success">{{ ticket.status.value }}</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ ticket.status.value }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ ticket.updated_at | jalali }}</td>
+                <td>
+                    <a href="{{ url_for('main.view_ticket', ticket_id=ticket.id) }}" class="btn btn-info btn-sm">مشاهده و پاسخ</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center p-4">هیچ تیکتی برای نمایش وجود ندارد.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{# >>>>> پایان: بخش جدید برای مدیریت تیکت‌های پشتیبانی <<<<< #}
+
+
 <hr class="w-100 txt-black">
 
 <h3 class="txt-black">گزارش‌های تخلف آگهی‌های استخدام</h3>

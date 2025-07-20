@@ -377,6 +377,24 @@
                         <span class="txt-black">گفت و گوها</span>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#feedback-content">
+                        <i class="bi bi-lightbulb-fill"></i>
+                        <span>انتقادات و پیشنهادات</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link txt-black" href="{{ url_for('main.tickets_list') }}">
+                        <i class="bi bi-headset"></i>
+                        <span>پشتیبانی و تیکت‌ها</span>
+                    </a>
+                </li>
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab-target="#sessions-content">
+                        <i class="bi bi-display-fill"></i>
+                        <span>مدیریت دستگاه‌ها</span>
+                    </a>
+                </li> -->
                 </ul>
                 <a class="nav-link" href="#" data-tab-target="#saved-content">
                     <i class="bi bi-bookmark-fill"></i>
@@ -785,6 +803,104 @@
                 {% endif %}
             </div>
 
+
+
+            <div id="feedback-content" class="tab-pane" style="margin-bottom: 6rem;">
+                <h2 class="mb-4">انتقادات و پیشنهادات</h2>
+                <div class="card">
+                    <div class="card-header" style="color: var(--text-color);">
+                        راه های ارتباطی
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-4">
+                            برای ارائه نظرات، پیشنهادات و یا گزارش هرگونه مشکل، می‌توانید از راه‌های ارتباطی زیر با توسعه دهنده و شرکت ما در تماس باشید.
+                        </p>
+                        
+                        <ul class="list-group list-group-flush p-0">
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-0 py-2 flex-wrap" style="background-color: transparent; color: var(--text-color);">
+                                <div>
+                                    <i class="bi bi-whatsapp me-3 fs-4" style="color: #25D366;"></i>
+                                    <span>پشتیبانی واتساپ و تلگرام:</span>
+                                </div>
+                                <span class="badge bg-success rounded-pill p-2 fs-6" style="direction: ltr;">+98 9228192173</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-0 py-2 flex-wrap" style="background-color: transparent; color: var(--text-color);">
+                                <div>
+                                    <i class="bi bi-telephone-outbound-fill me-3 fs-4" style="color: var(--text-muted-color);"></i>
+                                    <span>تماس با هیلتی حیدری:</span>
+                                </div>
+                                <span class="badge bg-secondary rounded-pill p-2 fs-6" style="direction: ltr;">021 - 91691502</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- <div id="sessions-content" class="tab-pane" style="margin-bottom: 5rem;">
+                <h2 class="mb-4">مدیریت دستگاه‌ها و نشست‌ها</h2>
+                <div class="card">
+                    <div class="card-header" style="color: var(--text-color);">
+                        لیست نشست‌های فعال و اخیر
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead style="color: var(--text-color);">
+                                    <tr>
+                                        <th>دستگاه (مرورگر و سیستم‌عامل)</th>
+                                        <th>آدرس IP</th>
+                                        <th>آخرین بازدید</th>
+                                        <th>وضعیت</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="color: var(--text-color);">
+                                    {% if current_user.sessions %}
+                                        {% for user_session in user_sessions %}
+                                        <tr class="align-middle">
+                                            <td>
+                                                <small class="d-block">{{ user_session.user_agent | truncate(60) }}</small>
+                                            </td>
+                                            <td>
+                                                <code class="d-block text-start" dir="ltr">{{ user_session.ip_address }}</code>
+                                            </td>
+                                            <td>
+                                                {{ user_session.last_seen | to_jalali }}
+                                            </td>
+                                            <td>
+                                                {% if user_session.is_active %}
+                                                    <span class="badge bg-success">فعال</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">خارج شده</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if user_session.session_token == session.get('user_session_token') %}
+                                                    <span class="text-muted small">نشست فعلی</span>
+                                                {% elif user_session.is_active %}
+                                                    <form action="{{ url_for('main.terminate_session', session_id=user_session.id) }}" method="POST">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('آیا از خاتمه دادن به این نشست اطمینان دارید؟')">
+                                                            خروج
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center p-4">هیچ نشستی برای نمایش وجود ندارد.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer small text-muted">
+                        برای امنیت بیشتر، توصیه می‌شود نشست‌هایی که نمی‌شناسید یا دیگر از آن‌ها استفاده نمی‌کنید را خاتمه دهید.
+                    </div>
+                </div>
+            </div> -->
         </main>
     </div>
 
@@ -847,6 +963,24 @@
                 </a>
             </li>
             {% endif %}
+            <li class="nav-item">
+                    <a class="nav-link txt-black d-flex flex-nowrap" href="#" data-tab-target="#feedback-content" data-bs-dismiss="offcanvas" aria-label="Close">
+                        <i class="bi bi-lightbulb-fill"></i>
+                        <span class="text-nowrap">انتقادات و پیشنهادات</span>
+                    </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link txt-black" href="{{ url_for('main.tickets_list') }}">
+                    <i class="bi bi-headset"></i>
+                    <span>پشتیبانی و تیکت‌ها</span>
+                </a>
+            </li>
+            <!-- <li class="nav-item">
+                <a class="nav-link txt-black d-flex flex-nowrap" href="#" data-tab-target="#sessions-content" data-bs-dismiss="offcanvas" aria-label="Close">
+                    <i class="bi bi-display-fill"></i>
+                    <span class="text-nowrap">مدیریت دستگاه‌ها</span>
+                </a>
+            </li> -->
         </ul>
 
          <div class="footer-links mt-auto">

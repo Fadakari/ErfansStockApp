@@ -1,0 +1,23 @@
+<div class="col">
+    <a href="{{ url_for('main.job_listing_detail', job_id=job.id) }}" class="divar-card-horizontal-link header-tabs">
+        <div class="divar-card-body py-2 px-3 flex-nowrap" style="display: flex;">
+            {# بررسی می‌شود که عکس پروفایل وجود داشته باشد و مقدار پیش‌فرض نباشد #}
+            {% if job.profile_picture and job.profile_picture != 'default.jpg' %}
+                <img src="{{ url_for('static', filename='uploads/' + job.profile_picture) }}" class="divar-card-img" alt="{{ job.title }}" loading="lazy" style="width: 100px; height: 100px; object-fit: cover; border-radius: 0.75rem; margin-left: 10px;">
+            {% endif %}
+        
+            <div style="flex-grow: 1;">
+                {# عنوان آگهی از خود آبجکت job خوانده می‌شود #}
+                <h3 class="divar-card-title txt-black">{{ job.title }}</h3>
+                <p class="divar-card-meta txt-black" style="font-size: 0.8rem;">
+                     <i class="bi bi-briefcase-fill"></i> {{ job.cooperation_type.value }}
+                </p>
+
+                <p class="divar-card-price txt-black">
+                    {{ job.salary_amount if job.salary_amount else job.salary_type.value }}
+                </p>
+            </div>
+        </div>
+    </a>
+    <hr class="txt-black">
+</div>

@@ -48,6 +48,7 @@ class User(UserMixin, db.Model):
     fcm_token = db.Column(db.String(255), nullable=True, unique=True)
     is_banned = db.Column(db.Boolean, default=False, nullable=False)
     ban_reason = db.Column(db.String(255), nullable=True)
+    sessions = db.relationship('UserSession', backref='user', lazy='dynamic', cascade="all, delete-orphan")
 
     # Reports, Messages, Conversations, etc.
     reports_filed = db.relationship('Report', back_populates='reporter', lazy='dynamic', cascade="all, delete-orphan", foreign_keys='Report.reporter_id')
@@ -440,3 +441,53 @@ class SearchHistory(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('search_history', lazy='dynamic'))
+
+
+class UserSession(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    session_token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    login_time = db.Column(db.DateTime, default=datetime.utcnow)
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __repr__(self):
+        return f'<UserSession {self.id} for User {self.user_id}>'
+
+
+
+class TicketStatus(Enum):
+    OPEN = 'باز'
+    USER_REPLIED = 'پاسخ کاربر'
+    ADMIN_REPLIED = 'پاسخ داده شد'
+    CLOSED = 'بسته شده'
+
+# Add the new models at the end of the file
+class Ticket(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    status = db.Column(db.Enum(TicketStatus), default=TicketStatus.OPEN, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('tickets', lazy='dynamic', cascade="all, delete-orphan"))
+    messages = db.relationship('TicketMessage', backref='ticket', lazy='dynamic', cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f'<Ticket {self.id} - {self.subject}>'
+
+class TicketMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # The user who sent the message
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    file_path = db.Column(db.String(255), nullable=True) # For attachments
+
+    sender = db.relationship('User', backref=db.backref('ticket_messages', lazy='dynamic'))
+
+    def __repr__(self):
+        return f'<TicketMessage {self.id} for Ticket {self.ticket_id}>'

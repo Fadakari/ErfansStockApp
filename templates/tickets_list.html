@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="txt-black"><i class="bi bi-headset me-2"></i>تیکت‌های پشتیبانی</h2>
+        <a href="{{ url_for('main.new_ticket') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-2"></i>ایجاد تیکت جدید
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">لیست تیکت‌ها</div>
+        <div class="card-body p-0">
+            {% if tickets %}
+            <ul class="list-group list-group-flush">
+                {% for ticket in tickets %}
+                <a href="{{ url_for('main.view_ticket', ticket_id=ticket.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">{{ ticket.subject }}</h6>
+                        <small class="text-muted">آخرین بروزرسانی: {{ ticket.updated_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <div>
+                        {% if ticket.status.name == 'OPEN' %}
+                            <span class="badge rounded-pill bg-primary">{{ ticket.status.value }}</span>
+                        {% elif ticket.status.name == 'USER_REPLIED' %}
+                            <span class="badge rounded-pill bg-warning text-dark">{{ ticket.status.value }}</span>
+                        {% elif ticket.status.name == 'ADMIN_REPLIED' %}
+                            <span class="badge rounded-pill bg-success">{{ ticket.status.value }}</span>
+                        {% elif ticket.status.name == 'CLOSED' %}
+                            <span class="badge rounded-pill bg-secondary">{{ ticket.status.value }}</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center p-5">
+                <p>شما هنوز هیچ تیکتی ثبت نکرده‌اید.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

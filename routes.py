@@ -5,7 +5,7 @@ import secrets
 import traceback
 from urllib.parse import urlparse
 from aplication import db
-from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks, UserReport, CooperationType, SalaryType, MilitaryStatus, MaritalStatus, EducationLevel, JobListing, JobProfile, WorkExperience, job_applications, JobListingReport, JobProfileReport, CategoryView, SearchHistory
+from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks, UserReport, CooperationType, SalaryType, MilitaryStatus, MaritalStatus, EducationLevel, JobListing, JobProfile, WorkExperience, job_applications, JobListingReport, JobProfileReport, CategoryView, SearchHistory, UserSession, Ticket, TicketMessage, TicketStatus
 from utils import save_image
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -24,6 +24,7 @@ from flask_limiter.util import get_remote_address
 from sqlalchemy import case, func, or_, and_
 from firebase_admin import messaging
 from sqlalchemy.sql.expression import func
+import jdatetime
 
 
 
@@ -136,6 +137,7 @@ def index():
 
     recommended_products = []
     if current_user.is_authenticated:
+        # ۱. پیدا کردن دسته‌بندی‌های محبوب (مثل قبل)
         favorite_categories_query = db.session.query(CategoryView.category_id)\
             .filter_by(user_id=current_user.id)\
             .group_by(CategoryView.category_id)\
@@ -143,33 +145,46 @@ def index():
             .limit(3).all()
         favorite_category_ids = [cat[0] for cat in favorite_categories_query]
 
-        recent_searches_query = db.session.query(SearchHistory)\
-            .filter_by(user_id=current_user.id)\
+        # ۲. پیدا کردن آخرین جستجوی کاربر
+        last_search = db.session.query(SearchHistory)\
+            .filter(SearchHistory.user_id == current_user.id, SearchHistory.search_term.isnot(None))\
             .order_by(SearchHistory.timestamp.desc())\
-            .limit(5).all()
-        
+            .first()
+
         recommendation_conditions = []
-        
         if favorite_category_ids:
             recommendation_conditions.append(Product.category_id.in_(favorite_category_ids))
-
-        for history in recent_searches_query:
-            if history.search_term:
-                recommendation_conditions.append(Product.name.ilike(f'%{history.search_term}%'))
-            if history.city:
-                recommendation_conditions.append(Product.address.ilike(f'%{history.city}%'))
+        if last_search and last_search.search_term:
+            recommendation_conditions.append(Product.name.ilike(f'%{last_search.search_term}%'))
 
         if recommendation_conditions:
+            # ۳. ساخت امتیاز برای اولویت‌بندی
+            top_category_id = favorite_category_ids[0] if favorite_category_ids else -1
+            last_search_term = last_search.search_term if last_search else ""
+
+            recommendation_score = case(
+                (Product.category_id == top_category_id, 10),
+                (Product.name.ilike(f'%{last_search_term}%'), 8),
+                (Product.category_id.in_(favorite_category_ids), 5),
+                else_=0
+            ).label('recommendation_score')
+
             recommendation_query = Product.query.filter(
                 Product.status == 'published',
                 or_(*recommendation_conditions)
-            ).order_by(Product.created_at.desc()).limit(8)
+            ).add_columns(recommendation_score)\
+             .order_by(recommendation_score.desc(), Product.created_at.desc())\
+             .limit(8)
             
-            recommended_products = recommendation_query.all()
+            # نتایج شامل (محصول, امتیاز) خواهند بود
+            recommendation_results = recommendation_query.all()
+            recommended_products = [res[0] for res in recommendation_results]
 
+    # حالت جایگزین (بدون تغییر)
     if not recommended_products:
         top_products_query = Product.query.order_by(Product.views.desc()).limit(8)
         recommended_products = top_products_query.all()
+
 
 
     
@@ -541,6 +556,18 @@ def verify_login():
         
         if user.phone in whitelist_phones or entered_code == str(otp_code):
             login_user(user, remember=True)
+            session_token = secrets.token_hex(32)
+            
+            new_session = UserSession(
+                user_id=user.id,
+                session_token=session_token,
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get('User-Agent')
+            )
+            db.session.add(new_session)
+            db.session.commit()
+            
+            session['user_session_token'] = session_token
             session.pop('otp_code', None)
             session.pop('user_id', None)
             session.pop('otp_expiry', None)
@@ -589,6 +616,14 @@ def resend_login_otp():
 @limiter.limit("5 per minute")
 @bp.route('/logout')
 def logout():
+    token = session.get('user_session_token')
+    if token:
+        user_session = UserSession.query.filter_by(session_token=token).first()
+        if user_session:
+            user_session.is_active = False
+            db.session.commit()
+    
+    session.clear()
     logout_user()
     return redirect(url_for('main.index'))
 
@@ -601,6 +636,8 @@ def dashboard():
 
     user_job_listings = JobListing.query.filter_by(user_id=current_user.id).order_by(JobListing.created_at.desc()).all()
     user_job_profile = JobProfile.query.filter_by(user_id=current_user.id).first()
+
+    user_sessions = current_user.sessions.order_by(UserSession.last_seen.desc()).all()
     
     now = datetime.utcnow()
     for product in products:
@@ -695,7 +732,8 @@ def dashboard():
         saved_products=saved_products,
         blocked_products=blocked_products,
         user_job_listings=user_job_listings,
-        user_job_profile=user_job_profile
+        user_job_profile=user_job_profile,
+        user_sessions=user_sessions
     )
 
 
@@ -1657,6 +1695,16 @@ def admin_dashboard():
 
     users = users.all()
 
+    all_tickets = Ticket.query.order_by(
+        case(
+            (Ticket.status == 'USER_REPLIED', 1),
+            (Ticket.status == 'OPEN', 2),
+            (Ticket.status == 'ADMIN_REPLIED', 3),
+            (Ticket.status == 'CLOSED', 4),
+        ),
+        Ticket.updated_at.desc()
+    ).all()
+
     categories = Category.query.all()
     reports = Report.query.order_by(Report.created_at.desc()).all()
     user_reports = UserReport.query.order_by(UserReport.created_at.desc()).all()
@@ -1673,7 +1721,7 @@ def admin_dashboard():
 
     blocked_products = Product.query.filter_by(status='blocked').order_by(Product.updated_at.desc()).all()
 
-    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, user_reports=user_reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users, highly_reported_products=highly_reported_products, blocked_products=blocked_products, job_listing_reports=job_listing_reports, job_profile_reports=job_profile_reports)
+    return render_template("admin_dashboard.html", users=users, categories=categories, reports=reports, user_reports=user_reports, pending_products=pending_products, users_dict=users_dict, count=count, total_users=total_users, highly_reported_products=highly_reported_products, blocked_products=blocked_products, job_listing_reports=job_listing_reports, job_profile_reports=job_profile_reports, all_tickets=all_tickets)
 
 
 
@@ -1821,11 +1869,18 @@ def remove_admin(user_id):
     if not current_user.is_admin:
         flash("شما دسترسی لازم برای این کار را ندارید")
         return redirect(url_for('main.admin_dashboard'))
-    
+
     user = User.query.get_or_404(user_id)
+
+    # لیست شماره‌هایی که نباید از ادمین حذف شوند
+    protected_numbers = ["09228192173", "09910689541"]
+
+    if user.phone in protected_numbers:
+        flash("این کاربر قابل حذف از ادمین نیست")
+        return redirect(url_for('main.admin_dashboard'))
+
     user.is_admin = False
     db.session.commit()
-
     flash("کاربر با موفقیت از ادمین بودن حذف شد")
     return redirect(url_for('main.admin_dashboard'))
 
@@ -2715,6 +2770,19 @@ def before_request_handler():
     if current_user.is_authenticated and getattr(current_user, 'is_banned', False):
         if request.endpoint and request.endpoint not in ['main.banned', 'main.logout', 'static']:
             return redirect(url_for('main.banned'))
+        
+    token = session.get('user_session_token')
+    if token:
+        user_session = UserSession.query.filter_by(session_token=token).first()
+        if user_session:
+            if user_session.is_active:
+                user_session.last_seen = datetime.utcnow()
+                db.session.commit()
+            else:
+                logout_user()
+                session.clear()
+                flash('نشست شما از دستگاه دیگری خاتمه یافته است. لطفاً دوباره وارد شوید.', 'warning')
+                return redirect(url_for('main.login_with_phone'))
 
     session.permanent = True
     session.modified = True
@@ -4273,3 +4341,216 @@ def live_search_jobs():
         return render_template('_job_profile_list.html', job_profiles=job_profiles)
     
     return ""
+
+
+
+@bp.route('/terminate-session/<int:session_id>', methods=['POST'])
+@login_required
+def terminate_session(session_id):
+    session_to_terminate = UserSession.query.get_or_404(session_id)
+
+    if session_to_terminate.user_id != current_user.id:
+        flash('شما اجازه دسترسی به این نشست را ندارید.', 'danger')
+        abort(403)
+
+    session_to_terminate.is_active = False
+    db.session.commit()
+
+    flash('نشست مورد نظر با موفقیت خاتمه یافت.', 'success')
+    return redirect(url_for('main.dashboard'))
+
+
+@bp.app_template_filter('to_jalali')
+def to_jalali_filter(dt):
+    if not dt:
+        return ''
+    jalali_date = jdatetime.datetime.fromgregorian(datetime=dt)
+    return jalali_date.strftime('%Y/%m/%d - %H:%M')
+
+
+@bp.route('/tickets')
+@login_required
+def tickets_list():
+    if current_user.is_admin:
+        tickets = Ticket.query.order_by(Ticket.updated_at.desc()).all()
+    else:
+        tickets = Ticket.query.filter_by(user_id=current_user.id).order_by(Ticket.updated_at.desc()).all()
+    return render_template('tickets_list.html', tickets=tickets)
+
+
+@bp.route('/ticket/new', methods=['GET', 'POST'])
+@login_required
+def new_ticket():
+    if request.method == 'POST':
+        subject = request.form.get('subject')
+        content = request.form.get('content')
+        uploaded_filename = request.form.get('uploaded_filename')
+        attachment = request.files.get('attachment')
+
+        if not subject or not content:
+            flash('موضوع و متن پیام نمی‌توانند خالی باشند.', 'danger')
+            return redirect(url_for('main.new_ticket'))
+
+        try:
+            final_file_path = None
+            if uploaded_filename:
+                temp_upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'temp')
+                final_upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                temp_file_path = os.path.join(temp_upload_folder, uploaded_filename)
+                
+                if os.path.exists(temp_file_path):
+                    final_filename = uploaded_filename.replace('temp_', 'ticket_')
+                    final_file_path = final_filename
+                    os.rename(temp_file_path, os.path.join(final_upload_folder, final_filename))
+            
+            elif attachment and attachment.filename: # Fallback
+                final_file_path = save_ticket_attachment(attachment)
+
+            # Create the ticket
+            new_ticket_obj = Ticket(
+                user_id=current_user.id,
+                subject=subject,
+                status=TicketStatus.OPEN
+            )
+            db.session.add(new_ticket_obj)
+            db.session.flush()
+
+            # Create the first message
+            first_message = TicketMessage(
+                ticket_id=new_ticket_obj.id,
+                user_id=current_user.id,
+                content=content,
+                file_path=final_file_path
+            )
+            db.session.add(first_message)
+            db.session.commit()
+            flash('تیکت شما با موفقیت ایجاد شد.', 'success')
+            return redirect(url_for('main.view_ticket', ticket_id=new_ticket_obj.id))
+        
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error creating ticket: {e}")
+            flash('خطایی در ایجاد تیکت رخ داد.', 'danger')
+
+    return render_template('new_ticket.html')
+
+
+
+@bp.route('/ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@login_required
+def view_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if not current_user.is_admin and ticket.user_id != current_user.id:
+        abort(403) # Forbidden access
+
+    if request.method == 'POST':
+        content = request.form.get('content')
+        uploaded_filename = request.form.get('uploaded_filename')
+        attachment = request.files.get('attachment')
+
+        if not content:
+            flash('متن پاسخ نمی‌تواند خالی باشد.', 'danger')
+        else:
+            try:
+                final_file_path = None
+                if uploaded_filename:
+                    temp_upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'temp')
+                    final_upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                    temp_file_path = os.path.join(temp_upload_folder, uploaded_filename)
+                    final_filename = uploaded_filename.replace('temp_', 'ticket_')
+                    final_file_path = final_filename
+                    os.rename(temp_file_path, os.path.join(final_upload_folder, final_filename))
+                elif attachment and attachment.filename:
+                    final_file_path = save_ticket_attachment(attachment)
+
+                new_message = TicketMessage(
+                    ticket_id=ticket.id,
+                    user_id=current_user.id,
+                    content=content,
+                    file_path=final_file_path
+                )
+                db.session.add(new_message)
+
+                # Update ticket status
+                if current_user.is_admin:
+                    ticket.status = TicketStatus.ADMIN_REPLIED
+                else:
+                    ticket.status = TicketStatus.USER_REPLIED
+
+                db.session.commit()
+                flash('پاسخ شما با موفقیت ثبت شد.', 'success')
+                return redirect(url_for('main.view_ticket', ticket_id=ticket.id))
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Error replying to ticket: {e}")
+                flash('خطایی در ثبت پاسخ رخ داد.', 'danger')
+
+    messages = ticket.messages.order_by(TicketMessage.created_at.asc()).all()
+    return render_template('ticket_detail.html', ticket=ticket, messages=messages)
+
+
+
+
+@bp.route('/ticket/<int:ticket_id>/close', methods=['POST'])
+@login_required
+def close_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if not current_user.is_admin and ticket.user_id != current_user.id:
+        abort(403)
+
+    ticket.status = TicketStatus.CLOSED
+    db.session.commit()
+    flash('تیکت با موفقیت بسته شد.', 'info')
+    return redirect(url_for('main.tickets_list'))
+
+
+@bp.route('/upload_temp_attachment', methods=['POST'])
+@login_required
+def upload_temp_attachment():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    if file:
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'temp')
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+
+        random_hex = secrets.token_hex(8)
+        _, f_ext = os.path.splitext(secure_filename(file.filename))
+        temp_filename = "temp_" + random_hex + f_ext
+        file_path = os.path.join(upload_folder, temp_filename)
+        try:
+            file.save(file_path)
+            return jsonify({'filename': temp_filename})
+        except Exception as e:
+            logging.error(f"Error saving temporary attachment: {e}")
+            return jsonify({'error': 'Failed to save temporary file'}), 500
+    return jsonify({'error': 'Something went wrong'}), 500
+
+
+@bp.route('/delete_temp_attachment', methods=['POST'])
+@login_required
+def delete_temp_attachment():
+    """
+    فایل موقتی که کاربر قبل از ارسال نهایی آپلود کرده را حذف می‌کند.
+    """
+    data = request.get_json()
+    filename = data.get('filename')
+
+    if not filename or not filename.startswith('temp_') or '..' in filename or '/' in filename:
+        return jsonify({'success': False, 'error': 'نام فایل نامعتبر است'}), 400
+
+    try:
+        temp_file_path = os.path.join(current_app.root_path, 'static', 'uploads', 'temp', filename)
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+            logging.info(f"فایل موقت حذف شد: {temp_file_path}")
+            return jsonify({'success': True})
+        else:
+            logging.warning(f"کاربر درخواست حذف فایلی را داد که وجود نداشت: {temp_file_path}")
+            return jsonify({'success': False, 'error': 'فایل یافت نشد'}), 404
+    except Exception as e:
+        logging.error(f"خطا در حذف فایل موقت: {e}")
+        return jsonify({'success': False, 'error': 'خطای سرور'}), 500

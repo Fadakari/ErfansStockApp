@@ -1,0 +1,8 @@
+{# templates/_job_profile_list.html #}
+{% for profile in job_profiles %}
+    {% include '_job_profile_card.html' %}
+{% else %}
+    <div class="col-12">
+        <p class="text-center txt-black py-5">کارجویی با این مشخصات یافت نشد.</p>
+    </div>
+{% endfor %}
