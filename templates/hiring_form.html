@@ -30,9 +30,9 @@
     <div class="col-md-8 mb-5">
         <div class="card signuper mb-4">
             <div class="card-header" style="background: var(--dark-green);">
-                <a href="{{ url_for('main.new_job_ad_choice') }}" class="btn header-tabs py-2 px-3 float-start">
+                <button class="btn float-start" onclick="history.back()">
                     <i class="bi bi-arrow-left fs-3 txt-black"></i>
-                </a>
+                </button>
                 <h4 class="mb-0 txt-black mt-2">{% if job %}ویرایش آگهی استخدام{% else %}ثبت آگهی استخدام{% endif %}</h4>
             </div>
             <div class="card-body bg-very-black p-4">

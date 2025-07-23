@@ -65,6 +65,102 @@
       opacity: 1;
       transform: translateY(0);
     }
+    .bottom-sheet-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px); /* ایجاد افکت شیشه‌ای زیبا */
+    z-index: 1040;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.bottom-sheet-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0; /* برای پوشش کامل عرض */
+    width: 100%;
+    max-width: 600px; /* محدودیت عرض در صفحات بزرگتر */
+    margin: 0 auto; /* وسط‌چین کردن در صفحات بزرگتر */
+    backdrop-filter: blur(15px);
+    color: #f1f1f1;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.25);
+    z-index: 1050;
+    transform: translateY(30rem);
+    transition: transform 0.3s ease-in-out;
+    max-height: 30rem; /* حداکثر ارتفاع ۶۰ درصد صفحه */
+    display: flex;
+    flex-direction: column;
+}
+
+.bottom-sheet.show {
+    transform: translateY(0);
+}
+
+.bottom-sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #444;
+    position: relative;
+    flex-shrink: 0; /* جلوگیری از کوچک شدن هدر */
+}
+
+/* دستگیره بالای پاپ آپ برای زیبایی */
+.bottom-sheet-handle {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-20rem);
+    width: 45px;
+    height: 5px;
+    background-color: #555;
+    border-radius: 2.5px;
+}
+
+.bottom-sheet-header h5 {
+    padding-top: 15px; /* ایجاد فضا برای دستگیره */
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.bottom-sheet-body {
+    padding: 8px 20px 20px; /* کمی پدینگ کمتر در بالا */
+    overflow-y: auto;
+}
+
+/* استایل زیباتر برای آیتم های لیست */
+.bottom-sheet-body .list-group-item {
+    border-radius: 12px;
+    margin-top: 8px;
+    padding: 14px 16px;
+    font-size: 1rem;
+    border: 1px solid #4a4a4a; /* کمی روشن‌تر */
+}
+.bottom-sheet-body .list-group-item:first-child {
+    margin-top: 0;
+}
+.bottom-sheet-body .list-group-item-action:hover,
+.bottom-sheet-body .list-group-item-action:focus {
+    border-color: #666;
+}
+.list-group-item:active{
+    scale: 0.94;
+}
 </style>
 
 
@@ -114,7 +210,6 @@
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  // این اسکریپت برای چسبناک شدن نوار جستجو است
   const nav = document.querySelector('nav.rounder');
   if (nav) {
     function checkStickiness() {
@@ -217,15 +312,15 @@ document.addEventListener('DOMContentLoaded', function () {
             <svg class="svgclasses" viewBox="-15.6 -15.6 55.20 55.20" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(3.7200000000000006,3.7200000000000006), scale(0.69)"><path transform="translate(-15.6, -15.6), scale(1.725)" d="M16,28.42664321594768C19.924161769058184,28.598988733545987,24.23254837893754,29.75897553594664,27.276875818991314,27.276875818991314C30.487217392801302,24.65942153110994,32.10317109282902,20.05151544785429,31.24143879943424,16C30.46389620707689,12.34431035201177,25.92783500618298,11.357250222159013,23.321183546345157,8.678816453654845C20.63915943816806,5.9229344149680365,19.82813363662903,0.7042607560856797,16.000000000000004,0.3388404664066105C12.146664909996774,-0.028985466143498284,9.62678634994219,4.172603094131542,7.133606819334071,7.133606819334068C4.932269301079751,9.748006830226688,3.072730792777702,12.59212201678184,2.8132275409168663,15.999999999999998C2.5312715635553604,19.70273420697757,2.969445854390644,23.78124837983062,5.671990551268291,26.328009448731706C8.329826041795894,28.832638498027233,12.351496242004906,28.266404340580944,16,28.42664321594768" fill="#9B1B30" strokewidth="0"></path></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M22 22L2 22" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M2 11L6.06296 7.74968M22 11L13.8741 4.49931C12.7784 3.62279 11.2216 3.62279 10.1259 4.49931L9.34398 5.12486" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M15.5 5.5V3.5C15.5 3.22386 15.7239 3 16 3H18.5C18.7761 3 19 3.22386 19 3.5V8.5" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M4 22V9.5" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M20 9.5V13.5M20 22V17.5" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round"></path> <path d="M15 22V17C15 15.5858 15 14.8787 14.5607 14.4393C14.1213 14 13.4142 14 12 14C10.5858 14 9.87868 14 9.43934 14.4393M9 22V17" stroke="#F1F1F1" stroke-width="0.9600000000000002" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M14 9.5C14 10.6046 13.1046 11.5 12 11.5C10.8954 11.5 10 10.6046 10 9.5C10 8.39543 10.8954 7.5 12 7.5C13.1046 7.5 14 8.39543 14 9.5Z" stroke="#F1F1F1" stroke-width="0.9600000000000002"></path> </g></svg>
             <span class="category-name">همه آگهی‌ها</span>
         </a>
-        <a href="{{ url_for('main.index', category=2) }}" class="category-item-divar animationshow txt-black mx-2">
+        <a href="{{ url_for('main.index', category=1) }}" onclick="openSubcategoryPopup(event, 1)" class="category-item-divar animationshow txt-black mx-2">
             <svg class="svgclasses" fill="#F1F1F1" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-291.84 -291.84 1095.68 1095.68" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(56.31999999999999,56.31999999999999), scale(0.78)"><path transform="translate(-291.84, -291.84), scale(34.24)" d="M16,30.85186870271961C18.489851725389375,31.31282299828501,21.015667028445865,29.590852314606636,22.822362837071218,27.816679061477103C24.484917587393365,26.184052165569653,24.70440875506175,23.68000988687304,25.52440237625178,21.498916275799274C26.212705036845133,19.668106258854852,26.84878511631458,17.911143553907223,27.264905516058207,16C27.780765423494646,13.63077624306875,29.00884362249698,11.227049695368944,28.263305082531478,8.91977750944595C27.490809646934146,6.529079863702965,25.625993200687553,4.222165896800757,23.222621932625774,3.4900518488308503C20.816061407344453,2.7569662905312473,18.46108491242743,4.662589276792203,16,5.184134146819513C14.095237315331973,5.58778507401496,12.138313974712654,5.442640426260929,10.35208945286771,6.21753197576273C8.421846425156948,7.054900958421719,6.631687915681968,8.192504954835227,5.303566055979761,9.824410983050857C3.841983417363055,11.620304561090988,2.488937127874484,13.686604537006277,2.390656992793083,15.999999999999998C2.291236895710238,18.34022878917855,3.2486173798223303,20.70145310231847,4.765656492512502,22.486151248216622C6.191055124499845,24.163040310860794,8.730048845480978,24.220057929860026,10.495242621749634,25.53451946246927C12.576886752330399,27.08462754182938,13.447970659717502,30.379403264389868,16,30.85186870271961" fill="#9B1B30" strokewidth="0"></path></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <g> <path d="M128,160H16c-8.848,0-16,7.152-16,16s7.152,16,16,16h112c8.848,0,16-7.152,16-16S136.848,160,128,160z"></path> </g> </g> <g> <g> <path d="M272,208h-48c-8.848,0-16,7.152-16,16s7.152,16,16,16h48c8.848,0,16-7.152,16-16S280.848,208,272,208z"></path> </g> </g> <g> <g> <path d="M451.584,96H224c-8.848,0-16,7.152-16,16s7.152,16,16,16h227.584c7.76,0,28.416,0,28.416,44.848v71.008 C480,288,460.08,288,451.584,288H432c-8.848,0-16,7.152-16,16v61.44C416,384,407.664,384,404.928,384h-58.944 C334.08,384,320,374.304,320,366.112V256c0-8.848-7.152-16-16-16c-8.848,0-16,7.152-16,16v110.112 C288,394.656,318.608,416,345.984,416h58.944c26.16,0,43.072-19.84,43.072-50.56V320h3.584c18.16,0,60.416-7.424,60.416-76.144 v-71.008C512,103.488,469.744,96,451.584,96z"></path> </g> </g> <g> <g> <path d="M272,208c-8.848,0-16,7.152-16,16s7.152,16,16,16c10.32,0,16,5.68,16,16c0,8.848,7.152,16,16,16c8.848,0,16-7.152,16-16 C320,228.192,299.808,208,272,208z"></path> </g> </g> <g> <g> <path d="M225.408,207.728c-8.96,0-17.408-7.552-17.408-15.52v-48.304c0-7.552,9.904-15.536,19.28-15.536c8.848,0,16-7.152,16-16 c0-8.848-7.152-16-16-16c-27.312,0-51.28,22.208-51.28,47.536v48.288c0,25.76,22.624,47.52,49.408,47.52 c8.848,0,16-7.136,16-15.984C241.408,214.88,234.256,207.728,225.408,207.728z"></path> </g> </g> <g> <g> <path d="M192,192h-40.368c-1.92,0-5.616-1.408-7.632-2.752v-42.24c1.968-1.44,5.76-3.008,7.632-3.008H192c8.848,0,16-7.152,16-16 c0-8.848-7.152-16-16-16h-40.368C135.472,112,112,124.576,112,144.288v47.84C112,211.872,135.072,224,151.632,224H192 c8.848,0,16-7.152,16-16S200.848,192,192,192z"></path> </g> </g> <g> <g> <path d="M384,208h-32c-8.848,0-16,7.152-16,16s7.152,16,16,16h32c8.848,0,16-7.152,16-16S392.848,208,384,208z"></path> </g> </g> <g> <g> <path d="M384,160h-32c-8.848,0-16,7.152-16,16s7.152,16,16,16h32c8.848,0,16-7.152,16-16S392.848,160,384,160z"></path> </g> </g> <g> <g> <path d="M432,96c-8.848,0-16,7.152-16,16v192c0,8.848,7.152,16,16,16c8.848,0,16-7.152,16-16V112C448,103.152,440.848,96,432,96z"></path> </g> </g> <g> <g> <path d="M224,208c-8.848,0-16,7.152-16,16v176c0,8.848,7.152,16,16,16c8.848,0,16-7.152,16-16V224 C240,215.152,232.848,208,224,208z"></path> </g> </g> </g></svg>
-            <span class="category-name">دریل ها</span>
+            <span class="category-name">کرگیری</span>
         </a>
-        <a href="{{ url_for('main.index', category=5) }}" class="category-item-divar animationshow txt-black mx-2">
+        <a href="{{ url_for('main.index', category=5) }}" onclick="openSubcategoryPopup(event, 5)" class="category-item-divar animationshow txt-black mx-2">
             <svg class="svgclasses" viewBox="-9.36 -9.36 42.72 42.72" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(1.4399999999999995,1.4399999999999995), scale(0.88)"><path transform="translate(-9.36, -9.36), scale(1.335)" d="M16,27.916015553687302C18.788361748222137,27.88322057457766,21.91369718801636,28.88222199358542,24.128382847542525,27.187759194025524C26.33580272843822,25.49885546400952,26.233153896302316,22.242129182625792,26.93189602191803,19.551988334691323C27.58055736664583,17.05465732235149,28.83105876541352,14.543847340099237,28.051392085037364,12.084265344546008C27.26957768991019,9.61790804274186,24.71203275849535,8.375603048805603,22.827219985690483,6.603137844616159C20.588936006516736,4.498270704801373,19.049512075035235,1.1265267476036807,16.000000000000004,0.751217605812208C12.914631602653287,0.3714955595221127,10.24483119560195,2.7976201661834383,7.831948667686671,4.757641820723448C5.536994704450697,6.621868285159458,3.764015446159747,8.929041435449113,2.5913544695806987,11.643266967361441C1.3117239860924326,14.60508270018253,-0.15403325429444337,17.85630548634638,0.8477052135794381,20.923279019235217C1.8490214446924913,23.98895981054369,4.803230710500031,26.029220398987373,7.731503490332701,27.38060910538507C10.302179272432834,28.56696791856186,13.168973236647417,27.94931233220687,16,27.916015553687302" fill="#9B1B30" strokewidth="0"></path></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M2 6V18.5C2 19.9045 2 20.6067 2.33706 21.1111C2.48298 21.3295 2.67048 21.517 2.88886 21.6629C3.39331 22 4.09554 22 5.5 22C6.90446 22 7.60669 22 8.11114 21.6629C8.32952 21.517 8.51702 21.3295 8.66294 21.1111C9 20.6067 9 19.9045 9 18.5V11C9 10.0572 9 9.58579 9.29289 9.29289C9.58579 9 10.0572 9 11 9H18.5C19.9045 9 20.6067 9 21.1111 8.66294C21.3295 8.51702 21.517 8.32952 21.6629 8.11114C22 7.60669 22 6.90446 22 5.5C22 4.09554 22 3.39331 21.6629 2.88886C21.517 2.67048 21.3295 2.48298 21.1111 2.33706C20.6067 2 19.9045 2 18.5 2H6C4.11438 2 3.17157 2 2.58579 2.58579C2 3.17157 2 4.11438 2 6Z" stroke="#F1F1F1" stroke-width="1.5" stroke-linecap="round"></path> <path opacity="0.5" d="M12 2L12 4M18 2L18 4M9 2L9 5M15 2L15 5" stroke="#F1F1F1" stroke-width="1.5" stroke-linecap="round"></path> <path opacity="0.5" d="M2 12H4M2 18H4M2 15L5 15M2 9L5 9" stroke="#F1F1F1" stroke-width="1.5" stroke-linecap="round"></path> </g></svg>
             <span class="category-name">اندازه‌گیری</span>
         </a>
-        <a href="{{ url_for('main.index', category=8) }}" class="category-item-divar animationshow txt-black mx-2">
+        <a href="{{ url_for('main.index', category=8) }}" onclick="openSubcategoryPopup(event, 8)" class="category-item-divar animationshow txt-black mx-2">
             <svg class="svgclasses" fill="#F1F1F1" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-172.95 -172.95 678.50 678.50" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0" transform="translate(26.608319999999992,26.608319999999992), scale(0.84)"><path transform="translate(-172.95, -172.95), scale(21.203125)" d="M16,26.592113928575266C18.084632027909528,27.263833564059038,19.77594413860149,29.75641515401948,21.91472019670457,29.284679069152446C23.870295271485777,28.85335044737096,24.144127712976886,26.027008583507772,25.449081119175126,24.507990854603648C26.72301681395492,23.02507897693594,28.67575322427601,22.151941539356585,29.54613653188121,20.401406567068317C30.44409176766645,18.595418297237636,31.18077151493672,16.35638081368968,30.4336231196176,14.482965079899607C29.64750245229623,12.511829444670976,26.450895491091337,12.403644658857587,25.58400441907166,10.466672468734417C24.57320806074856,8.20815983762823,27.42573910513765,4.477938197728115,25.351843757661122,3.12829132888403C23.208271145888016,1.7332999822185726,20.687103207495372,5.072954579414846,18.19785150134734,5.659921650598903C16.7674532660971,5.99721042726139,15.308632884484577,5.766612100972579,13.840969985797383,5.8425623879146595C12.154540792152703,5.92983364160608,10.482429335765016,5.754392796631164,8.8393536525662,6.1442158285041675C6.7521893463605265,6.63939978514225,4.349759269851825,6.855007794040042,2.9019864797271016,8.437858368221075C1.4835994902867258,9.98858143468594,0.3467407028010496,12.548274527075463,1.2432799841055608,14.449006227699703C2.3578233819861474,16.81192329363198,6.368426932139899,16.45893784927175,7.735509367096135,18.685295785962822C8.679933709162162,20.223335172468623,6.268247562776587,22.40784706521665,7.110536470792406,24.00410891333666C7.875772300438918,25.454343800742123,9.995067329836786,25.492826163979814,11.569449721375324,25.951178854422572C13.018017268658527,26.372902849910407,14.564000507873082,26.12939962576679,16,26.592113928575266" fill="#9B1B30" strokewidth="0"></path></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g> <path d="M95.056,117.539c0.984,0,1.985-0.195,2.947-0.607l115.311-49.357c0.029-0.012,0.057-0.024,0.085-0.037l27.104-11.602 c3.808-1.63,5.573-6.038,3.943-9.846c-1.629-3.807-6.037-5.573-9.846-3.943l-16.667,7.134V7.5c0-4.143-3.357-7.5-7.5-7.5h-90.582 c-4.143,0-7.5,3.357-7.5,7.5v86.975l-20.251,8.668c-3.808,1.63-5.573,6.038-3.943,9.846 C89.375,115.834,92.144,117.539,95.056,117.539z M127.352,15h75.582v40.702l-75.582,32.352V15z"></path> <path d="M234.601,118.52l-16.667,7.134v-33.57c0-4.143-3.357-7.5-7.5-7.5s-7.5,3.357-7.5,7.5v39.99l-75.582,32.352v-39.012 c0-4.143-3.357-7.5-7.5-7.5s-7.5,3.357-7.5,7.5v45.433l-20.251,8.668c-3.808,1.63-5.573,6.038-3.943,9.846 c1.218,2.846,3.986,4.551,6.898,4.551c0.984,0,1.985-0.195,2.947-0.607l24.727-10.584c0.03-0.013,0.059-0.025,0.089-0.038 l90.495-38.735c0.029-0.012,0.057-0.024,0.085-0.037l27.104-11.602c3.808-1.63,5.573-6.038,3.943-9.846 C242.817,118.655,238.409,116.89,234.601,118.52z"></path> <path d="M234.601,194.892l-16.667,7.134v-35.723c0-4.143-3.357-7.5-7.5-7.5s-7.5,3.357-7.5,7.5v42.144l-75.582,32.352v-39.012 c0-4.143-3.357-7.5-7.5-7.5s-7.5,3.357-7.5,7.5v45.433l-20.251,8.668c-3.808,1.63-5.573,6.038-3.943,9.846 c1.218,2.846,3.986,4.551,6.898,4.551c0.984,0,1.985-0.195,2.947-0.607l20.717-8.868l39.954,68.091 c1.347,2.295,3.808,3.704,6.469,3.704s5.122-1.409,6.469-3.704l45.291-77.188c0.675-1.151,1.031-2.462,1.031-3.796v-29.575 l22.569-9.661c3.808-1.63,5.573-6.038,3.943-9.846C242.817,195.027,238.409,193.261,234.601,194.892z M202.934,245.878 l-37.791,64.405l-32.522-55.425l70.313-30.096V245.878z"></path> </g> </g></svg>
             <span class="category-name">مته و قلم</span>
         </a>
@@ -249,14 +344,15 @@ document.addEventListener('DOMContentLoaded', function () {
 </div>
 
 
+{# در فایل products.html، کد تست را با این کد جایگزین کنید #}
 {% if not selected_category %}
     {% if recommended_products %}
-    <div class="container-fluid px-3" id="suggestions">
+    <div class="container-fluid px-3">
         <h2 class="mb-3 mt-5 txt-black">شاید بپسندید</h2>
-        <hr class="w-100 mb-5">
+        <hr class="w-100 mb-4">
         
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-3 g-3 mb-5">
-            {# روش پیشنهادی و تمیزتر #}
+        <div id="recommendation-results-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-3 g-3 mb-5">
+            {# با این کار، از همان فایل _product_list.html برای نمایش استفاده می‌کنیم #}
             {% with products=recommended_products %}
                 {% include '_product_list.html' %}
             {% endwith %}
@@ -266,10 +362,26 @@ document.addEventListener('DOMContentLoaded', function () {
 {% endif %}
 
 
-<h2 class="mb-3 mt-5 txt-black">محصولات</h2>
+
+{% if selected_category %}
+    <h2 class="mb-3 mt-5 txt-black">محصولات {{ selected_category.name }}</h2>
+{% else %}
+    <h2 class="mb-3 mt-5 txt-black">محصولات</h2>
+{% endif %}
 <hr class="w-100 mb-5">
 <div id="product-results-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-3 g-3 mb-5">
     {% include '_product_list.html' %}
+</div>
+
+<div id="bottomSheetOverlay" class="bottom-sheet-overlay"></div>
+<div id="subcategoryBottomSheet" class="bottom-sheet">
+    <div class="bottom-sheet-header">
+        <div class="bottom-sheet-handle"></div>
+        <h5 class="modal-title" id="bottomSheetTitle">انتخاب زیرمجموعه</h5>
+        <button type="button" id="closeBottomSheet" class="btn-close m-0" aria-label="Close" style="filter: invert(1) grayscale(100%) brightness(200%);"></button>
+    </div>
+    <div id="bottomSheetBody" class="bottom-sheet-body">
+        </div>
 </div>
 
 <footer class="w-100 animationshow text-start pt-4 px-3 {{ 'd-none' if 'chat.html' in request.path else '' }}" style="background-color: #1f1f1f; color: #f1f1f1; z-index: 2;">
@@ -309,9 +421,86 @@ document.addEventListener('DOMContentLoaded', function () {
     </footer>
 
 
-
-    <script>
+<script>
+    const categoryTree = {{ category_tree_json|safe }};
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
+    const subcategoryData = {
+        '1': [ { id: 2, name: 'دریل' }, { id: 3, name: 'فرز' }, { id: 4, name: 'کمپرسور' } ],
+        '5': [ { id: 6, name: 'اره' }, { id: 7, name: 'چمن‌زن' } ],
+        '8': [ { id: 9, name: 'جک هیدرولیک' }, { id: 10, name: 'آچار بکس' } ]
+    };
+
+    const bottomSheet = document.getElementById('subcategoryBottomSheet');
+    const overlay = document.getElementById('bottomSheetOverlay');
+    const sheetTitle = document.getElementById('bottomSheetTitle');
+    const sheetBody = document.getElementById('bottomSheetBody');
+    const closeButton = document.getElementById('closeBottomSheet');
+
+    if (!bottomSheet || !overlay || !closeButton) return;
+
+    function showBottomSheet() {
+        overlay.classList.add('show');
+        bottomSheet.classList.add('show');
+    }
+
+    function hideBottomSheet() {
+        overlay.classList.remove('show');
+        bottomSheet.classList.remove('show');
+    }
+
+    closeButton.addEventListener('click', hideBottomSheet);
+    overlay.addEventListener('click', hideBottomSheet);
+
+    window.openSubcategoryPopup = function(event, categoryId) {
+        event.preventDefault();
+
+        const parentLink = event.currentTarget;
+        const categoryName = parentLink.querySelector('.category-name').textContent.trim();
+        const subcategories = subcategoryData[categoryId];
+
+        if (!subcategories) {
+            window.location.href = parentLink.href;
+            return;
+        }
+
+        sheetTitle.textContent = `انتخاب از دسته ${categoryName}`;
+        sheetBody.innerHTML = '';
+
+        const listGroup = document.createElement('div');
+        listGroup.className = 'list-group';
+        listGroup.style.direction = 'rtl';
+
+        const allLink = document.createElement('a');
+        allLink.href = parentLink.href;
+        allLink.className = 'list-group-item list-group-item-action header-tabs';
+        allLink.textContent = `همه آگهی‌های ${categoryName}`;
+        allLink.style.backgroundColor = 'transparent';
+        allLink.style.color = '#f1f1f1';
+        listGroup.appendChild(allLink);
+
+        subcategories.forEach(sub => {
+            const subLink = document.createElement('a');
+            const baseUrl = "{{ url_for('main.index') }}";
+            subLink.href = `${baseUrl}?category=${sub.id}`;
+            subLink.className = 'list-group-item list-group-item-action header-tabs';
+            subLink.textContent = sub.name;
+            subLink.style.backgroundColor = 'transparent';
+            subLink.style.color = '#f1f1f1';
+            listGroup.appendChild(subLink);
+        });
+
+        sheetBody.appendChild(listGroup);
+        showBottomSheet();
+    }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+
+
     // --- Element References ---
     // Mobile controls
     const searchInputMobile = document.getElementById('search-input-mobile');
@@ -333,7 +522,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const isMobileView = window.innerWidth < 992;
         
-        // تعیین مقادیر بر اساس اندازه صفحه
         const searchTerm = isMobileView ? searchInputMobile.value : searchInputDesktop.value;
         const minPrice = isMobileView ? minPriceMobile.value : minPriceDesktop.value;
         const maxPrice = isMobileView ? maxPriceMobile.value : maxPriceDesktop.value;
@@ -362,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
             debounceTimeout = setTimeout(() => func.apply(this, args), delay);
         };
     }
-    const debouncedSearch = debounce(performLiveSearch, 500); // 500 میلی‌ثانیه تاخیر
+    const debouncedSearch = debounce(performLiveSearch, 500);
 
     // --- Event Listeners ---
     [searchInputMobile, minPriceMobile, maxPriceMobile, searchInputDesktop, minPriceDesktop, maxPriceDesktop].forEach(element => {
@@ -404,7 +592,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(closeFiltersButton) closeFiltersButton.addEventListener('click', hideFilters);
     }
     
-    // نمایش و پنهان کردن پیام "برای فیلتر نگه دارید"
     const myElement = document.getElementById('myElement');
     if(myElement) {
         setTimeout(() => {
@@ -732,7 +919,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    // شناسایی تمام عناصر ورودی در ابتدای کار
     const searchInputDesktop = document.getElementById('search-input-desktop');
     const searchInputMobile = document.getElementById('search-input-mobile');
     const minPriceDesktop = document.getElementById('min-price-desktop');
@@ -744,20 +930,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultsContainer = document.getElementById('product-results-container');
     let debounceTimeout;
 
-    // تعریف تابع اصلی جستجو
     function performLiveSearch() {
         if (!resultsContainer) return;
         resultsContainer.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">در حال جستجو...</span></div></div>';
 
-        // اصلاح شد: از یک متغیر واحد برای تشخیص موبایل استفاده می‌کنیم
         const isMobile = window.innerWidth < 992; 
 
-        // خواندن مقادیر از فیلدهای مربوطه
         const searchTerm = (isMobile ? searchInputMobile?.value : searchInputDesktop?.value) || '';
         const minPrice = (isMobile ? minPriceMobile?.value : minPriceDesktop?.value) || '';
         const maxPrice = (isMobile ? maxPriceMobile?.value : maxPriceDesktop?.value) || '';
-        const province = provinceInputMobile?.value || ''; // فرض شده فیلتر استان فقط برای موبایل است
-        const city = cityInputMobile?.value || '';       // فرض شده فیلتر شهر فقط برای موبایل است
+        const province = provinceInputMobile?.value || '';
+        const city = cityInputMobile?.value || '';
 
         const queryParams = new URLSearchParams({
             search: searchTerm,
@@ -774,7 +957,6 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(html => {
                 resultsContainer.innerHTML = html;
-                // فراخوانی انیمیشن برای عناصر جدید
                 if (typeof initializeAnimations === 'function') {
                     initializeAnimations();
                 }
@@ -785,7 +967,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // تابع debounce برای جلوگیری از درخواست‌های مکرر
     function debounce(func, delay) {
         return function(...args) {
             clearTimeout(debounceTimeout);
@@ -795,7 +976,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const debouncedSearch = debounce(performLiveSearch, 400);
 
-    // اتصال Event Listener به تمام فیلدهای ورودی
     const allInputs = [
         searchInputDesktop, searchInputMobile,
         minPriceDesktop, maxPriceDesktop,
@@ -807,7 +987,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // بازنویسی توابع انتخاب استان و شهر برای فراخوانی جستجوی زنده
     const originalSelectProvince = window.selectProvince;
     window.selectProvince = function(formType, province) {
         if(typeof originalSelectProvince === 'function') {
@@ -828,6 +1007,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('search-input-mobile');
+    const minpricemobile = document.getElementById('min-price-mobile');
+    const maxpricemobile = document.getElementById('max-price-mobile');
     const categoriesContainer = document.getElementById('categories-scroll-container-id');
     const categoriesTitle = document.getElementById('categories-title');
     const suggestions = document.getElementById('suggestions');
@@ -847,6 +1028,46 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         searchInput.addEventListener('blur', function() {
+            if (searchInput.value.trim() === '') {
+                categoriesContainer.style.display = '';
+                categoriesTitle.style.display = '';
+                suggestions.style.display = '';
+            }
+        });
+
+        minpricemobile.addEventListener('focus', function() {
+            categoriesContainer.style.display = 'none';
+            categoriesTitle.style.display = 'none';
+            suggestions.style.display = 'none';
+        });
+
+        minpricemobile.addEventListener('input', function() {
+            categoriesContainer.style.display = 'none';
+            categoriesTitle.style.display = 'none';
+            suggestions.style.display = 'none';
+        });
+
+        minpricemobile.addEventListener('blur', function() {
+            if (searchInput.value.trim() === '') {
+                categoriesContainer.style.display = '';
+                categoriesTitle.style.display = '';
+                suggestions.style.display = '';
+            }
+        });
+
+        maxpricemobile.addEventListener('focus', function() {
+            categoriesContainer.style.display = 'none';
+            categoriesTitle.style.display = 'none';
+            suggestions.style.display = 'none';
+        });
+
+        maxpricemobile.addEventListener('input', function() {
+            categoriesContainer.style.display = 'none';
+            categoriesTitle.style.display = 'none';
+            suggestions.style.display = 'none';
+        });
+
+        maxpricemobile.addEventListener('blur', function() {
             if (searchInput.value.trim() === '') {
                 categoriesContainer.style.display = '';
                 categoriesTitle.style.display = '';

@@ -4,6 +4,10 @@
     {% include '_job_listing_card.html' with context %}
 {% else %}
     <div class="col-12">
-        <p class="text-center txt-black py-5">آگهی استخدامی یافت نشد.</p>
+        <p class="text-center txt-black pt-5">آگهی استخدامی یافت نشد. اولین نفری باشید که آگهی می گذارد.</p>
+        <a href="{{ url_for('main.new_hiring_ad') }}" class="btn btn-lg btn-danger header-tabs py-3 txt-black">
+            <i class="bi bi-person-plus-fill me-2"></i>
+            افزودن آگهی استخدام
+        </a>
     </div>
 {% endfor %}

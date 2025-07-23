@@ -6,7 +6,7 @@ import traceback
 from urllib.parse import urlparse
 from aplication import db
 from models import User, Product, Category, EditProfileForm, Message, Conversation, Report, SignupTempData, ChatBotInteraction, ProductImage, bookmarks, UserReport, CooperationType, SalaryType, MilitaryStatus, MaritalStatus, EducationLevel, JobListing, JobProfile, WorkExperience, job_applications, JobListingReport, JobProfileReport, CategoryView, SearchHistory, UserSession, Ticket, TicketMessage, TicketStatus
-from utils import save_image
+from utils import save_image, save_ticket_attachment
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import logging
@@ -25,6 +25,7 @@ from sqlalchemy import case, func, or_, and_
 from firebase_admin import messaging
 from sqlalchemy.sql.expression import func
 import jdatetime
+from collections import Counter
 
 
 
@@ -52,6 +53,22 @@ def inject_enums_into_templates():
 @limiter.limit("5 per minute")
 @bp.route('/')
 def index():
+    # --- Start of New Logic for Signup Popup ---
+    show_signup_popup = False
+    is_new_visit_for_cookie = False
+
+    # This logic only applies to guest (not authenticated) users.
+    if not current_user.is_authenticated:
+        # Check for a session cookie to see if we've already counted this visit.
+        if 'visit_counted_this_session' not in request.cookies:
+            is_new_visit_for_cookie = True
+            # Get the persistent count from its cookie, increment it.
+            count = int(request.cookies.get('guest_visit_count', '0')) + 1
+            # Decide if the popup should be shown on this new visit.
+            if count > 0 and count % 3 == 0:
+                show_signup_popup = True
+    # --- End of New Logic ---
+
     search = request.args.get('search', '').strip()
     province_search = request.args.get('province_search', '').strip()
     city_search = request.args.get('city_search', '').strip()
@@ -83,9 +100,6 @@ def index():
 
     if address_search:
         query = query.filter(Product.address.ilike(f'%{address_search}%'))
-
-    if category_id:
-        query = query.filter(Product.category_id == category_id)
 
     if min_price is not None:
         query = query.filter(Product.price >= min_price)
@@ -131,21 +145,25 @@ def index():
     
     results = query.all()
     
-    products = [res[0] if isinstance(res, tuple) else res for res in results]
+    products = []
+    for res in results:
+        product_object = res[0] if hasattr(res, '_fields') else res
+        products.append(product_object)
 
 
 
     recommended_products = []
     if current_user.is_authenticated:
-        # ۱. پیدا کردن دسته‌بندی‌های محبوب (مثل قبل)
-        favorite_categories_query = db.session.query(CategoryView.category_id)\
-            .filter_by(user_id=current_user.id)\
-            .group_by(CategoryView.category_id)\
-            .order_by(func.count(CategoryView.category_id).desc())\
-            .limit(3).all()
-        favorite_category_ids = [cat[0] for cat in favorite_categories_query]
+        recent_views = CategoryView.query.filter_by(user_id=current_user.id)\
+            .order_by(CategoryView.timestamp.desc())\
+            .limit(15).all()
 
-        # ۲. پیدا کردن آخرین جستجوی کاربر
+        favorite_category_ids = []
+        if recent_views:
+            category_ids_from_views = [v.category_id for v in recent_views]
+            category_counts = Counter(category_ids_from_views)
+            favorite_category_ids = [cat_id for cat_id, count in category_counts.most_common(3)]
+
         last_search = db.session.query(SearchHistory)\
             .filter(SearchHistory.user_id == current_user.id, SearchHistory.search_term.isnot(None))\
             .order_by(SearchHistory.timestamp.desc())\
@@ -158,7 +176,6 @@ def index():
             recommendation_conditions.append(Product.name.ilike(f'%{last_search.search_term}%'))
 
         if recommendation_conditions:
-            # ۳. ساخت امتیاز برای اولویت‌بندی
             top_category_id = favorite_category_ids[0] if favorite_category_ids else -1
             last_search_term = last_search.search_term if last_search else ""
 
@@ -176,16 +193,12 @@ def index():
              .order_by(recommendation_score.desc(), Product.created_at.desc())\
              .limit(8)
             
-            # نتایج شامل (محصول, امتیاز) خواهند بود
             recommendation_results = recommendation_query.all()
             recommended_products = [res[0] for res in recommendation_results]
 
-    # حالت جایگزین (بدون تغییر)
     if not recommended_products:
         top_products_query = Product.query.order_by(Product.views.desc()).limit(8)
         recommended_products = top_products_query.all()
-
-
 
     
 
@@ -234,7 +247,33 @@ def index():
     
 
     categories = Category.query.filter_by(parent_id=None).all()
-    return render_template('products.html', products=products, categories=categories, recommended_products=recommended_products, selected_category=selected_category, provinces=provinces,cities=cities_with_products, datetime=datetime, citiesByProvince=citiesByProvince, top_products=top_products)
+
+
+    # Create the response object. We need this to set cookies.
+    response = make_response(render_template(
+        'products.html', 
+        products=products, 
+        categories=categories, 
+        recommended_products=recommended_products, 
+        selected_category=selected_category, 
+        provinces=provinces,
+        cities=cities_with_products, 
+        datetime=datetime, 
+        citiesByProvince=citiesByProvince, 
+        top_products=top_products,
+        show_signup_popup=show_signup_popup  # Pass the flag to the template.
+    ))
+    
+    # If it was a new visit for a guest, set the necessary cookies.
+    if is_new_visit_for_cookie:
+        # Retrieve the count we calculated earlier.
+        count = int(request.cookies.get('guest_visit_count', '0')) + 1
+        # Set the persistent cookie for a year.
+        response.set_cookie('guest_visit_count', str(count), max_age=365*24*60*60)
+        # Set the session cookie (no max_age means it's cleared when browser closes).
+        response.set_cookie('visit_counted_this_session', 'true')
+
+    return response
 
 
 
@@ -616,6 +655,7 @@ def resend_login_otp():
 @limiter.limit("5 per minute")
 @bp.route('/logout')
 def logout():
+    # Deactivate the custom UserSession from the database
     token = session.get('user_session_token')
     if token:
         user_session = UserSession.query.filter_by(session_token=token).first()
@@ -623,8 +663,13 @@ def logout():
             user_session.is_active = False
             db.session.commit()
     
+    # Clear all data from the server-side session
     session.clear()
+    
+    # Perform the standard Flask-Login logout
     logout_user()
+    
+    flash('شما با موفقیت از حساب کاربری خود خارج شدید.', 'success')
     return redirect(url_for('main.index'))
 
 @bp.route('/dashboard', methods=['GET', 'POST'])
@@ -637,7 +682,12 @@ def dashboard():
     user_job_listings = JobListing.query.filter_by(user_id=current_user.id).order_by(JobListing.created_at.desc()).all()
     user_job_profile = JobProfile.query.filter_by(user_id=current_user.id).first()
 
-    user_sessions = current_user.sessions.order_by(UserSession.last_seen.desc()).all()
+    jalali_birth_date = None
+    if user_job_profile and user_job_profile.birth_date:
+        jdate = jdatetime.date.fromgregorian(date=user_job_profile.birth_date)
+        jalali_birth_date = {'year': jdate.year, 'month': jdate.month, 'day': jdate.day}
+
+    # user_sessions = current_user.sessions.order_by(UserSession.last_seen.desc()).all()
     
     now = datetime.utcnow()
     for product in products:
@@ -733,7 +783,8 @@ def dashboard():
         blocked_products=blocked_products,
         user_job_listings=user_job_listings,
         user_job_profile=user_job_profile,
-        user_sessions=user_sessions
+        jalali_birth_date=jalali_birth_date
+        # user_sessions=user_sessions
     )
 
 
@@ -947,11 +998,24 @@ def new_product():
             main_image_path = image_paths[0] if image_paths else None
 
             image_path = request.form.get('uploaded_image_path')
+            is_negotiable = request.form.get('is_negotiable') is not None
+            price_str = request.form.get('price', '0').replace(',', '')
+            price = 0 if is_negotiable else float(price_str) if price_str else 0
+
+            is_electric = request.form.get('is_electric') is not None
+            is_cordless = request.form.get('is_cordless') is not None
+            is_pneumatic = request.form.get('is_pneumatic') is not None
+
+            is_body_only = request.form.get('is_body_only') is not None
+            body_only_description = request.form.get('body_only_description')
+
+            is_chat_only = request.form.get('is_chat_only') is not None
+            contact_phone = request.form.get('contact_phone')
 
             product = Product(
                 name=name,
                 description=description,
-                price=float(price),
+                price=price,
                 image_path=main_image_path,
                 user_id=current_user.id,
                 category_id=category_id,
@@ -959,7 +1023,14 @@ def new_product():
                 postal_code=postal_code,
                 product_type=ProductType[product_type] if product_type in ProductType.__members__ else None,
                 brand=brand,
-                status='pending'
+                status='pending',
+                is_electric=is_electric,
+                is_cordless=is_cordless,
+                is_pneumatic=is_pneumatic,
+                is_body_only=is_body_only,
+                body_only_description=body_only_description,
+                is_chat_only=is_chat_only,
+                contact_phone=contact_phone if not is_chat_only else None
             )
 
             db.session.add(product)
@@ -1096,6 +1167,19 @@ def edit_product(id):
 
             product.postal_code = request.form.get("postal_code")
             product.brand = request.form.get('brand')
+            is_negotiable = 'is_negotiable' in request.form
+            price_str = request.form.get('price', '0').replace(',', '')
+            product.price = 0 if is_negotiable else float(price_str) if price_str else 0
+            
+            product.is_electric = 'is_electric' in request.form
+            product.is_cordless = 'is_cordless' in request.form
+            product.is_pneumatic = 'is_pneumatic' in request.form
+            
+            product.is_body_only = 'is_body_only' in request.form
+            product.body_only_description = request.form.get('body_only_description')
+            
+            product.is_chat_only = 'is_chat_only' in request.form
+            product.contact_phone = request.form.get('contact_phone') if not product.is_chat_only else None
 
 
             product_type = request.form.get("product_type")
@@ -1215,6 +1299,9 @@ def delete_product(id):
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
 
+    if product.status == 'blocked':
+        if not current_user.is_authenticated or (not current_user.is_admin and product.user_id != current_user.id):
+            abort(404)
 
     if current_user.is_authenticated:
         five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
@@ -1387,6 +1474,7 @@ def signup():
 
             verification_code = random.randint(1000, 9999)
             session['verification_code'] = str(verification_code)
+            session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=1)).timestamp()
 
             print(f"📲 ارسال پیامک برای: {phone} با کد {verification_code}")
             send_verification_code(phone, str(verification_code))
@@ -1410,13 +1498,18 @@ def verify():
 
     signup_data = session.get('signup_data')
     verification_code = str(session.get('verification_code', ''))
+    otp_expiry = session.get('otp_expiry')
 
-    if not signup_data or not verification_code:
-        flash('خطای سیستمی! لطفاً دوباره ثبت‌نام کنید.', 'danger')
+    if not signup_data or not verification_code or not otp_expiry:
+        flash('خطای سیستمی یا جلسه منقضی شده! لطفاً دوباره ثبت‌نام کنید.', 'danger')
         return redirect(url_for('main.signup'))
 
     if request.method == 'POST':
         entered_code = request.form.get('code', '').strip()
+
+        if datetime.utcnow().timestamp() > otp_expiry:
+            flash('کد تایید منقضی شده است. لطفاً کد جدید درخواست کنید.', 'danger')
+            return redirect(url_for('main.verify'))
 
         if signup_data.get('phone') in admin_phones:
             entered_code = verification_code
@@ -1441,14 +1534,44 @@ def verify():
 
             session.pop('verification_code', None)
             session.pop('signup_data', None)
+            session.pop('otp_expiry', None)
 
             flash('.ثبت‌نام با موفقیت انجام شد و وارد شدید. قابلیت محصول گذاری رایگان برای شماره تماس شما فعال شد', 'success')
             return redirect(url_for('main.index'))
-
         else:
             flash('کد وارد شده اشتباه است!', 'danger')
 
-    return render_template('verify.html')
+    time_left = max(0, int(otp_expiry - datetime.utcnow().timestamp()))
+    return render_template('verify.html', time_left=time_left)
+
+
+@bp.route('/resend-signup-otp')
+@limiter.limit("2 per minute")
+def resend_signup_otp():
+    """
+    یک کد تایید جدید برای کاربری که در حال ثبت نام است ارسال می‌کند.
+    """
+    if 'signup_data' not in session:
+        flash('جلسه شما نامعتبر است. لطفاً از ابتدا ثبت نام کنید.', 'danger')
+        return redirect(url_for('main.signup'))
+
+    signup_data = session['signup_data']
+    phone = signup_data.get('phone')
+
+    if not phone:
+        flash('شماره تماسی در جلسه یافت نشد.', 'danger')
+        session.clear()
+        return redirect(url_for('main.signup'))
+
+    otp = random.randint(1000, 9999)
+    session['verification_code'] = str(otp)
+    session['otp_expiry'] = (datetime.utcnow() + timedelta(minutes=1)).timestamp()
+    send_verification_code(phone, str(otp))
+
+    flash('کد تایید جدید برای شما ارسال شد.', 'info')
+    return redirect(url_for('main.verify'))
+
+
 
 
 @bp.route('/delete-uploaded-image', methods=['POST'])
@@ -1872,7 +1995,6 @@ def remove_admin(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    # لیست شماره‌هایی که نباید از ادمین حذف شوند
     protected_numbers = ["09228192173", "09910689541"]
 
     if user.phone in protected_numbers:
@@ -3758,18 +3880,69 @@ def delete_job_listing(id):
 def save_resume(file):
     """
     فایل رزومه را در پوشه static/resumes ذخیره می‌کند و نام آن را برمی‌گرداند.
-    **نکته:** مطمئن شوید پوشه‌ای به نام resumes در کنار پوشه uploads شما وجود دارد.
     """
     resume_folder = os.path.join(current_app.root_path, 'static/resumes')
     if not os.path.exists(resume_folder):
         os.makedirs(resume_folder)
         
     random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(file.filename)
-    resume_fn = random_hex + f_ext
+    _, f_ext = os.path.splitext(secure_filename(file.filename))
+    if f_ext.lower() != '.pdf':
+        raise ValueError("File type not allowed. Only PDF is accepted.")
+        
+    resume_fn = "resume_" + random_hex + f_ext
     resume_path = os.path.join(resume_folder, resume_fn)
     file.save(resume_path)
     return resume_fn
+
+
+
+@bp.route('/upload-resume', methods=['POST'])
+@login_required
+def upload_resume():
+    if 'resume' not in request.files:
+        return jsonify({'error': 'فایلی ارسال نشده'}), 400
+    
+    file = request.files['resume']
+    if file.filename == '':
+        return jsonify({'error': 'فایلی انتخاب نشده'}), 400
+
+    if file and file.filename.lower().endswith('.pdf'):
+        try:
+            resume_path = save_resume(file)
+            return jsonify({'resume_path': resume_path}), 200
+        except Exception as e:
+            logging.error(f"Error saving resume: {e}")
+            return jsonify({'error': 'خطا در ذخیره فایل'}), 500
+    
+    return jsonify({'error': 'فرمت فایل نامعتبر است. فقط PDF مجاز است.'}), 400
+
+
+
+@bp.route('/delete-resume', methods=['POST'])
+@login_required
+def delete_resume():
+    data = request.get_json()
+    resume_path = data.get('resume_path')
+    if not resume_path:
+        return jsonify({'success': False, 'message': 'مسیر فایل مشخص نیست.'}), 400
+
+    profile = JobProfile.query.filter_by(user_id=current_user.id, resume_path=resume_path).first()
+    if not profile:
+        return jsonify({'success': False, 'message': 'دسترسی غیرمجاز یا فایل یافت نشد.'}), 403
+
+    try:
+        full_path = os.path.join(current_app.root_path, 'static/resumes', resume_path)
+        if os.path.exists(full_path):
+            os.remove(full_path)
+        
+        profile.resume_path = None
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        logging.error(f"Error deleting resume file: {e}")
+        return jsonify({'success': False, 'message': 'خطای سرور در حذف فایل.'}), 500
 
 
 
@@ -3785,16 +3958,14 @@ def new_job_profile():
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
+        logging.debug(f"FORM DATA received in new_job_profile: {request.form.to_dict()}")
         try:
             
             picture_path = request.form.get('profile_picture')
-            resume_path = None
-            if 'resume_file' in request.files:
-                file = request.files['resume_file']
-                if file.filename != '':
-                    resume_path = save_resume(file)
+            resume_path = request.form.get('resume_path')
 
             birth_date_str = request.form.get('birth_date')
+            logging.debug(f"Birth date string from form: '{birth_date_str}'")
             birth_date_obj = datetime.strptime(birth_date_str, '%Y-%m-%d').date() if birth_date_str else None
             
             salary_min_str = request.form.get('requested_salary_min')
@@ -3872,6 +4043,12 @@ def edit_job_profile():
     """
     profile = JobProfile.query.filter_by(user_id=current_user.id).first_or_404()
 
+    jalali_birth_date = None
+    if request.method == 'GET' and profile.birth_date:
+        jdate = jdatetime.date.fromgregorian(date=profile.birth_date)
+        jalali_birth_date = {'year': jdate.year, 'month': jdate.month, 'day': jdate.day}
+    
+    
     if request.method == 'POST':
         try:
             profile.title = request.form.get('title')
@@ -3892,15 +4069,7 @@ def edit_job_profile():
             salary_max_str = request.form.get('requested_salary_max')
             profile.requested_salary_max = int(salary_max_str) if salary_max_str and salary_max_str.isdigit() else None
             profile.profile_picture = request.form.get('profile_picture')
-
-            if 'resume_file' in request.files:
-                file = request.files['resume_file']
-                if file.filename != '':
-                    if profile.resume_path:
-                        old_resume_path = os.path.join(current_app.root_path, 'static/resumes', profile.resume_path)
-                        if os.path.exists(old_resume_path):
-                            os.remove(old_resume_path)
-                    profile.resume_path = save_resume(file)
+            profile.resume_path = request.form.get('resume_path')
 
             form_experiences = {}
             for key, value in request.form.items():
@@ -3940,7 +4109,8 @@ def edit_job_profile():
                            profile=profile,
                            MaritalStatus=MaritalStatus,
                            MilitaryStatus=MilitaryStatus,
-                           EducationLevel=EducationLevel)
+                           EducationLevel=EducationLevel,
+                           jalali_birth_date=jalali_birth_date)
 
 
 
@@ -4554,3 +4724,4 @@ def delete_temp_attachment():
     except Exception as e:
         logging.error(f"خطا در حذف فایل موقت: {e}")
         return jsonify({'success': False, 'error': 'خطای سرور'}), 500
+

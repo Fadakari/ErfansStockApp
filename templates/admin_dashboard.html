@@ -8,9 +8,9 @@
 </button>
 <h2 class="txt-black">پنل مدیریت</h2>
 <hr class="w-100">
-<h3 class="txt-black">تعداد محصولات پلتفرم: {{ count*2 }}</h3>
+<h3 class="txt-black">تعداد محصولات پلتفرم: {{ count }}</h3>
 <h3 class="txt-black">تعداد کاربران آنلاین: <span id="userCount">...</span></h3>
-<h3 class="txt-black">تعداد کل کاربران: {{ total_users*2 }}</h3>
+<h3 class="txt-black">تعداد کل کاربران: {{ total_users }}</h3>
 <hr class="w-100 txt-black">
  <script>
         function fetchOnlineUsers() {
@@ -31,6 +31,7 @@
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-2 row-cols-xl-3 g-4 prod mb-5">
     {% for product in pending_products %}
     <div class="col">
+        <a href="{{ url_for('main.product_detail', product_id=product.id) }}">
         <div class="card productes h-100 header-tabs text-light">
             {% if product.image_path %}
             <img src="{{ url_for('static', filename='uploads/' + product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
@@ -50,6 +51,7 @@
                 </form>
             </div>
         </div>
+        </a>
     </div>
     {% endfor %}
 </div>
@@ -150,7 +152,6 @@
 
 <hr class="w-100 txt-black">
 
-{# >>>>> شروع: بخش جدید برای مدیریت تیکت‌های پشتیبانی <<<<< #}
 <h3 class="txt-black">تیکت‌های پشتیبانی</h3>
 <div class="table-responsive">
     <table class="table bg-black rounded-3 mb-5">
@@ -194,7 +195,6 @@
         </tbody>
     </table>
 </div>
-{# >>>>> پایان: بخش جدید برای مدیریت تیکت‌های پشتیبانی <<<<< #}
 
 
 <hr class="w-100 txt-black">
@@ -229,9 +229,7 @@
     </table>
 </div>
 <hr class="w-100 txt-black">
-{# >>>>> پایان: بخش جدید برای نمایش گزارش‌های آگهی استخدام <<<<< #}
 
-{# >>>>> شروع: بخش جدید برای نمایش گزارش‌های پروفایل کاریابی <<<<< #}
 <h3 class="txt-black">گزارش‌های تخلف پروفایل‌های کاریابی</h3>
 <div class="table-responsive">
     <table class="table bg-black rounded-3 mb-5">
@@ -371,9 +369,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-<div class="text-center my-4">
+<!-- <div class="text-center my-4">
     <button class="btn btn-danger" onclick="cleanupUnusedImages()">🧹 حذف تصاویر بلااستفاده</button>
-</div>
+</div> -->
 
 
 

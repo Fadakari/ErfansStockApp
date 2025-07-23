@@ -91,7 +91,7 @@
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-person-video3 ms-2 txt-black"></i>وضعیت تحصیلی: <br><strong class="txt-black">{{ profile.education_status or 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-person-hearts ms-2 txt-black"></i>وضعیت تاهل: <br><strong class="txt-black">{{ profile.marital_status.value if profile.marital_status else 'ثبت نشده' }}</strong></div>
                             <div class="col-md-6 txt-black mt-4"><i class="bi bi-file-person-fill ms-2 txt-black"></i>وضعیت سربازی: <br><strong class="txt-black">{{ profile.military_status.value if profile.military_status else 'ثبت نشده' }}</strong></div>
-                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-calendar-event-fill ms-2 txt-black"></i>تاریخ تولد: <br><strong class="txt-black">{{ profile.birth_date.strftime('%Y-%m-%d') if profile.birth_date else 'ثبت نشده' }}</strong></div>
+                            <div class="col-md-6 txt-black mt-4"><i class="bi bi-calendar-event-fill ms-2 txt-black"></i>تاریخ تولد: <br><strong class="txt-black">{{ profile.birth_date | to_jalali if profile.birth_date else 'ثبت نشده' }}</strong></div>
                             
                             {% if profile.requested_salary_min or profile.requested_salary_max %}
                                 <div class="col-md-6 txt-black mt-4"><i class="bi bi-cash-stack ms-2 txt-black"></i>حقوق درخواستی (تومان):

@@ -553,7 +553,7 @@ window.onload = function() {
             const data = await res.json();
             if (data.length > 0) {
                 data.forEach(msg => {
-                    if (msg.sender_id != {{ current_user.id }}) { // فقط پیام‌های دریافتی جدید را اضافه کن
+                    if (msg.sender_id != {{ current_user.id }}) {
                         addMessageToDOM(msg);
                     }
                     lastMessageId = Math.max(lastMessageId, msg.id);

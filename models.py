@@ -141,9 +141,23 @@ class Product(db.Model):
     status = db.Column(db.String(20), default='pending')
     expires_at = db.Column(db.DateTime, nullable=True)
     brand = db.Column(db.String(100), nullable=True)
+    is_electric = db.Column(db.Boolean, default=False)
+    is_cordless = db.Column(db.Boolean, default=False)
+    is_pneumatic = db.Column(db.Boolean, default=False)
+
+    is_body_only = db.Column(db.Boolean, default=False)
+    body_only_description = db.Column(db.String(255), nullable=True)
+
+    is_chat_only = db.Column(db.Boolean, default=False)
+    contact_phone = db.Column(db.String(15), nullable=True)
     reports = db.relationship('Report', backref='product', cascade='all, delete-orphan', lazy=True)
 
-    def __init__(self, name, description, price, image_path, user_id, category_id, promoted_until=None, address=None, postal_code=None, product_type=None, views=0, status='pending', expires_at=None, brand=None):
+    def __init__(self, name, description, price, image_path, user_id, category_id, 
+                 promoted_until=None, address=None, postal_code=None, product_type=None, 
+                 views=0, status='pending', expires_at=None, brand=None,
+                 is_electric=False, is_cordless=False, is_pneumatic=False,
+                 is_body_only=False, body_only_description=None,
+                 is_chat_only=False, contact_phone=None):
         self.name = name
         self.description = description
         self.price = price
@@ -158,6 +172,13 @@ class Product(db.Model):
         self.status = status
         self.expires_at = expires_at if expires_at else datetime.utcnow() + timedelta(days=30)
         self.brand = brand
+        self.is_electric = is_electric
+        self.is_cordless = is_cordless
+        self.is_pneumatic = is_pneumatic
+        self.is_body_only = is_body_only
+        self.body_only_description = body_only_description
+        self.is_chat_only = is_chat_only
+        self.contact_phone = contact_phone
 
 
         if product_type:
@@ -218,6 +239,11 @@ class ProductForm(FlaskForm):
         ('wurth', 'wurth'),
         ('wiha', 'wiha'),
         ('genius', 'genius'),
+        ('sparky', 'sparky'),
+        ('ronix', 'ronix'),
+        ('tosan', 'tosan'),
+        ('arva', 'arva'),
+        ('kenzax', 'kenzax'),
         ('unknown', 'unknown')
     ], validators=[DataRequired()])
     submit = SubmitField('Add Product')

@@ -183,7 +183,6 @@
                             <a href="{{ url_for('main.product_detail', product_id=product.id) }}" class="divar-card-horizontal-link">
                                 
                                 {% if product.images %}
-                                    {# به اولین آبجکت تصویر با اندیس [0] دسترسی پیدا کرده و سپس نام فایل آن را می‌خوانیم #}
                                     {% set image_url = url_for('static', filename='uploads/' + product.images[0].image_path) %}
                                 {% elif product.image_path %}
                                     {% set image_url = url_for('static', filename='uploads/' + product.image_path) %}

@@ -446,7 +446,7 @@
                                 </a>
                             </div>
                         {% else %}
-                            <div class="card p-3 h-100" onclick="document.querySelector('.nav-link[data-tab-target=\'#products-content\']').click(); return false;">
+                            <div class="card p-3 h-100" data-tab-target="#products-content" style="cursor: pointer;">
                                 <div class="d-flex align-items-center">
                                     <div class="p-3 bg-success bg-opacity-10 text-success">
                                         <i class="bi bi-check-circle-fill fs-2"></i>
@@ -461,7 +461,7 @@
                         
                     </div>
                     <div class="col-md-6 col-lg-4">
-                        <div class="card p-3 h-100" onclick="document.querySelector('.nav-link[data-tab-target=\'#products-content\']').click(); return false;">
+                        <div class="card p-3 h-100" data-tab-target="#products-content" style="cursor: pointer;">
                             <div class="d-flex align-items-center">
                                 <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3 me-3">
                                     <i class="bi bi-box-seam-fill fs-2"></i>
@@ -758,7 +758,7 @@
                                     <p><i class="bi bi-envelope-fill me-2"></i><span id="profile-email-display">{{ user_job_profile.contact_email or 'ثبت نشده' }}</span></p>
                                     <p><i class="bi bi-calendar-event-fill me-2"></i>تاریخ تولد: 
                                         <span id="profile-birthdate-display">
-                                            {{ user_job_profile.birth_date.strftime('%Y-%m-%d') if user_job_profile.birth_date else 'ثبت نشده' }}
+                                            {{ user_job_profile.birth_date | to_jalali if user_job_profile.birth_date else 'ثبت نشده' }}
                                         </span>
                                     </p>
                                     <p><i class="bi bi-person-hearts me-2"></i>وضعیت تاهل: <span id="profile-marital-display">{{ user_job_profile.marital_status.value if user_job_profile.marital_status else 'ثبت نشده' }}</span></p>
@@ -1075,12 +1075,36 @@
                 <div class="col-md-6"><label class="form-label">شماره تماس</label><input type="tel" class="form-control inputs" name="contact_phone" value="{{ user_job_profile.contact_phone }}"></div>
                 <div class="col-md-6"><label class="form-label">ایمیل</label><input type="email" class="form-control inputs" name="contact_email" value="{{ user_job_profile.contact_email }}"></div>
                 <div class="col-12"><label class="form-label">محل سکونت</label><input type="text" class="form-control inputs" name="location" value="{{ user_job_profile.location }}"></div>
-                <div class="col-md-4 mb-3">
-                    <label for="birthdate-picker-display-modal" class="form-label txt-black">تاریخ تولد</label>
-                    <input type="text" class="form-control inputs" id="birthdate-picker-display-modal" autocomplete="off" style="background-color: var(--card-bg) !important;" placeholder="انتخاب تاریخ...">
-                                
-                    <input type="hidden" id="birthdate-gregorian-alt-modal" name="birth_date" 
-                           value="{{ user_job_profile.birth_date.strftime('%Y-%m-%d') if user_job_profile and user_job_profile.birth_date }}">
+                <div class="col-md-8 mb-3">
+                    <label class="form-label txt-black">تاریخ تولد</label>
+                    <input type="hidden" id="birth_date_hidden" name="birth_date">
+
+                    <div class="row g-2">
+                        <div class="col">
+                            <select id="birth_year" class="form-select inputs txt-black bg-secondary">
+                                <option value="">سال</option>
+                                {% for year in range(1330, 1405) %} {# اصلاح شده تا سال ۱۴۰۴ #}
+                                <option value="{{ year }}">{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <select id="birth_month" class="form-select inputs txt-black bg-secondary">
+                                <option value="">ماه</option>
+                                {% for month in range(1, 13) %} {# اصلاح شده تا ۱۲ ماه کامل #}
+                                <option value="{{ month }}">{{ month }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <select id="birth_day" class="form-select inputs txt-black bg-secondary">
+                                <option value="">روز</option>
+                                {% for day in range(1, 32) %}
+                                <option value="{{ day }}">{{ day }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-4"><label class="form-label">وضعیت تاهل</label><select name="marital_status" class="form-select inputs bg-secondary">{% for s in MaritalStatus %}<option value="{{ s.name }}" {% if user_job_profile.marital_status == s %}selected{% endif %}>{{ s.value }}</option>{% endfor %}</select></div>
                 <div class="col-md-4"><label class="form-label">وضعیت سربازی</label><select name="military_status" class="form-select inputs bg-secondary">{% for s in MilitaryStatus %}<option value="{{ s.name }}" {% if user_job_profile.military_status == s %}selected{% endif %}>{{ s.value }}</option>{% endfor %}</select></div>
@@ -1156,6 +1180,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+
+        document.body.addEventListener('click', function(event) {
+        console.log('--- A CLICK HAPPENED ---');
+        console.log('ELEMENT CLICKED:', event.target);
+        console.log('ELEMENT CLASSES:', event.target.className);
+        console.log('--------------------------');
+    }, true);
+
+
         document.addEventListener('DOMContentLoaded', function () {
             const trigger = document.getElementById('custom-popup-trigger');
             const popup = document.getElementById('custom-popup');
@@ -1178,68 +1211,99 @@
     </script>
 
 {% block page_scripts %}
-<script type="text/javascript" src="https://unpkg.com/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
 <script>
-function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
-    const displayEl = document.getElementById(pickerDisplayId);
-    const hiddenEl = document.getElementById(hiddenInputId);
+document.addEventListener('DOMContentLoaded', function() {
+    const editContactModal = document.getElementById('editContactModal');
 
-    if (!displayEl || !hiddenEl) return;
+    if (editContactModal) {
+        editContactModal.addEventListener('shown.bs.modal', function () {
+            console.log("✅ Contact modal shown. Initializing date logic.");
 
-    jalaliDatepicker.startWatch({
-        selector: '#' + pickerDisplayId,
-        container: 'body',
-        onSelect: function(selectedDate) {
-            const date = new Date(selectedDate * 1000);
-            const year = date.getFullYear();
-            const month = ('0' + (date.getMonth() + 1)).slice(-2);
-            const day = ('0' + date.getDate()).slice(-2);
-            hiddenEl.value = `${year}-${month}-${day}`;
-        }
-    });
+            const yearSelect = document.getElementById('birth_year');
+            const monthSelect = document.getElementById('birth_month');
+            const daySelect = document.getElementById('birth_day');
+            const hiddenInput = document.getElementById('birth_date_hidden');
 
-    const initialGregorianDate = hiddenEl.value;
-    if (initialGregorianDate) {
-        jalaliDatepicker.updateOptions({
-            date: new Date(initialGregorianDate),
-            selector: '#' + pickerDisplayId
-        });
-        displayEl.value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
-    }
-}
-</script>
+            // 1. Define functions first
+            function toGregorian(j_y, j_m, j_d) {
+                j_y = parseInt(j_y); j_m = parseInt(j_m); j_d = parseInt(j_d);
+                var jy = j_y - 979;
+                var jm = j_m - 1;
+                var jd = j_d - 1;
+                var j_day_no = 365 * jy + parseInt(jy / 33) * 8 + parseInt((jy % 33 + 3) / 4);
+                for (var i = 0; i < jm; ++i) j_day_no += (i < 6) ? 31 : 30;
+                j_day_no += jd;
+                var g_day_no = j_day_no + 79;
+                var gy = 1600 + 400 * parseInt(g_day_no / 146097);
+                g_day_no = g_day_no % 146097;
+                var leap = true;
+                if (g_day_no >= 36525) {
+                    g_day_no--;
+                    gy += 100 * parseInt(g_day_no / 36524);
+                    g_day_no = g_day_no % 36524;
+                    if (g_day_no >= 365) g_day_no++; else leap = false;
+                }
+                gy += 4 * parseInt(g_day_no / 1461);
+                g_day_no %= 1461;
+                if (g_day_no >= 366) {
+                    leap = false;
+                    g_day_no--;
+                    gy += parseInt(g_day_no / 365);
+                    g_day_no = g_day_no % 365;
+                }
+                var g_days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                if (leap) g_days_in_month[1] = 29;
+                var i;
+                for (i = 0; g_day_no >= g_days_in_month[i]; i++) g_day_no -= g_days_in_month[i];
+                var gm = i + 1;
+                var gd = g_day_no + 1;
+                return new Date(gy, gm - 1, gd);
+            }
 
-<!-- <script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        jalaliDatepicker.startWatch({
-            selector: "#birthdate-picker-display",
-            onSelect: function(selectedDate) {
-                const date = new Date(selectedDate * 1000);
-                const year = date.getFullYear();
-                const month = ('0' + (date.getMonth() + 1)).slice(-2);
-                const day = ('0' + date.getDate()).slice(-2);
-                document.getElementById("birthdate-gregorian-alt").value = `${year}-${month}-${day}`;
+            function updateHiddenDateField() {
+                const year = yearSelect.value;
+                const month = monthSelect.value;
+                const day = daySelect.value;
+                if (year && month && day) {
+                    const gDate = toGregorian(year, month, day);
+                    const gYear = gDate.getFullYear();
+                    const gMonth = ('0' + (gDate.getMonth() + 1)).slice(-2);
+                    const gDay = ('0' + gDate.getDate()).slice(-2);
+                    hiddenInput.value = `${gYear}-${gMonth}-${gDay}`;
+                    console.log(`✅ Hidden birth date updated to: ${hiddenInput.value}`);
+                } else {
+                    hiddenInput.value = "";
+                }
+            }
+
+            // 2. Pre-fill dropdowns and update hidden field
+            const initialDate = {{ jalali_birth_date | tojson | safe if jalali_birth_date else 'null' }};
+            if (initialDate) {
+                yearSelect.value = initialDate.year;
+                monthSelect.value = initialDate.month;
+                daySelect.value = initialDate.day;
+                updateHiddenDateField(); // Call function to set initial hidden value
+            }
+
+            // 3. Attach event listeners
+            if (!yearSelect.dataset.listenerAttached) {
+                yearSelect.addEventListener('change', updateHiddenDateField);
+                monthSelect.addEventListener('change', updateHiddenDateField);
+                daySelect.addEventListener('change', updateHiddenDateField);
+                yearSelect.dataset.listenerAttached = 'true';
             }
         });
+    }
 
-        const initialGregorianDate = document.getElementById('birthdate-gregorian-alt').value;
-        if(initialGregorianDate) {
-            jalaliDatepicker.updateOptions({
-                time: false,
-                date: new Date(initialGregorianDate)
-            });
-            document.getElementById("birthdate-picker-display").value = new Date(initialGregorianDate).toLocaleDateString('fa-IR');
-        }
-    });
-</script> -->
-
+});
+</script>
 {% endblock %}
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            initJalaliDatepicker('birthdate-picker-display-modal', 'birthdate-gregorian-alt-modal');
+            
 
             // function displayInitialShamsiDate() {
             //     const initialDateElem = document.getElementById('initial-gregorian-date');
@@ -1251,31 +1315,29 @@ function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
             // }
             // displayInitialShamsiDate();
 
-            const editContactModal = document.getElementById('editContactModal');
-            if (editContactModal) {
-                // رویداد 'shown.bs.modal' تضمین می‌کند که مودال کاملاً نمایش داده شده
-                editContactModal.addEventListener('shown.bs.modal', function () {
-                    // فراخوانی تابع استاندارد برای مقداردهی تقویم داخل مودال
-                    initJalaliDatepicker('birthdate-picker-display-modal', 'birthdate-gregorian-alt-modal');
-                });
-            }
+            // const editContactModal = document.getElementById('editContactModal');
+            // if (editContactModal) {
+            //     editContactModal.addEventListener('shown.bs.modal', function () {
+            //         initJalaliDatepicker('birthdate-picker-display-modal', 'birthdate-gregorian-alt-modal');
+            //     });
+            // }
             // --- Tab Switching Logic ---
             const tabLinks = document.querySelectorAll('.sidebar .nav-link[data-tab-target], .offcanvas .nav-link[data-tab-target]');
             const contentPanes = document.querySelectorAll('.main-content .tab-pane');
-        
-            function switchTab(targetId) {
-                const targetPane = document.querySelector(targetId);
-                const targetLink = document.querySelector(`.nav-link[data-tab-target="${targetId}"]`);
 
-                tabLinks.forEach(l => l.classList.remove('active'));
-                document.querySelectorAll(`.nav-link[data-tab-target="${targetId}"]`).forEach(l => l.classList.add('active'));
+            function switchTab(targetId) {
+                if (!targetId) return;
+                const targetPane = document.querySelector(targetId);
             
+                tabLinks.forEach(l => l.classList.remove('active'));
                 contentPanes.forEach(p => p.classList.remove('active'));
+            
+                document.querySelectorAll(`.nav-link[data-tab-target="${targetId}"]`).forEach(l => l.classList.add('active'));
                 if (targetPane) {
                     targetPane.classList.add('active');
                 }
             }
-        
+
             tabLinks.forEach(link => {
                 link.addEventListener('click', function(event) {
                     event.preventDefault();
@@ -1283,15 +1345,13 @@ function initJalaliDatepicker(pickerDisplayId, hiddenInputId) {
                     switchTab(targetId);
                 });
             });
-        
-            document.querySelectorAll('a[data-tab-target][onclick]').forEach(cardLink => {
-                cardLink.addEventListener('click', function(event) {
-                    event.preventDefault();
+
+            document.querySelectorAll('.card[data-tab-target]').forEach(card => {
+                card.addEventListener('click', function() {
                     const targetId = this.dataset.tabTarget;
                     switchTab(targetId);
                 });
-            });
-        
+            });        
             const mobileMenuElement = document.getElementById('mobileMenu');
             if (mobileMenuElement) {
                 document.addEventListener('click', function(event) {
@@ -1411,12 +1471,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (openModalEl) {
             const modalInstance = bootstrap.Modal.getInstance(openModalEl);
             if (modalInstance) {
-                // این دستور مودال را به طور کامل از حافظه پاک می‌کند
                 modalInstance.dispose(); 
             }
         }
 
-        // پاک‌سازی دستی و فوری برای حذف بقایای بصری
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.remove());
         document.body.classList.remove('modal-open');
         document.body.style.overflow = '';
@@ -1429,14 +1487,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
      document.body.addEventListener('click', function(event) {
-        // پیدا کردن دکمه‌ای که کلیک شده و ویژگی data-bs-target دارد اما data-bs-toggle ندارد
         const trigger = event.target.closest('[data-bs-target]');
         if (trigger && !trigger.hasAttribute('data-bs-toggle')) {
             event.preventDefault();
             const targetId = trigger.getAttribute('data-bs-target');
             const modalEl = document.querySelector(targetId);
             if (modalEl) {
-                // هر بار یک نمونه کاملاً جدید از مودال ایجاد و نمایش داده می‌شود
                 const myModal = new bootstrap.Modal(modalEl);
                 myModal.show();
             }
@@ -1478,7 +1534,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!form) return;
 
         const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
+        const data = {
+            contact_phone: form.querySelector('[name="contact_phone"]').value,
+            contact_email: form.querySelector('[name="contact_email"]').value,
+            location: form.querySelector('[name="location"]').value,
+            birth_date: form.querySelector('[name="birth_date"]').value,
+            marital_status: form.querySelector('[name="marital_status"]').value,
+            military_status: form.querySelector('[name="military_status"]').value
+        };
 
         fetch(url, {
             method: 'POST',
@@ -1491,11 +1554,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
 
            if (result.success) {
-                forceCloseAllModals(); // تابع پاک‌سازی و تخریب کامل را صدا می‌زنیم
+                forceCloseAllModals();
                 if (successCallback) successCallback(result);
                 showToast(result.message || 'تغییرات با موفقیت ذخیره شد.');
             } else {
-                // در صورت خطا نیز پیام را با Toast نمایش بده
                 showToast('خطا: ' + (result.message || 'مشکلی در ذخیره تغییرات رخ داد.'), true);
             }
         })
@@ -1508,7 +1570,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listener for "About Me" modal
     document.getElementById('save-about-changes')?.addEventListener('click', function() {
         sendAjaxForm('edit-about-form', "{{ url_for('main.edit_job_profile_summary') }}", (result) => {
-            // آپدیت کردن متن در صفحه اصلی بعد از ذخیره موفق
             document.getElementById('profile-title-display').innerText = result.new_title;
             document.getElementById('profile-description-display').innerText = result.new_description;
         });
@@ -1590,9 +1651,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (result.success) {
                     document.getElementById('profile-picture-display').src = result.new_path;
                     forceCloseAllModals();
-                    showToast(result.message); // استفاده از Toast به جای alert
+                    showToast(result.message);
                 } else {
-                    showToast(result.message, true); // استفاده از Toast برای خطا
+                    showToast(result.message, true);
                 }
             });
         });

@@ -11,17 +11,18 @@ window.addEventListener('beforeinstallprompt', (e) => {
     if (installBtn) {
         installBtn.classList.remove('d-none');
     }
-    
-    installBtn.addEventListener('click', async () => {
-        if (deferredPrompt !== null) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                deferredPrompt = null;
-                installBtn.classList.add('d-none');
+    if (installBtn) {
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt !== null) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    deferredPrompt = null;
+                    installBtn.classList.add('d-none');
+                }
             }
-        }
-    });
+        });
+    }
 });
 
     // Preview image before upload

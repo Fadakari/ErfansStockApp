@@ -36,16 +36,37 @@
     <div class="col-md-8 mb-5">
         <div class="card signuper mb-4">
             <div class="card-header" style="background: var(--dark-green);">
-                <button class="btn header-tabs py-2 px-3 float-start">
-                    <a href="{{ url_for('main.index') }}">
-                        <i class="bi bi-arrow-left fs-3 txt-black"></i>
-                    </a>
+                <button class="btn float-start" onclick="history.back()">
+                    <i class="bi bi-arrow-left fs-3 txt-black"></i>
                 </button>
                 <h4 class="mb-0 txt-black">{% if product %}ویرایش محصول{% else %}محصول جدید{% endif %}</h4>
             </div>
             <div class="card-body bg-very-black">
                 <!-- فرم بدون جاوا اسکریپت -->
                 <form method="POST" id="productForm">
+                    <div class="mb-3">
+                        <label for="image" class="form-label txt-black">تصویر محصول (حداکثر ۳ عدد)</label>
+                        <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد برای نمایش بهتر در پلتفرم</p>
+                    
+                        <div class="custom-file">
+                            <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*" multiple onchange="handleFileSelect(this)">
+                            <div class="image-upload-box" onclick="document.getElementById('image').click();">
+                                <span class="image-upload-plus">+</span>
+                                <p class="image-upload-text">انتخاب عکس‌ها</p>
+                            </div>
+                        </div>
+                    
+                        <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths" 
+                            value="{% if product %}{% if product.images %}{{ product.images|map(attribute='image_path')|join(',') }}{% else %}{{ product.image_path or '' }}{% endif %}{% endif %}">
+                    
+                        <div id="image-previews" class="d-flex flex-wrap mt-2">
+                        </div>
+                    
+                        <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
+                            <p class="txt-black">در حال آپلود عکس</p>
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label for="name" class="form-label txt-black">نام محصول</label>
                         <input type="text" class="inputs txt-black" placeholder="نام محصول را وارد کنید" id="name" name="name" 
@@ -57,11 +78,16 @@
                     </div>
                     <div class="mb-3">
                         <label for="price" class="form-label txt-black">قیمت (تومان)</label>
-
-                        <input type="text" inputmode="numeric" class="inputs txt-black"
-                               placeholder="قیمت محصول را وارد کنید" id="price" name="price"
-                               value="{{ product.price if product else '' }}" required>
-
+                        <div class="input-group d-flex flex-nowrap">
+                            <input type="text" inputmode="numeric" class="inputs txt-black w-50"
+                                   placeholder="قیمت محصول را وارد کنید" id="price" name="price"
+                                   value="{{ "{:,.0f}".format(product.price) if product and product.price > 0 else '' }}" 
+                                   {% if product and product.price == 0 %}disabled{% endif %}>
+                            <div class="input-group-text bg-secondary w-50">
+                                <input class="form-check-input mt-0 rounded-end" type="checkbox" id="is_negotiable" {% if product and product.price == 0 %}checked{% endif %}>
+                                <label for="is_negotiable" class="form-check-label me-2 txt-black">توافقی</label>
+                            </div>
+                        </div>
                         <small id="price-in-words" class="form-text mt-1 d-block text-success">&nbsp;</small>
                     </div>
                     <div class="mb-3">
@@ -137,6 +163,11 @@
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/wurth.png') }}" value="wurth" {% if product and product.brand == "wurth" %}selected{% endif %}>wurth/وورث</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/new_1000-removebg-preview.png') }}" value="wiha" {% if product and product.brand == "wiha" %}selected{% endif %}>wiha/ویها</option>
                             <option class="txt-black" data-logo="{{ url_for('static', filename='images/Unconfirmed_466698-removebg-preview.png') }}" value="genius" {% if product and product.brand == "genius" %}selected{% endif %}>genius/جنیوس</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/sparky-logo-png-transparent.png') }}" value="sparky" {% if product and product.brand == "sparky" %}selected{% endif %}>sparky/اسپارکی</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/Arva.png') }}" value="arva" {% if product and product.brand == "arva" %}selected{% endif %}>Arva/آروا</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/logo-ronix.png') }}" value="ronix" {% if product and product.brand == "ronix" %}selected{% endif %}>Ronix/رونیکس</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/tosan-min.png') }}" value="tosan" {% if product and product.brand == "tosan" %}selected{% endif %}>Tosan/توسان</option>
+                            <option class="txt-black" data-logo="{{ url_for('static', filename='images/kenzax-min.png') }}" value="kenzax" {% if product and product.brand == "kenzax" %}selected{% endif %}>Kenzax/کنزاکس</option>
                         </select>
                     </div>
 
@@ -152,29 +183,57 @@
                     </div>
 
 
-<div class="mb-3">
-    <label for="image" class="form-label txt-black">تصویر محصول (حداکثر ۳ عدد)</label>
-    <p class="text-warning">ترجیها عکسی آپلودی 1 در 1 (مربع) باشد برای نمایش بهتر در پلتفرم</p>
 
-    <div class="custom-file">
-        <input type="file" class="form-control-file d-none" id="image" name="image" accept="image/*" multiple onchange="handleFileSelect(this)">
-        <div class="image-upload-box" onclick="document.getElementById('image').click();">
-            <span class="image-upload-plus">+</span>
-            <p class="image-upload-text">انتخاب عکس‌ها</p>
-        </div>
-    </div>
+                    <div class="mb-3">
+                        <label class="form-label txt-black">نوع نیروی محرکه (حداقل یک مورد انتخاب شود)</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_electric" id="is_electric" value="1" {% if product and product.is_electric %}checked{% endif %}>
+                            <label class="form-check-label txt-black" for="is_electric">
+                                برقی
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_cordless" id="is_cordless" value="1" {% if product and product.is_cordless %}checked{% endif %}>
+                            <label class="form-check-label txt-black" for="is_cordless">
+                                شارژی
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_pneumatic" id="is_pneumatic" value="1" {% if product and product.is_pneumatic %}checked{% endif %}>
+                            <label class="form-check-label txt-black" for="is_pneumatic">
+                                بادی (پنوماتیک)
+                            </label>
+                        </div>
+                    </div>
 
-    <input type="hidden" name="uploaded_image_paths" id="uploaded_image_paths" 
-        value="{% if product %}{% if product.images %}{{ product.images|map(attribute='image_path')|join(',') }}{% else %}{{ product.image_path or '' }}{% endif %}{% endif %}">
+                    <div id="cordless_options" class="mb-3 p-3 border rounded border-secondary" style="display: {% if product and product.is_cordless %}block{% else %}none{% endif %};">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="is_body_only" id="is_body_only" value="1" {% if product and product.is_body_only %}checked{% endif %}>
+                            <label class="form-check-label txt-black" for="is_body_only">
+                                تنه خالی (بدون باتری و شارژر)
+                            </label>
+                        </div>
+                        <label for="body_only_description" class="form-label txt-black">توضیحات بیشتر (اختیاری)</label>
+                        <input type="text" class="inputs txt-black" id="body_only_description" name="body_only_description" placeholder="مثال: همراه با یک باتری ۴ آمپر" value="{{ product.body_only_description if product else '' }}">
+                    </div>
 
-    <div id="image-previews" class="d-flex flex-wrap mt-2">
-    </div>
 
-    <div class="progress mt-2" id="uploadProgress" style="display: none;">
-        <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100" id="uploadProgressBar">0%</div>
-        <p class="txt-black">در حال آپلود عکس</p>
-    </div>
-</div>
+                    <div class="mb-3 p-3 border rounded border-secondary">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="is_chat_only" id="is_chat_only" value="1" {% if product and product.is_chat_only %}checked{% endif %}>
+                            <label class="form-check-label txt-black" for="is_chat_only">
+                                فقط چت (شماره تماس نمایش داده نشود)
+                            </label>
+                        </div>
+                        <div id="contact_phone_wrapper" class="mt-3" style="display: {% if product and not product.is_chat_only %}block{% elif not product %}block{% else %}none{% endif %};">
+                            <label for="contact_phone" class="form-label txt-black">شماره تماس برای این آگهی</label>
+                            <input type="text" inputmode="numeric" class="inputs txt-black" id="contact_phone" name="contact_phone" value="{{ product.contact_phone if product and product.contact_phone else current_user.phone }}" required>
+                            <small class="form-text txt-black">این شماره در صفحه محصول نمایش داده می‌شود.</small>
+                        </div>
+                    </div>
+
+
+                    
 
 
 
@@ -1140,4 +1199,62 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isCordlessCheckbox = document.getElementById('is_cordless');
+    const cordlessOptionsDiv = document.getElementById('cordless_options');
+
+    const isNegotiableCheckbox = document.getElementById('is_negotiable');
+    const priceInput = document.getElementById('price');
+    
+    const isChatOnlyCheckbox = document.getElementById('is_chat_only');
+    const contactPhoneWrapper = document.getElementById('contact_phone_wrapper');
+    const contactPhoneInput = document.getElementById('contact_phone');
+
+    // 1. منطق نمایش گزینه‌های مربوط به ابزار شارژی
+    isCordlessCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            cordlessOptionsDiv.style.display = 'block';
+        } else {
+            cordlessOptionsDiv.style.display = 'none';
+        }
+    });
+
+    // 2. منطق چک‌باکس "توافقی"
+    isNegotiableCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            priceInput.disabled = true;
+            priceInput.value = '';
+            document.getElementById('price-in-words').innerHTML = '&nbsp;';
+        } else {
+            priceInput.disabled = false;
+        }
+    });
+    
+    // 3. منطق چک‌باکس "فقط چت"
+    isChatOnlyCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            contactPhoneWrapper.style.display = 'none';
+            contactPhoneInput.required = false; // در حالت مخفی، اجباری نیست
+        } else {
+            contactPhoneWrapper.style.display = 'block';
+            contactPhoneInput.required = true; // در حالت نمایش، اجباری است
+        }
+    });
+
+    // 4. اعتبارسنجی برای انتخاب حداقل یک نوع نیروی محرکه
+    const productForm = document.getElementById('productForm');
+    productForm.addEventListener('submit', function(event) {
+        const isElectric = document.getElementById('is_electric').checked;
+        const isCordless = document.getElementById('is_cordless').checked;
+        const isPneumatic = document.getElementById('is_pneumatic').checked;
+
+        if (!isElectric && !isCordless && !isPneumatic) {
+            alert('لطفاً حداقل یک مورد از "نوع نیروی محرکه" را انتخاب کنید.');
+            event.preventDefault(); // جلوگیری از ارسال فرم
+        }
+    });
+});
+</script>
 {% endblock %}
